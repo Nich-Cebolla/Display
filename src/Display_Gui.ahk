@@ -300,6 +300,7 @@ class GuiH {
         )
         DpiRatio := NewDpi / GuiObj.DpiChangeHelper.Dpi
         GuiObj.DpiChangeHelper.Dpi := NewDpi
+        if HasProp(GuiObj, 'WvCtrl')
         for Ctrl in GuiObj {
             if Ctrl.DpiExclude {
                 continue

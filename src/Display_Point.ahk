@@ -25,6 +25,15 @@ class Point extends Buffer {
         return Pt
     }
 
+    static GetCaretPos() {
+        DllCall('GetCaretPos', 'ptr', pt := Point(), 'int')
+        return pt
+    }
+
+    static SetCaretPos(X, Y) {
+        return DllCall('SetCaretPos', 'int', X, 'int', Y, 'int')
+    }
+
     /**
      * @description - Use this to convert screen coordinates (which should already be contained by
      * this Point), to client coordinates. This converts the points in-place; it does not return

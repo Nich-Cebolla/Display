@@ -9,6 +9,7 @@
 #Include Display_Point.ahk
 #Include Display_Rect.ahk
 #Include Display_Lib.ahk
+#Include Display_Scrollbar.ahk
 
 ; Call here or anywhere else in your code.
 GuiH.Initialize()

@@ -25,6 +25,13 @@ class Rect extends RectBase {
         }
     }
 
+
+    static Union(Rect1, Rect2) {
+        if DllCall('UnionRect', 'ptr', rc := Rect(), 'ptr', Rect1, 'ptr', Rect2, 'int') {
+            return rc
+        }
+    }
+
     static FromWinClient(Hwnd) {
         if DllCall('User32.dll\GetClientRect', 'Ptr', Hwnd, 'Ptr', RectObj := this()) {
             return RectObj

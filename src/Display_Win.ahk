@@ -547,7 +547,7 @@ class Win extends RectBase {
             return 2
         }
         ; Create buffer to store SIZE
-        StrPut(str, lpStr := Buffer(StrPut(str, 'utf-16'), 'utf-16'))
+        StrPut(str, lpStr := Buffer(StrPut(str, 'utf-16')), StrLen(str), 'utf-16')
         ; Measure the text
         if !DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32', 'Ptr'
             , hDC, 'Ptr', lpStr, 'Int', StrLen(str), 'Ptr', SIZE := Buffer(8)) {
@@ -626,7 +626,7 @@ class Win extends RectBase {
 
 
     static IsVisible(Hwnd) {
-        return DllCall('IsWindowVisible', 'Ptr', Hwnd)
+        return DllCall('IsWindowVisible', 'Ptr', Hwnd, 'int')
     }
 
 
@@ -751,7 +751,30 @@ class Win extends RectBase {
     ;@endregion
 
 
+    /**
+     * @description - Gets the bounding rectangle of all child windows of a given window.
+     * @param {Integer} hWnd - The handle to the parent window.
+     * @returns {Rect} - The bounding rectangle of all child windows, specifically the smallest
+     * rectangle that contains all child windows.
+     */
+    static GetChildrenBoundingRect(hWnd) {
+        rects := [Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), Rect()]
+        DllCall('EnumChildWindows', 'ptr', hWnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+        CallbackFree(cb)
+        return rects[1]
 
+
+        _EnumChildWindowsProc(hWnd) {
+            DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rects[1], 'int')
+            this.GuiObj.UpdateText(Format('`r`nenum child window proc`r`n1: x{} y{} w{} h{}`r`n2: x{} y{} w{} h{}`r`n3: x{} y{} w{} h{}', rects[1].l, rects[1].t, rects[1].r, rects[1].b, rects[2].l, rects[2].t, rects[2].r, rects[2].b, rects[3].l, rects[3].t, rects[3].r, rects[3].b), A_ThisFunc, A_LineNumber, A_LineFile)
+            DllCall('UnionRect', 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
+            this.GuiObj.UpdateText(Format('`r`nenum child window proc`r`n1: x{} y{} w{} h{}`r`n2: x{} y{} w{} h{}`r`n3: x{} y{} w{} h{}', rects[1].l, rects[1].t, rects[1].r, rects[1].b, rects[2].l, rects[2].t, rects[2].r, rects[2].b, rects[3].l, rects[3].t, rects[3].r, rects[3].b), A_ThisFunc, A_LineNumber, A_LineFile)
+            this.GuiObj.UpdateText(Format('`r`nenum child window proc`r`n1: x{} y{} w{} h{}`r`n2: x{} y{} w{} h{}`r`n3: x{} y{} w{} h{}', rects[1].l, rects[1].t, rects[1].r, rects[1].b, rects[2].l, rects[2].t, rects[2].r, rects[2].b, rects[3].l, rects[3].t, rects[3].r, rects[3].b), A_ThisFunc, A_LineNumber, A_LineFile)
+            rects.Push(rects.RemoveAt(1))
+            this.GuiObj.UpdateText(Format('`r`nenum child window proc`r`n1: x{} y{} w{} h{}`r`n2: x{} y{} w{} h{}`r`n3: x{} y{} w{} h{}', rects[1].l, rects[1].t, rects[1].r, rects[1].b, rects[2].l, rects[2].t, rects[2].r, rects[2].b, rects[3].l, rects[3].t, rects[3].r, rects[3].b), A_ThisFunc, A_LineNumber, A_LineFile)
+            return 1
+        }
+    }
 
 
     ;@region GetPosByM
@@ -810,9 +833,55 @@ class Win extends RectBase {
         return DllCall('WindowFromPhysicalPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
     }
 
-    static Show(hWnd, nCmdShow) {
-
+    static PhysicalToLogicalPoint(hWnd, X, Y) {
+        return DllCall('PhysicalToLogicalPoint', 'ptr', hWnd, 'ptr', Point(X, y), 'ptr')
     }
+
+    static Show(hWnd, nCmdShow) {
+        return DllCall('ShowWindow', 'ptr', hWnd, 'int', nCmdShow)
+    }
+
+    static AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
+        return DllCall('AdjustWindowRectEx', 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
+    }
+
+    static GetClientRect(hWnd, &lpRect) {
+        return DllCall('GetClientRect', 'ptr', hWnd, 'ptr', lpRect := Rect(), 'int')
+    }
+
+    static RealChildWindowFromPoint(hWnd, X, Y) {
+        return DllCall('RealChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
+
+    static ChildWindowFromPoint(hWnd, X, Y) {
+        return DllCall('ChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
+
+    static ChildWindowFromPointEx(hWnd, X, Y, flags := 0) {
+        return DllCall('ChildWindowFromPointEx', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
+    }
+
+    /**
+     * @returns {Integer} - The handle to the previous parent window.
+     */
+    static SetParent(hWnd, hWndNewParent) {
+        return DllCall('SetParent', 'ptr', hWnd, 'ptr', hWndNewParent, 'ptr')
+    }
+
+
+    static LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
+        AspectRatio := W1 / H1
+        WidthFromHeight := H2 / AspectRatio
+        HeightFromWidth := W2 * AspectRatio
+        if WidthFromHeight > W2 {
+            W2 := W2
+            H2 := HeightFromWidth
+        } else {
+            W2 := WidthFromHeight
+            H2 := H2
+        }
+    }
+
 
 
 }
