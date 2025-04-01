@@ -783,6 +783,7 @@ class Win extends RectBase {
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
      */
     static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params?) {
+        Params := this.Defaults(Params??{})
         if Params.UseWorkArea {
             _Process(Unit.LW, Unit.TW, Unit.RW, Unit.BW)
         } else {
