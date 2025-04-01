@@ -315,7 +315,7 @@ class Win extends RectBase {
         if MoveImmediately
             WinMove(x, y, , , Number(Hwnd))
         CoordMode('Mouse', oCoordMode)
-        return { X: x, Y: y }
+        return 1
     }
     ;@endregion
 
