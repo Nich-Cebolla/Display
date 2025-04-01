@@ -788,18 +788,21 @@ class Win extends RectBase {
         } else {
 
         }
-        if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
-            OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
-        else if (mX + Params.OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
-            OutX := Unit.L + Params.OffsetEdgeOfMonitor.X
-        else
-            OutX := mX + Params.OffsetMouse.X
-        if (mY + Params.OffsetMouse.Y + wH > Unit.B - Params.OffsetEdgeOfMonitor.Y)
-            OutY := Unit.B - wH - Params.OffsetEdgeOfMonitor.Y
-        else if (mY + Params.OffsetMouse.Y < Unit.T + Params.OffsetEdgeOfMonitor.Y)
-            OutY := Unit.T + Params.OffsetEdgeOfMonitor.Y
-        else
-            OutY := mY + Params.OffsetMouse.Y
+
+        _Process(UnitL, UnitT, UnitR, UnitB) {
+            if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
+                OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
+            else if (mX + Params.OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
+                OutX := Unit.L + Params.OffsetEdgeOfMonitor.X
+            else
+                OutX := mX + Params.OffsetMouse.X
+            if (mY + Params.OffsetMouse.Y + wH > Unit.B - Params.OffsetEdgeOfMonitor.Y)
+                OutY := Unit.B - wH - Params.OffsetEdgeOfMonitor.Y
+            else if (mY + Params.OffsetMouse.Y < Unit.T + Params.OffsetEdgeOfMonitor.Y)
+                OutY := Unit.T + Params.OffsetEdgeOfMonitor.Y
+            else
+                OutY := mY + Params.OffsetMouse.Y
+        }
     }
     ;@endregion
 
