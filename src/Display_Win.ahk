@@ -343,7 +343,6 @@ class Win extends RectBase {
         oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
         WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
         DpiRatio := Mon.Dpi.Win(hWnd) / Mon.Dpi.Mouse()
-        DpiMouse :=
         newW := wW / DpiRatio
         newH := wH / DpiRatio
         Mon.Win._GetPosByMouse(&x, &y, &mX, &mY, &newW, &newH, OffsetMouse, OffsetEdgeOfMonitor, unitMouse[UseWorkArea ? 'Work' : 'Display'])
