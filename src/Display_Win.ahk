@@ -925,7 +925,7 @@ class Win extends RectBase {
         }
         static GetPosByPoint := {
             UseWorkArea: true
-          , OffsetMouse: { x: 5, y: 5 }
+          , OffsetPoint: { x: 5, y: 5 }
           , OffsetEdgeOfMonitor: { x: 50, y: 50 }
         }
     }
