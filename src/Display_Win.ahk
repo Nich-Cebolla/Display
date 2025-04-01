@@ -307,7 +307,7 @@ class Win extends RectBase {
     static MoveByMouse(Hwnd, Params?) {
         Params := this.Defaults(Params??{})
         oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
-        WinDpi := GetDpiForWindow(hWnd)
+        WinDpi := Mon.Dpi.Win(hWnd)
         MouseDpi := Mon.Dpi.Mouse()
         MouseGetPos(&mX, &mY)
         Unit := UseWorkArea ? Mon.Get.PtW(mX, mY) : Mon.Get.PtD(mX, mY)
