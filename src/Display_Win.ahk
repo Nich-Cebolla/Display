@@ -783,18 +783,18 @@ class Win extends RectBase {
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
      */
     static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params) {
-        if (mX + OffsetMouse.X + wW > Unit.R - OffsetEdgeOfMonitor.X)
-            OutX := Unit.R - wW - OffsetEdgeOfMonitor.X
-        else if (mX + OffsetMouse.X < Unit.L + OffsetEdgeOfMonitor.X)
-            OutX := Unit.L + OffsetEdgeOfMonitor.X
+        if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
+            OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
+        else if (mX + OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
+            OutX := Unit.L + Params.OffsetEdgeOfMonitor.X
         else
-            OutX := mX + OffsetMouse.X
-        if (mY + OffsetMouse.Y + wH > Unit.B - OffsetEdgeOfMonitor.Y)
-            OutY := Unit.B - wH - OffsetEdgeOfMonitor.Y
-        else if (mY + OffsetMouse.Y < Unit.T + OffsetEdgeOfMonitor.Y)
-            OutY := Unit.T + OffsetEdgeOfMonitor.Y
+            OutX := mX + Params.OffsetMouse.X
+        if (mY + Params.OffsetMouse.Y + wH > Unit.B - Params.OffsetEdgeOfMonitor.Y)
+            OutY := Unit.B - wH - Params.OffsetEdgeOfMonitor.Y
+        else if (mY + Params.OffsetMouse.Y < Unit.T + Params.OffsetEdgeOfMonitor.Y)
+            OutY := Unit.T + Params.OffsetEdgeOfMonitor.Y
         else
-            OutY := mY + OffsetMouse.Y
+            OutY := mY + Params.OffsetMouse.Y
     }
     ;@endregion
 
