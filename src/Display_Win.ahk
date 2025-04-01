@@ -341,6 +341,17 @@ class Win extends RectBase {
         , OffsetMouse := {x:5,y:5}, OffsetEdgeOfMonitor := {x:50,y:50}
         , MouseCoordMode := 'Screen'
     ) {
+        Params := this.Defaults(Params??{}, A_ThisFunc)
+        oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
+        DpiWin := Mon.Dpi.Win(hWnd)
+        DpiMouse := Mon.Dpi.Mouse()
+        WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
+        Win.GetPosByMouse(&X, &Y, &mX, &mY, &wW, &wH, Params.OffsetMouse, Params.OffsetEdgeOfMonitor, Mon.FromMouse_U(&mX, &mY))
+        if MoveImmediately {
+            WinMove(X, Y, , , Number(Hwnd))
+        }
+        CoordMode('Mouse', oCoordMode)
+        
         params := Map('Dpi'||Unset, 'mouse', MouseCoordMode||Unset)
         oCoordMode := CoordMode('Mouse', MouseCoordMode)
         unitWin := Mon.FromWin(Hwnd), unitMouse := Mon.FromMouse(&mX, &mY)
