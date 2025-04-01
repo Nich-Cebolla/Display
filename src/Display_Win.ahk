@@ -346,6 +346,7 @@ class Win extends RectBase {
         Mon.FromMouse_U(&mX, &mY)
         Params.OffsetPoint := Params.OffsetMouse
         Win.GetPosByMouse(&X, &Y, mX, mY, wW / DpiRatio, wH / DpiRatio, Unit, Params)
+        Params.DeleteProp('OffsetMouse')
         if Params.MoveImmediately {
             WinMove(X, Y, , , Number(Hwnd))
         }
