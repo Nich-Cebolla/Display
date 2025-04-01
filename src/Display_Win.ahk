@@ -784,9 +784,9 @@ class Win extends RectBase {
      */
     static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params) {
         if Params.UseWorkArea {
-
+            _Process(Unit.LW, Unit.TW, Unit.RW, Unit.BW)
         } else {
-
+            _Process(Unit.L, Unit.T, Unit.R, Unit.B)
         }
 
         _Process(UnitL, UnitT, UnitR, UnitB) {
