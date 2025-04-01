@@ -783,6 +783,11 @@ class Win extends RectBase {
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
      */
     static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params) {
+        if Params.UseWorkArea {
+
+        } else {
+
+        }
         if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
             OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
         else if (mX + Params.OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
