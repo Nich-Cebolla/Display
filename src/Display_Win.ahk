@@ -897,6 +897,7 @@ class Win extends RectBase {
         /**
          * @description - Sets the base object.
          * @param {Object} Options - The input object.
+         * @param {String} Name - The function name.
          * @return {Object} - The same input object.
          */
         static Call(Options) {
