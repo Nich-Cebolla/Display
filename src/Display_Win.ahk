@@ -901,12 +901,7 @@ class Win extends RectBase {
          * @return {Object} - The same input object.
          */
         static Call(Options, Name) {
-            if IsSet(DefaultsConfig) {
-                ObjSetBase(DefaultsConfig, Defaults.Options.Default)
-                ObjSetBase(Options, DefaultsConfig)
-            } else {
-                ObjSetBase(Options, Defaults.Options.Default)
-            }
+            ObjSetBase(Options, this.%Name%)
             return Options
         }
         static MoveByMouse := {
