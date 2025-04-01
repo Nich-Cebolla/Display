@@ -783,18 +783,18 @@ class Win extends RectBase {
         }
 
         _Process(UnitL, UnitT, UnitR, UnitB) {
-            if (mX + Params.OffsetPoint.X + wW > UnitR - Params.OffsetEdgeOfMonitor.X)
-                OutX := UnitR - wW - Params.OffsetEdgeOfMonitor.X
-            else if (mX + Params.OffsetPoint.X < UnitL + Params.OffsetEdgeOfMonitor.X)
+            if (X + Params.OffsetPoint.X + Width > UnitR - Params.OffsetEdgeOfMonitor.X)
+                OutX := UnitR - Width - Params.OffsetEdgeOfMonitor.X
+            else if (X + Params.OffsetPoint.X < UnitL + Params.OffsetEdgeOfMonitor.X)
                 OutX := UnitL + Params.OffsetEdgeOfMonitor.X
             else
-                OutX := mX + Params.OffsetPoint.X
-            if (mY + Params.OffsetPoint.Y + wH > UnitB - Params.OffsetEdgeOfMonitor.Y)
-                OutY := UnitB - wH - Params.OffsetEdgeOfMonitor.Y
-            else if (mY + Params.OffsetPoint.Y < UnitT + Params.OffsetEdgeOfMonitor.Y)
+                OutX := X + Params.OffsetPoint.X
+            if (Y + Params.OffsetPoint.Y + Height > UnitB - Params.OffsetEdgeOfMonitor.Y)
+                OutY := UnitB - Height - Params.OffsetEdgeOfMonitor.Y
+            else if (Y + Params.OffsetPoint.Y < UnitT + Params.OffsetEdgeOfMonitor.Y)
                 OutY := UnitT + Params.OffsetEdgeOfMonitor.Y
             else
-                OutY := mY + Params.OffsetPoint.Y
+                OutY := Y + Params.OffsetPoint.Y
         }
     }
     ;@endregion
