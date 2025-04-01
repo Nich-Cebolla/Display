@@ -893,7 +893,6 @@ class Win extends RectBase {
                 ObjSetBase(this, this())
             }
         }
-        class Options {
 
         /**
          * @description - Sets the base object such that the values are used in this priority order:
