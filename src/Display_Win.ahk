@@ -6,6 +6,12 @@
  */
 class Win extends RectBase {
 
+    class Defaults {
+        static MoveByMouse := {
+
+        }
+    }
+
 
     /**
      * @description - Calls `BeginDeferWindowPos`, which is used to prepare for adjusting the
