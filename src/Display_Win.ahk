@@ -913,6 +913,13 @@ class Win extends RectBase {
                 return Options
             }
         }
+        static MoveByMouse := {
+            UseWorkArea: true
+          , MoveImmediately: true
+          , OffsetMouse: { x: 5, y: 5 }
+          , OffsetEdgeOfMonitor: { x: 50, y: 50 }
+          , MouseCoordMode: 'Screen'
+        }
     }
 
 }
