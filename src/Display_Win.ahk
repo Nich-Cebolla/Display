@@ -776,6 +776,8 @@ class Win extends RectBase {
      */
     static GetPosByPoint(&X, &Y, Width, Height, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
+        OffsetPoint := Params.OffsetPoint
+        OffsetEdgeOfMonitor := Params.OffsetEdgeOfMonitor
         if Params.UseWorkArea {
             _Process(Unit.LW, Unit.TW, Unit.RW, Unit.BW)
         } else {
