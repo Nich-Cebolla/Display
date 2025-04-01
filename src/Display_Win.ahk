@@ -304,9 +304,7 @@ class Win extends RectBase {
      * @returns {Object} - An object with properties `X` and `Y` representing the new position of the
      * window.
      */
-    static MoveByMouse(Hwnd, UseWorkArea := true, MoveImmediately := true
-    , OffsetMouse := { x: 5, y: 5 }, OffsetEdgeOfMonitor := { x: 50, y: 50 }
-    , MouseCoordMode := 'Screen') {
+    static MoveByMouse(Hwnd, Params) {
         oCoordMode := CoordMode('Mouse', MouseCoordMode)
         WinDpi := GetDpiForWindow(hWnd)
         MouseDpi := Mon.Dpi.Mouse()
