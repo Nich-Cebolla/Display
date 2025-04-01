@@ -308,7 +308,7 @@ class Win extends RectBase {
         Params := this.Defaults(Params??{}, A_ThisFunc)
         oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
         Unit := Mon.FromMouse_U(&mX, &mY)
-        WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
+        WinGetPos(, , &wW, &wH, Number(Hwnd))
         Params.OffsetPoint := Params.OffsetMouse
         Win.GetPosByMouse(&(OutX := mX), &(OutY := mY), wW, wH, Unit, Params)
         Params.DeleteProp('OffsetMouse')
