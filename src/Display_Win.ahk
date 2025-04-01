@@ -774,7 +774,7 @@ class Win extends RectBase {
      * to be used to control the position relative to the point and relative to the edge of the
      * monitor.
      */
-    static GetPosByPoint(&OutX, &OutY, mX, mY, wW, wH, Params?) {
+    static GetPosByPoint(&X, &Y, Width, Height, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
         if Params.UseWorkArea {
             _Process(Unit.LW, Unit.TW, Unit.RW, Unit.BW)
