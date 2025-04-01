@@ -1,4 +1,3 @@
-﻿
 
 /**
  * @class
@@ -312,8 +311,8 @@ class Win extends RectBase {
         Params.OffsetPoint := Params.OffsetMouse
         Win.GetPosByPoint(&OutX, &OutY, wW, wH, Mon.FromMouse_U(), Params)
         Params.DeleteProp('OffsetMouse')
-        if MoveImmediately {
-            WinMove(X, Y, , , Number(Hwnd))
+        if Params.MoveImmediately {
+            WinMove(OutX, OutY, , , Number(Hwnd))
         }
         CoordMode('Mouse', oCoordMode)
     }
@@ -344,12 +343,11 @@ class Win extends RectBase {
         WinGetPos(, , &wW, &wH, Number(Hwnd))
         DpiRatio := Mon.Dpi.Win(hWnd) / Mon.Dpi.Mouse()
         MouseGetPos(&OutX, &OutY)
-
         Params.OffsetPoint := Params.OffsetMouse
         Win.GetPosByPoint(&OutX, &OutY, wW / DpiRatio, wH / DpiRatio, Mon.FromMouse_U(), Params)
         Params.DeleteProp('OffsetMouse')
         if Params.MoveImmediately {
-            WinMove(X, Y, , , Number(Hwnd))
+            WinMove(OutX, OutY, , , Number(Hwnd))
         }
         CoordMode('Mouse', oCoordMode)
     }
@@ -932,4 +930,3 @@ class Win extends RectBase {
         }
     }
 }
-
