@@ -782,7 +782,7 @@ class Win extends RectBase {
      * @description - A utility function for getting a new position for a window as a function of the
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
      */
-    static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, OffsetMouse, OffsetEdgeOfMonitor, Unit) {
+    static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params) {
         if (mX + OffsetMouse.X + wW > Unit.R - OffsetEdgeOfMonitor.X)
             OutX := Unit.R - wW - OffsetEdgeOfMonitor.X
         else if (mX + OffsetMouse.X < Unit.L + OffsetEdgeOfMonitor.X)
