@@ -344,8 +344,8 @@ class Win extends RectBase {
         WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
         DpiRatio := Mon.Dpi.Win(hWnd) / Mon.Dpi.Mouse()
         newW :=
-        newH := wH / DpiRatio
-        Mon.Win._GetPosByMouse(&x, &y, &mX, &mY, &newW, &newH, OffsetMouse, OffsetEdgeOfMonitor, unitMouse[UseWorkArea ? 'Work' : 'Display'])
+        newH :=
+        Mon.Win._GetPosByMouse(&x, &y, &mX, &mY, wW / DpiRatio, wH / DpiRatio, OffsetMouse, OffsetEdgeOfMonitor, unitMouse[UseWorkArea ? 'Work' : 'Display'])
         Win.GetPosByMouse(&X, &Y, &mX, &mY, &wW, &wH, Params.OffsetMouse, Params.OffsetEdgeOfMonitor, Mon.FromMouse_U(&mX, &mY))
         if MoveImmediately {
             WinMove(X, Y, , , Number(Hwnd))
@@ -783,7 +783,7 @@ class Win extends RectBase {
      * @description - A utility function for getting a new position for a window as a function of the
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
      */
-    static GetPosByMouse(&OutX, &OutY, &mX, &mY, &wW, &wH, OffsetMouse, OffsetEdgeOfMonitor, Unit) {
+    static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, OffsetMouse, OffsetEdgeOfMonitor, Unit) {
         if (mX + OffsetMouse.X + wW > Unit.R - OffsetEdgeOfMonitor.X)
             OutX := Unit.R - wW - OffsetEdgeOfMonitor.X
         else if (mX + OffsetMouse.X < Unit.L + OffsetEdgeOfMonitor.X)
