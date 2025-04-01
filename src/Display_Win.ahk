@@ -777,7 +777,7 @@ class Win extends RectBase {
     }
 
 
-    ;@region GetPosByP
+    ;@region GetPosByPoint
     /**
      * @description - A utility function for getting a new position for a window as a function of the
      * mouse's current position. See {@link Win.MoveByMouse} for more information.
