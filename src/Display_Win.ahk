@@ -774,7 +774,7 @@ class Win extends RectBase {
      * to be used to control the position relative to the point and relative to the edge of the
      * monitor.
      */
-    static GetPosByPoint(&X, &Y, Width, Height, Params?) {
+    static GetPosByPoint(&X, &Y, Width, Height, Unit, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
         OffsetPoint := Params.OffsetPoint
         OffsetEdgeOfMonitor := Params.OffsetEdgeOfMonitor
