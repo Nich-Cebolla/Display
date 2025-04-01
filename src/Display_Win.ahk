@@ -921,7 +921,7 @@ class Win extends RectBase {
           , OffsetEdgeOfMonitor: { x: 50, y: 50 }
           , MouseCoordMode: 'Screen'
         }
-        static GetPosByMouse := {
+        static GetPosByPoint := {
             UseWorkArea: true
           , OffsetMouse: { x: 5, y: 5 }
           , OffsetEdgeOfMonitor: { x: 50, y: 50 }
