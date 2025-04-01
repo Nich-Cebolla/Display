@@ -917,6 +917,5 @@ class Win extends RectBase {
           , MouseCoordMode: 'Screen'
         }
     }
-
 }
 
