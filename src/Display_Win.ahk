@@ -918,6 +918,13 @@ class Win extends RectBase {
           , OffsetPoint: { x: 5, y: 5 }
           , OffsetEdgeOfMonitor: { x: 50, y: 50 }
         }
+        static ScaleMoveByMouse := {
+            UseWorkArea: true
+          , MoveImmediately: true
+          , OffsetMouse: {x:5,y:5}
+          , OffsetEdgeOfMonitor: {x:50,y:50}
+          , MouseCoordMode: 'Screen'
+        }
     }
 }
 
