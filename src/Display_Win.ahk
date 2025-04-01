@@ -305,6 +305,7 @@ class Win extends RectBase {
      * window.
      */
     static MoveByMouse(Hwnd, Params?) {
+        if
         oCoordMode := CoordMode('Mouse', MouseCoordMode)
         WinDpi := GetDpiForWindow(hWnd)
         MouseDpi := Mon.Dpi.Mouse()
