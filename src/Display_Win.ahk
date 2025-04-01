@@ -883,35 +883,34 @@ class Win extends RectBase {
 
 
 
+    /**
+     * @class
+     * @description - Handles the input options.
+     */
     class Defaults {
-        /**
-         * @class
-         * @description - Handles the input options.
-         */
+        class Null {
+            static __New() {
+                ObjSetBase(this, this())
+            }
+        }
         class Options {
-            class Null {
-                static __New() {
-                    ObjSetBase(this, this())
-                }
-            }
 
-            /**
-             * @description - Sets the base object such that the values are used in this priority order:
-             * - 1: The input object.
-             * - 2: The configuration object (if present).
-             * - 3: The default object.
-             * @param {Object} Options - The input object.
-             * @return {Object} - The same input object.
-             */
-            static Call(Options) {
-                if IsSet(DefaultsConfig) {
-                    ObjSetBase(DefaultsConfig, Defaults.Options.Default)
-                    ObjSetBase(Options, DefaultsConfig)
-                } else {
-                    ObjSetBase(Options, Defaults.Options.Default)
-                }
-                return Options
+        /**
+         * @description - Sets the base object such that the values are used in this priority order:
+         * - 1: The input object.
+         * - 2: The configuration object (if present).
+         * - 3: The default object.
+         * @param {Object} Options - The input object.
+         * @return {Object} - The same input object.
+         */
+        static Call(Options) {
+            if IsSet(DefaultsConfig) {
+                ObjSetBase(DefaultsConfig, Defaults.Options.Default)
+                ObjSetBase(Options, DefaultsConfig)
+            } else {
+                ObjSetBase(Options, Defaults.Options.Default)
             }
+            return Options
         }
         static MoveByMouse := {
             UseWorkArea: true
