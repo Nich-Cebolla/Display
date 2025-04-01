@@ -790,16 +790,16 @@ class Win extends RectBase {
         }
 
         _Process(UnitL, UnitT, UnitR, UnitB) {
-            if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
-                OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
-            else if (mX + Params.OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
-                OutX := Unit.L + Params.OffsetEdgeOfMonitor.X
+            if (mX + Params.OffsetMouse.X + wW > UnitR - Params.OffsetEdgeOfMonitor.X)
+                OutX := UnitR - wW - Params.OffsetEdgeOfMonitor.X
+            else if (mX + Params.OffsetMouse.X < UnitL + Params.OffsetEdgeOfMonitor.X)
+                OutX := UnitL + Params.OffsetEdgeOfMonitor.X
             else
                 OutX := mX + Params.OffsetMouse.X
-            if (mY + Params.OffsetMouse.Y + wH > Unit.B - Params.OffsetEdgeOfMonitor.Y)
-                OutY := Unit.B - wH - Params.OffsetEdgeOfMonitor.Y
-            else if (mY + Params.OffsetMouse.Y < Unit.T + Params.OffsetEdgeOfMonitor.Y)
-                OutY := Unit.T + Params.OffsetEdgeOfMonitor.Y
+            if (mY + Params.OffsetMouse.Y + wH > UnitB - Params.OffsetEdgeOfMonitor.Y)
+                OutY := UnitB - wH - Params.OffsetEdgeOfMonitor.Y
+            else if (mY + Params.OffsetMouse.Y < UnitT + Params.OffsetEdgeOfMonitor.Y)
+                OutY := UnitT + Params.OffsetEdgeOfMonitor.Y
             else
                 OutY := mY + Params.OffsetMouse.Y
         }
