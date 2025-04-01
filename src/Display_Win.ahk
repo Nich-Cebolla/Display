@@ -895,10 +895,7 @@ class Win extends RectBase {
         }
 
         /**
-         * @description - Sets the base object such that the values are used in this priority order:
-         * - 1: The input object.
-         * - 2: The configuration object (if present).
-         * - 3: The default object.
+         * @description - Sets the base object.
          * @param {Object} Options - The input object.
          * @return {Object} - The same input object.
          */
