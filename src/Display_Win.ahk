@@ -341,11 +341,11 @@ class Win extends RectBase {
     static ScaleMoveByMouse(Hwnd, &OutX?, &OutY?, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
         oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
-        WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
+        WinGetPos(, , &wW, &wH, Number(Hwnd))
         DpiRatio := Mon.Dpi.Win(hWnd) / Mon.Dpi.Mouse()
-        Mon.FromMouse_U(&mX, &mY)
+        Mon.FromMouse_U(&OutX, &OutY)
         Params.OffsetPoint := Params.OffsetMouse
-        Win.GetPosByMouse(&X, &Y, mX, mY, wW / DpiRatio, wH / DpiRatio, Unit, Params)
+        Win.GetPosByMouse(&OutX, &OutY, wW / DpiRatio, wH / DpiRatio, Unit, Params)
         Params.DeleteProp('OffsetMouse')
         if Params.MoveImmediately {
             WinMove(X, Y, , , Number(Hwnd))
