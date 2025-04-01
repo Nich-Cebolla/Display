@@ -900,7 +900,7 @@ class Win extends RectBase {
          * @param {String} Name - The function name.
          * @return {Object} - The same input object.
          */
-        static Call(Options) {
+        static Call(Options, Name) {
             if IsSet(DefaultsConfig) {
                 ObjSetBase(DefaultsConfig, Defaults.Options.Default)
                 ObjSetBase(Options, DefaultsConfig)
