@@ -1,4 +1,4 @@
-﻿
+
 #Include Display_Define.ahk
 #Include Display_DefaultConfig.ahk
 #Include Display_SetThreadDpiAwareness__Call.ahk
@@ -51,8 +51,9 @@ if IsSet(Mon) {
  */
 class DisplayConfig {
 
+
     /**
-     * @property {Boolean|Array} DisplayConfig.NewControlSetFont - **Required** <br>
+     * @property {Boolean|Array} DisplayConfig.NewControlSetFont - **Required** Default = false <br>
      * Controls which `Gui.Control` types have the `SetFont` method overridden. If false,
      * all control types have their `SetFont` method overridden. If an array, all control
      * types except those listed will have their `SetFont` method overridden. If true, no
@@ -62,19 +63,19 @@ class DisplayConfig {
 
 
     /**
-     * @property {Boolean} DisplayConfig.NewGuiSetFont - **Required** <br>
+     * @property {Boolean} DisplayConfig.NewGuiSetFont - **Required** Default = true <br>
      * Controls whether `Gui.Prototype.SetFont` is overridden.
      */
     static NewGuiSetFont := true
 
     /**
-     * @property {Boolean} DisplayConfig.NewGuiCall - **Required** <br>
+     * @property {Boolean} DisplayConfig.NewGuiCall - **Required** Default = true <br>
      * Controls whether `Gui.Call` is overridden.
      */
     static NewGuiCall := true
 
     /**
-     * @property {Boolean} DisplayConfig.NewGuiAdd - **Required** <br>
+     * @property {Boolean} DisplayConfig.NewGuiAdd - **Required** Default = true <br>
      * Controls whether `Gui.Prototype.Add` is overridden.
      */
     static NewGuiAdd := true
@@ -113,7 +114,14 @@ class DisplayConfig {
     /**
      * @property {Boolean} DisplayConfig.DefaultExcludeGui - When true, the property
      * `Gui.Prototype.DpiExclude` is set to true, causing all `GUI_HANDLEDPICHANGE` function calls
-     * to return immediately. Gui windows must be opted-in by setting it to false.
+     * to return immediately. Gui windows must be opted-in by setting the property to false on
+     * that Gui instance. When false, the built-in DPI change handler is activated for all Gui
+     * windows without any additional code from you. Use this option if you would prefer to
+     * selectively enable DPI handling at an individual window level.
+     * @example
+        G := Gui('-DPIScale +Resize')
+        G.DpiExclude := false
+     * @
      */
     static DefaultExcludeGui := false
 
