@@ -7,8 +7,10 @@
 class Win extends RectBase {
 
     class Defaults {
-        static MoveByMouse := {
-
+        static MoveByMouse := { UseWorkArea: true, MoveImmediately: true, OffsetMouse := { x: 5, y: 5 }, OffsetEdgeOfMonitor := { x: 50, y: 50 }, MouseCoordMode := 'Screen'
+UseWorkArea := true,  := true
+    ,
+    ,
         }
     }
 
