@@ -785,7 +785,7 @@ class Win extends RectBase {
     static GetPosByMouse(&OutX, &OutY, mX, mY, wW, wH, Params) {
         if (mX + Params.OffsetMouse.X + wW > Unit.R - Params.OffsetEdgeOfMonitor.X)
             OutX := Unit.R - wW - Params.OffsetEdgeOfMonitor.X
-        else if (mX + OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
+        else if (mX + Params.OffsetMouse.X < Unit.L + Params.OffsetEdgeOfMonitor.X)
             OutX := Unit.L + Params.OffsetEdgeOfMonitor.X
         else
             OutX := mX + Params.OffsetMouse.X
