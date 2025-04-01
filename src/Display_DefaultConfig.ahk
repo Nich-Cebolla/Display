@@ -1,4 +1,14 @@
-﻿
+
+if !IsSet(DPI_AWARENESS_CONTEXT_DEFAULT) {
+    DPI_AWARENESS_CONTEXT_DEFAULT := DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ?? -4
+}
+if !IsSet(MDT_DEFAULT) {
+    MDT_DEFAULT := MDT_EFFECTIVE_DPI ?? 0
+}
+if IsSet(Mon) && !Mon.HasOwnProp('UseOrderedMonitors') {
+    Mon.UseOrderedMonitors := false
+}
+
 class Display_DefaultConfig {
     ; see `DisplayConfig.ahk` for details
     static NewControlSetFont := 1
