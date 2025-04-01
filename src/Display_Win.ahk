@@ -310,7 +310,6 @@ class Win extends RectBase {
         WinDpi := Mon.Dpi.Win(hWnd)
         MouseDpi := Mon.Dpi.Mouse()
         UnitMouse := Mon.FromMouse_U(&mX, &mY)
-        UnitWin := Mon.FromWin_U(hWnd)
         WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
         Win.GetPosByMouse(&x, &y, &mX, &mY, &wW, &wH, OffsetMouse, Params.OffsetEdgeOfMonitor, UnitMouse)
         if MoveImmediately
