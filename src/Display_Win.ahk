@@ -337,7 +337,7 @@ class Win extends RectBase {
      * @returns {Map} - a map object with the new x and y coordinates as `Map('x', <new x>, 'y',
      * <new y>)`
      */
-    static ScaleMoveByMouse(Hwnd, Params?) {
+    static ScaleMoveByMouse(Hwnd, &OutX?, &OutY?, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
         oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
         WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
@@ -345,7 +345,7 @@ class Win extends RectBase {
         Mon.FromMouse_U(&mX, &mY)
         Params.OffsetPoint := Params.OffsetMouse
         Win.GetPosByMouse(&X, &Y, mX, mY, wW / DpiRatio, wH / DpiRatio, Unit, Params)
-        if MoveImmediately {
+        if Params.MoveImmediately {
             WinMove(X, Y, , , Number(Hwnd))
         }
         CoordMode('Mouse', oCoordMode)
