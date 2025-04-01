@@ -901,7 +901,7 @@ class Win extends RectBase {
          * @return {Object} - The same input object.
          */
         static Call(Options, Name) {
-            ObjSetBase(Options, this.%Name%)
+            ObjSetBase(Options, this.%SubStr(Name, InStr(Name, '.', , , -1) + 1)%)
             return Options
         }
         static MoveByMouse := {
