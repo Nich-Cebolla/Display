@@ -894,9 +894,6 @@ class Win extends RectBase {
                     ObjSetBase(this, this())
                 }
             }
-            static Default := {
-
-            }
 
             /**
              * @description - Sets the base object such that the values are used in this priority order:
