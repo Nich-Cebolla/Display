@@ -310,7 +310,7 @@ class Win extends RectBase {
         Unit := Mon.FromMouse_U(&mX, &mY)
         WinGetPos(&wX, &wY, &wW, &wH, Number(Hwnd))
         Params.OffsetPoint := Params.OffsetMouse
-        Win.GetPosByMouse(&(OutX := mX), &(OutY := mY), wW, wH, Params)
+        Win.GetPosByMouse(&(OutX := mX), &(OutY := mY), wW, wH, Unit, Params)
         if MoveImmediately {
             WinMove(X, Y, , , Number(Hwnd))
         }
