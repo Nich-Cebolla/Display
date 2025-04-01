@@ -779,8 +779,10 @@ class Win extends RectBase {
 
     ;@region GetPosByPoint
     /**
-     * @description - A utility function for getting a new position for a window as a function of the
-     * mouse's current position. See {@link Win.MoveByMouse} for more information.
+     * @description - A utility function for getting a new position nearby a point. The returned
+     * point is guaranteed to keep the rect completely on a single monitor, and allows two offsets
+     * to be used to control the position relative to the point and relative to the edge of the
+     * monitor.
      */
     static GetPosByPoint(&OutX, &OutY, mX, mY, wW, wH, Params?) {
         Params := this.Defaults(Params??{}, A_ThisFunc)
