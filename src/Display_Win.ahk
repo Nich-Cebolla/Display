@@ -1,4 +1,4 @@
-
+﻿
 /**
  * @class
  * @description - Win is a namespace for functions that interact with windows.
@@ -820,7 +820,7 @@ class Win extends RectBase {
      */
     static PathFromTitle(Hwnd) {
         if RegExMatch(WinGetTitle(Hwnd)
-        , '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:\*\?"<>\|]+\\?)+)\\(?<name>[^\r\n\\/:\*\?"<>\|]+)\.(?<ext>[\w\d]+)\b'
+        , '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:*?"<>|]+\\?)+)\\(?<name>[^\r\n\\/:*?"<>|]+)\.(?<ext>[\w\d]+)\b'
         , &MatchPath) {
             return MatchPath
         }

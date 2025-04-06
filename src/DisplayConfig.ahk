@@ -1,7 +1,8 @@
-
+﻿
 #Include Display_Define.ahk
 #Include Display_DefaultConfig.ahk
 #Include Display_SetThreadDpiAwareness__Call.ahk
+#Include Display_ComboBox.ahk
 #Include Display_Win.ahk
 #Include Display_Gui.ahk
 #Include Display_Helper.ahk
