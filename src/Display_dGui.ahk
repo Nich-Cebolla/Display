@@ -1,11 +1,27 @@
 ﻿
-class GuiH {
+class dGui {
 
     static Initialize(Config?) {
-        static ClassList := [], Indices := []
+        ClassList := []
+        ; Programmatically getting a list of all built-in control types
+        for Prop in Gui.OwnProps() {
+            if Gui.%Prop% is Class && InStr(Gui.%Prop%.Prototype.__Class, 'Gui.') {
+                ClassList.Push(StrSplit(Gui.%Prop%.Prototype.__Class, '.')[2])
+            }
+        }
+        Indices := []
+        ; When looping an array to compare values from another array, and when the values in the
+        ; comparison are unique, it's slightly more efficient to use a list of indices because
+        ; if a match is found, we can remove the index from the array so its associated item doesn't
+        ; get compared anymore.
+        loop Indices.Capacity := ClassList.Length {
+            Indices.Push(A_Index)
+        }
+
         if !IsSet(Config) {
             Config := {}
         }
+
         if IsSet(DisplayConfig) {
             ObjSetBase(Config := {}, DisplayConfig)
             ObjSetBase(DisplayConfig, Display_DefaultConfig)
@@ -14,74 +30,60 @@ class GuiH {
         }
 
                 ; ExcludeNewControlSetFont
-        __GUI_CONTROL_SETFONT := Gui.Control.Prototype.SetFont
-        this.DefineProp('ControlSetFont', { Call: (Self, Ctrl, OptFont?, FontFamily?) => __GUI_CONTROL_SETFONT(Ctrl, OptFont ?? unset, FontFamily ?? unset) })
+        ; Preserve the original `SetFont` method as a method on this class.
+        OriginalControlSetFont := Gui.Control.Prototype.SetFont
+        this.DefineProp('ControlSetFont', { Call: (Self, GuiObj, OptFont?, FontFamily?) => OriginalControlSetFont(GuiObj, OptFont ?? unset, FontFamily ?? unset) })
 
         if Config.ExcludeNewControlSetFont is Array {
-            List := _CrossReferenceListInverse(Config.ExcludeNewControlSetFont)
-            for Name in List {
+            for Name in _CrossReferenceListInverse(Config.ExcludeNewControlSetFont) {
                 Gui.%Name%.Prototype.DefineProp('SetFont', { Call: GUI_CONTROL_SETFONT })
             }
         } else if !Config.ExcludeNewControlSetFont {
             Gui.Control.Prototype.DefineProp('SetFont', { Call: GUI_CONTROL_SETFONT })
         }
 
-                ; ExcludeNewGuiSetFont
-        __GUI_SETFONT := Gui.Prototype.SetFont
-        this.DefineProp('SetFont', { Call: (Self, GuiObj, OptFont?, FontFamily?) => __GUI_SETFONT(GuiObj, OptFont ?? unset, FontFamily ?? unset) })
+                ; NewGuiSetFont
+        OriginalGuiSetFont := Gui.Prototype.SetFont
+        this.DefineProp('SetFont', { Call: (Self, GuiObj, OptFont?, FontFamily?) => OriginalGuiSetFont(GuiObj, OptFont ?? unset, FontFamily ?? unset) })
         if Config.NewGuiSetFont {
             Gui.Prototype.DefineProp('SetFont', { Call: GUI_SETFONT })
         }
 
                 ; NewGuiCall
-        __GUI_CALL := Gui.Call
-        this.DefineProp('Gui_Call', { Call: (Self, GuiClass, OptGui?, Title?, EventHandler?) => __GUI_CALL(GuiClass, OptGui?, Title?, EventHandler?) })
+        OriginalGuiCall := Gui.Call
+        this.DefineProp('Gui_Call', { Call: (Self, GuiClass, OptGui?, Title?, EventHandler?) => OriginalGuiCall(GuiClass, OptGui?, Title?, EventHandler?) })
         if Config.NewGuiCall {
             Gui.DefineProp('Call', { Call: GUI_CALL })
         }
 
                 ; NewGuiAdd
-        __GUI_ADD := Gui.Prototype.Add
-        this.DefineProp('Gui_Add', { Call: (Self, GuiObj, Type?, OptControl?, Text?) => __GUI_ADD(GuiObj, Type?, OptControl?, Text?) })
+        OriginalGuiAdd := Gui.Prototype.Add
+        this.DefineProp('Gui_Add', { Call: (Self, GuiObj, Type?, OptControl?, Text?) => OriginalGuiAdd(GuiObj, Type?, OptControl?, Text?) })
         if Config.NewGuiAdd {
             Gui.Prototype.DefineProp('Add', { Call: GUI_ADD })
         }
 
                 ; ExcludeNewGuiAddType
         if Config.ExcludeNewGuiAddType is Array {
-            List := _CrossReferenceListInverse(Config.ExcludeNewGuiAddType)
-            for t in List {
-                Gui.Prototype.DefineProp('Add' t, { Call: GUI_ADD2.Bind(t) })
+            Condition := (Name) => Name = 'Tab2' ? 2 : Name = 'Tab3' ? 3 : 1
+            for Name in _CrossReferenceListInverse(Config.ExcludeNewGuiAddType) {
+                Gui.Prototype.DefineProp('Add' Name, { Call: GUI_ADD2.Bind(Name) })
             }
-            Flag_2 := Flag_3 := false
-            Condition := Condition1 := (Name) => Name = 'Tab2' ? 2 : Name = 'Tab3' ? 3 : 0
-            Condition2 := (Name) => Name = 'Tab2' ? 4 : 0
-            Condition3 := (Name) => Name = 'Tab3' ? 5 : 0
-            for Name in Config.ExcludeNewGuiAddType {
-                switch Condition(Name) {
-                    case 2:
-                        Flag_2 := true
-                        Condition := Condition3
-                    case 3:
-                        Flag_3 := true
-                        Condition := Condition2
-                    case 4:
-                        Flag_2 := true
-                        break
-                    case 5:
-                        Flag_3 := true
-                        break
+            for Name in Config.ExcludeGuiAddType {
+                if Name = 'Tab2' {
+                    Flag_Tab2 := true
+                } else if Name = 'Tab3' {
+                    Flag_Tab3 := true
                 }
             }
-            if !Flag_2 {
+            if !IsSet(Flag_Tab2) {
                 Gui.Prototype.DefineProp('AddTab2', { Call: GUI_ADD2.Bind('Tab2') })
             }
-            if !Flag_3 {
+            if !IsSet(Flag_Tab3) {
                 Gui.Prototype.DefineProp('AddTab3', { Call: GUI_ADD2.Bind('Tab3') })
             }
         } else if !Config.ExcludeNewGuiAddType {
-            List := ClassList.Length ? ClassList : _GetClassList()
-            for CtrlType in List {
+            for CtrlType in ClassList {
                 Gui.Prototype.DefineProp('Add' CtrlType, { Call: GUI_ADD2.Bind(CtrlType) })
             }
             Gui.Prototype.DefineProp('AddTab2', { Call: GUI_ADD2.Bind('Tab2') })
@@ -113,7 +115,7 @@ class GuiH {
                     Gui.%CtrlType%.Prototype.DefineProp('GetTextExtent', { Call: Function })
                 }
             } else {
-                throw TypeError('``DisplayConfig.GetTextExtent`` must be a Map.', -1, 'Current type: ' Type(Config.GetTextExtent))
+                throw TypeError('``DisplayConfig.GetTextExtent`` must be a Map or ``false``.', -1, 'Current type: ' Type(Config.GetTextExtent))
             }
         }
                 ; ResizeByText
@@ -123,122 +125,76 @@ class GuiH {
                     Gui.%CtrlType%.Prototype.DefineProp('ResizeByText', { Call: GUI_CONTROL_RESIZE_BY_TEXT })
                 }
             } else {
-                throw TypeError('``DisplayConfig.ResizeByText`` must be an Array.', -1, 'Current type: ' Type(Config.ResizeByText))
+                throw TypeError('``DisplayConfig.ResizeByText`` must be an Array or ``false``.', -1, 'Current type: ' Type(Config.ResizeByText))
             }
         }
 
-        Gui.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        Gui.Control.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        Gui.Prototype.DefineProp('Toggle', { Call: GUI_TOGGLE })
-        Gui.Prototype.DefineProp('Dpi', { Get: (Self) => Mon.Dpi.Win(Self.Hwnd) })
-        Gui.Control.Prototype.DefineProp('Dpi', { Get: (Self) => Mon.Dpi.Win(Self.Hwnd) })
+        if Config.GuiToggle {
+            Gui.Prototype.DefineProp('Toggle', { Call: GUI_TOGGLE })
+        }
+        if Config.GuiCallWith_S {
+            Gui.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+        }
+        if Config.ControlCallWith_S {
+            Gui.Control.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+        }
+        if Config.GuiDpiGetter {
+            Gui.Prototype.DefineProp('Dpi', { Get: (Self) => DllCall('GetDpiForWindow', 'ptr', Self.hWnd, 'int') })
+        }
+        if Config.ControlDpiGetter {
+            Gui.Control.Prototype.DefineProp('Dpi', { Get: (Self) => dMon.Dpi.Win(Self.Hwnd) })
+        }
 
         _CrossReferenceList(List) {
             Result := []
-            if ClassList.Length {
-                _LoopList()
-            } else {
-                _LoopGetList()
+            Result.Capacity := List.Length
+            _indices := Indices.Clone()
+            for CtrlType in ClassList {
+                if !_indices.length {
+                    break
+                }
+                for i in _indices {
+                    if CtrlType = ClassList[i] {
+                        Result.Push(CtrlType)
+                        _indices.RemoveAt(A_Index)
+                        continue 2
+                    }
+                }
             }
             return Result
-
-            _LoopGetList() {
-                for Prop in Gui.OwnProps() {
-                    if Gui.%Prop% is Class && InStr(Gui.%Prop%.Prototype.__Class, 'Gui.') {
-                        Prop := StrSplit(Gui.%Prop%.Prototype.__Class, '.')[2]
-                        ClassList.Push(Prop)
-                        for Name in List {
-                            if Prop = Name {
-                                Result.Push(Name)
-                                continue 2
-                            }
-                        }
-                    }
-                }
-                loop Indices.Capacity := ClassList.Length {
-                    Indices.Push(A_Index)
-                }
-            }
-            _LoopList() {
-                ind := Indices.Clone()
-                for CtrlType in ClassList {
-                    if !ind.length {
-                        break
-                    }
-                    for i in ind {
-                        if CtrlType = ClassList[ind[i]] {
-                            Result.Push(CtrlType)
-                            ind.RemoveAt(A_Index)
-                            continue 2
-                        }
-                    }
-                }
-            }
         }
         _CrossReferenceListInverse(List) {
             Result := []
-            if ClassList.Length {
-                _LoopList()
-            } else {
-                _LoopGetList()
+            Result.Capacity := ClassList.Length - List.Length
+            _indices := Indices.Clone()
+            for CtrlType in ClassList {
+                if !_indices.length {
+                    break
+                }
+                for i in _indices {
+                    if CtrlType = ClassList[i] {
+                        _indices.RemoveAt(A_Index)
+                        continue 2
+                    }
+                }
+                Result.Push(CtrlType)
             }
             return Result
-
-            _LoopGetList() {
-                for Prop in Gui.OwnProps() {
-                    if Gui.%Prop% is Class && InStr(Gui.%Prop%.Prototype.__Class, 'Gui.') {
-                        Prop := StrSplit(Gui.%Prop%.Prototype.__Class, '.')[2]
-                        ClassList.Push(Prop)
-                        for Name in List {
-                            if Prop = Name {
-                                continue 2
-                            }
-                        }
-                        Result.Push(Prop)
-                    }
-                }
-                loop Indices.Capacity := ClassList.Length {
-                    Indices.Push(A_Index)
-                }
-            }
-            _LoopList() {
-                ind := Indices.Clone()
-                for CtrlType in ClassList {
-                    if !ind.length {
-                        break
-                    }
-                    for i in ind {
-                        if CtrlType = ClassList[ind[i]] {
-                            ind.RemoveAt(A_Index)
-                            continue 2
-                        }
-                    }
-                    Result.Push(CtrlType)
-                }
-            }
-        }
-        _GetClassList() {
-            for Prop in Gui.OwnProps() {
-                if Gui.%Prop% is Class && InStr(Gui.%Prop%.Prototype.__Class, 'Gui.') {
-                    ClassList.Push(StrSplit(Gui.%Prop%.Prototype.__Class, '.')[2])
-                }
-            }
-            return ClassList
         }
     }
 
     /**
-     * @description - Contains the built-in `Gui.Prototype.SetFont` method.
+     * @description - Contains AHK's built-in `Gui.Prototype.SetFont` method.
      */
     static SetFont(*) {
-        ; This is overridden in the `GuiH.__New()` method.
+        throw Error(A_ThisFunc ' is expected to be overridden by the constructor.', -1)
     }
 
     /**
-     * @description - Contains the built-in `Gui.Control.Prototype.SetFont` method.
+     * @description - Contains AHK's built-in `Gui.Control.Prototype.SetFont` method.
      */
     static ControlSetFont(*) {
-        ; This is overridden in the `GuiH.__New()` method.
+        throw Error(A_ThisFunc ' is expected to be overridden by the constructor.', -1)
     }
 
     /**
@@ -252,7 +208,7 @@ class GuiH {
      * @returns {Object} - The `RegExMatchInfo` object.
      * @example
         OptFont := 's12 q5'
-        if MatchFont := GuiH.GetMatchFont(OptFont) {
+        if MatchFont := dGui.GetMatchFont(OptFont) {
             MsgBox('Font size is ' MatchFont['n']) ; 12
             MsgBox('First part of options are ' MatchFont['opt1']) ; ''
             MsgBox('Second part of options are ' MatchFont['opt2']) ; " q5"
@@ -267,7 +223,7 @@ class GuiH {
     /**
      * @description - This is the core built-in method for resopnding to `WM_DPICHANGED` messages.
      * By default, this method is called from the global `GUI_HANDLEDPICHANGE` function after
-     * calling `GuiH.SetDpiChangeHandler`. This method is called once. This method has these
+     * calling `dGui.SetDpiChangeHandler`. This method is called once. This method has these
      * characteristics:
      * - `GUI_HANDLEDPICHANGE` sets the dpi thread awareness to -4 and calls `Critical(1)`, then
      * calls this method.
@@ -335,7 +291,7 @@ class GuiH {
 
     /**
      * @description - Calls `OnMessage(WM_DPICHANGED, Callback)` to set the `WM_DPICHANGED` message
-     * handler. This method is called by `GuiH.SetDpiChangeHandler` and `Gui.Call`. The default
+     * handler. This method is called by `dGui.SetDpiChangeHandler` and `Gui.Call`. The default
      * callback is `GUI_HANDLEDPICHANGE`, the primary built-in function for handling dpi changes.
      */
     static SetDpiChangeHandler(Callback := GUI_HANDLEDPICHANGE) {
@@ -370,12 +326,12 @@ class GuiH {
     /**
      * @description - Enumerate a specific control type of the controls in a Gui object.
      * @example
-        for Ctrl in GuiH.EnumerateControls(G, 'Button', 1) {
-            Ctrl.GetPos(&x, &y)
-            if x > 0 && y < 100 {
-                Ctrl.Move(x * .85)
-            }
-        }
+     *  for Ctrl in dGui.EnumerateControls(G, 'Button', 1) {
+     *      Ctrl.GetPos(&x, &y)
+     *      if x > 0 && y < 100 {
+     *          Ctrl.Move(x * .85)
+     *      }
+     *  }
      * @
      * @param {Gui} G - The Gui object to enumerate.
      * @param {String} CtrlType - The control type to enumerate.
@@ -422,11 +378,12 @@ class GuiH {
          * @description - This method is used to create a new instance of the `ControlDpiChangeHelper`
          * class. This method is called by the `Gui.Control` constructor.
          * @param {Gui.Control} Ctrl - The control object to attach this helper to.
-         * @returns {GuiH.ControlDpiChangeHelper} - The new instance of the `ControlDpiChangeHelper`.
+         * @returns {dGui.ControlDpiChangeHelper} - The new instance of the `ControlDpiChangeHelper`.
          */
         __New(Ctrl) {
-            Win.GetFontDetails(Ctrl.Hwnd, &FontSize)
-            this.FontSize := FontSize
+            lf := LOGFONT(Ctrl.hWnd)
+            lf()
+            this.FontSize := lf.FontSize
             this.Rounded := { X: 0, Y: 0, W: 0, H: 0, F: 0 }
             this.Offset := { X: 0, Y: 0, W: 2, H: 2, F: 0 }
             Ctrl.DefineProp('DpiChangeHelper', { Value: this })
@@ -539,11 +496,11 @@ class GuiH {
          * @description - This method is used to create a new instance of the `GuiDpiChangeHelper`
          * class. This method is called by the `Gui` constructor.
          * @param {Gui} GuiObj - The Gui object to attach this helper to.
-         * @returns {GuiH.GuiDpiChangeHelper} - The new instance of the `GuiDpiChangeHelper`.
+         * @returns {dGui.GuiDpiChangeHelper} - The new instance of the `GuiDpiChangeHelper`.
          */
         __New(GuiObj) {
             this.FontSize := 6
-            this.Dpi := Mon.Dpi.Win(GuiObj.Hwnd)
+            this.Dpi := dMon.Dpi.Win(GuiObj.Hwnd)
             this.Rounded := { F: 0 }
             GuiObj.DefineProp('DpiChangeHelper', { Value: this })
         }

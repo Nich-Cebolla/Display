@@ -1,18 +1,4 @@
 ﻿
-/* Credits
-Key details regarding DLL calls sourced from, or pulled directly from, these discussions:
-https://www.autohotkey.com/boards/viewTopic.php?f=6&t=4606
-@just me  -  @iPhilip  -  @guest3456
-https://www.autohotkey.com/boards/viewTopic.php?f=83&t=79220
-@Tigerlily  -  @CloakerSmoker  -  @jNizM
-
-For further reading on Dpi scaling, see @Descolada's tutorial here:
-https://www.autohotkey.com/boards/viewTopic.php?f=96&t=121040
-Also available is Descolada's Dpi.ahk; there's significant overlap between Descolada's code and my
-code, but each have functions unique to the other. You can find Descolada's Dpi.ahk here:
-https://github.com/Descolada/AHK-v2-libraries/blob/main/Lib/Dpi.ahk
-*/
-
 
 class RectBase extends Buffer {
     static __New() {

@@ -1,4 +1,8 @@
 ﻿
+/**
+ * @description - Enables the use of the "_S" suffix when calling functions that will have different
+ * behavior depending on the thread dpi awareness context.
+ */
 SetThreadDpiAwareness__Call(Obj, Name, Params) {
     Split := StrSplit(Name, '_')
     if Obj.HasMethod(Split[1]) && Split[2] = 'S' {

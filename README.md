@@ -1,7 +1,13 @@
 # Display
- An AutoHotkey (AHK) library that provides tools for managing windows and handling per-monitor dpi awareness.
+An AutoHotkey (AHK) library that provides tools for managing windows and handling per-monitor dpi awareness.
 
-This is mostly working, and the major functions are tested, but I have not tested every function. I welcome you to report any broken functions and I will fix them.
+This is a work in progress and will change frequently while I finish it. If you use this library in a project, do not use your git clone directory for the project. I will break things as I release updates.
+
+## Tested and working
+
+This is a list of tested classes / methods / functions
+
+
 
 Known issues:
 

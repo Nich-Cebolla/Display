@@ -3,13 +3,13 @@
 /**
  * @class
  * @description - The `Mon` instance object provides an interface for making use of the `Hmon` values.
- * The main consideration for this object is with respect to the `Mon.SetOrder` function. AutoHotkey
+ * The main consideration for this object is with respect to the `dMon.SetOrder` function. AutoHotkey
  * does not have built-in usage for `Hmon` values, and so making use of `SetOrder` can be a but
  * cumbersome if one needs to retrieve a new buffer object each time. Using a `Mon` instance simplifies
  * the process, creating a disposable object that can be used and let to expire when the calling
  * function returns.
  */
-class Mon extends RectBase {
+class dMon extends RectBase {
 
     /**
      * @description
@@ -58,7 +58,7 @@ class Mon extends RectBase {
      * @returns {Integer} - The Hmon of the monitor to which the rectangle has the largest area
      * of intersection.
      */
-    static FromDimensions(X, Y, W, H) => Mon.FromPos(X, Y, x+w, y+h)
+    static FromDimensions(X, Y, W, H) => dMon.FromPos(X, Y, x+w, y+h)
     ;@endregion
 
 
@@ -167,12 +167,12 @@ class Mon extends RectBase {
                 return DpiX
             }
         }
-        static Pos(Left, Top, Right, Bottom, DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromPos(Left, Top, Right, Bottom), DpiType)
-        static Rect(RectObj, DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromRect(RectObj), DpiType)
-        static Dimensions(X, Y, W, H, DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromDimensions(X, Y, W, H), DpiType)
-        static Mouse(DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromMouse(), DpiType)
-        static Point(X, Y, DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromPoint(X, Y), DpiType)
-        static Win(Hwnd, DpiType := MDT_DEFAULT ?? 0) => Mon.Dpi(Mon.FromWin(Hwnd), DpiType)
+        static Pos(Left, Top, Right, Bottom, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromPos(Left, Top, Right, Bottom), DpiType)
+        static Rect(RectObj, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromRect(RectObj), DpiType)
+        static Dimensions(X, Y, W, H, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromDimensions(X, Y, W, H), DpiType)
+        static Mouse(DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromMouse(), DpiType)
+        static Point(X, Y, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromPoint(X, Y), DpiType)
+        static Win(Hwnd, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromWin(Hwnd), DpiType)
     }
     ;@endregion
 
@@ -211,55 +211,55 @@ class Mon extends RectBase {
      * to be 3. To accomplish this, call the function without parameters; the defaults will follow
      * this order.
      * @example
-        ;  ____________
-        ;  |    ||    |
-        ;  ------------
-        ;     ______
-        ;     |    |
-        ;     ------
-        MoveWindowToRightHalf(MonitorIndex, Hwnd) {
-            ; Get a new list every function call in case the user plugs in / removes a monitor.
-            List := Mon.GetOrder()
-            ; Get the `Mon` instance.
-            MonUnit := Mon(List[MonitorIndex])
-            ; Move, fitting the window in the right-half of the monitor's work area.
-            WinMove(MonUnit.MidXW, MonUnit.TW, MonUnit.WW / 2, MonUnit.HW, Hwnd)
-        }
+     *   ;  ____________
+     *   ;  |    ||    |
+     *   ;  ------------
+     *   ;     ______
+     *   ;     |    |
+     *   ;     ------
+     *   MoveWindowToRightHalf(MonitorIndex, Hwnd) {
+     *       ; Get a new list every function call in case the user plugs in / removes a monitor.
+     *       List := dMon.GetOrder()
+     *       ; Get the `Mon` instance.
+     *       MonUnit := Mon(List[MonitorIndex])
+     *       ; Move, fitting the window in the right-half of the monitor's work area.
+     *       WinMove(MonUnit.MidXW, MonUnit.TW, MonUnit.WW / 2, MonUnit.HW, Hwnd)
+     *   }
      * @
      * Perhaps the user has three monitors where one is on top, and beneath it two adjacent monitors,
      * and they want the top monitor to be 1, and the right monitor to be 2, and the left monitor to
      * be 3.
      * @example
-        ;     ______
-        ;     |    |
-        ;     ------
-        ;  ____________
-        ;  |    ||    |
-        ;  ------------
-        List := Mon.GetOrder('X', L2R := false, T2B := true, OriginIs1 := false)
+     *   ;     ______
+     *   ;     |    |
+     *   ;     ------
+     *   ;  ____________
+     *   ;  |    ||    |
+     *   ;  ------------
+     *   List := dMon.GetOrder('X', L2R := false, T2B := true, OriginIs1 := false)
      * @
      * Many people have a laptop but use an external monitor as their "primary", so it might be
      * more intuitive for them to have their "primary" monitor be referenced by index 1, instead of
      * the built-in display.
      * @example
-        ; Left-most monitor would be 1. If two monitors both share the lowest X coordinate, the
-        ; monitor with the lowest Y coordinate between the two would be 1.
-        List := Mon.GetOrder(, , , OriginIs1 := false)
+     *   ; Left-most monitor would be 1. If two monitors both share the lowest X coordinate, the
+     *   ; monitor with the lowest Y coordinate between the two would be 1.
+     *   List := dMon.GetOrder(, , , OriginIs1 := false)
      * @
      * If your script is going to be frequently referring to a monitor using the ordered Hmon index,
-     * you can set `Mon.UseOrderedMonitors` to true and get a new `Mon` instance using item notation
+     * you can set `dMon.UseOrderedMonitors` to true and get a new `Mon` instance using item notation
      * and the index. This uses the default values.
      * @example
-        Mon.UseOrderedMonitors := true
-        MonUnit := Mon[1] ; The primary monitor
-        MonUnit := Mon[2] ; The top-left monitor
+     *   dMon.UseOrderedMonitors := true
+     *   MonUnit := Mon[1] ; The primary monitor
+     *   MonUnit := Mon[2] ; The top-left monitor
      * @
      * To use item notation with a different ordering schema, set `UseOrderedMonitors` to
      * an object with one or more properties that have the same name as the parameters you want
      * passed to `GetOrder`.
      * @example
-        Mon.UseOrderedMonitors := { OriginIs1: false }
-        MonUnit := Mon[1] ; The top-left monitor
+     *   dMon.UseOrderedMonitors := { OriginIs1: false }
+     *   MonUnit := Mon[1] ; The top-left monitor
      * @
      * @param {String} [Precedent='X'] - Determines which axis is primarily considered when ordering
      * the monitors. When comparing two monitors, if their positions along the precedent axis are
@@ -286,10 +286,10 @@ class Mon extends RectBase {
         }
         Rect.Order(List, Precedent, LeftToRight, TopToBottom)
         if IsSet(Temp) {
-            Result.Push(Mon.FromPoint(Temp.L, Temp.T))
+            Result.Push(dMon.FromPoint(Temp.L, Temp.T))
         }
         for Item in List {
-            Result.Push(Mon.FromPoint(Item.L, Item.T))
+            Result.Push(dMon.FromPoint(Item.L, Item.T))
         }
         return Result
     }
@@ -305,9 +305,9 @@ class Mon extends RectBase {
      * U - Returns a `Mon` instance using the return value from the method call, instead of returning
      * the `Hmon` value.
      * @example
-        MonUnit := Mon.FromWin_SU(WinGetId('A'))
-        MsgBox(MonUnit.LW) ; Left side of monitor's work area.
-        MsgBox(MonUnit.Dpi) ; Dpi of monitor.
+     *  MonUnit := dMon.FromWin_SU(WinGetId('A'))
+     *  MsgBox(MonUnit.LW) ; Left side of monitor's work area.
+     *  MsgBox(MonUnit.Dpi) ; Dpi of monitor.
      * @
      */
     static __Call(Name, Params) {
@@ -378,9 +378,9 @@ class Mon extends RectBase {
     HW => this.BW - this.TW
     MidXW => (this.RW - this.LW) / 2
     MidYW => (this.BW - this.TW) / 2
-    Dpi => Mon.Dpi(this.Hmon)
-    Dpi_Raw => Mon.Dpi(this.Hmon, MDT_RAW_DPI ?? 2)
-    Dpi_Angular => Mon.Dpi(this.Hmon, MDT_ANGULAR_DPI ?? 1)
+    Dpi => dMon.Dpi(this.Hmon)
+    Dpi_Raw => dMon.Dpi(this.Hmon, MDT_RAW_DPI)
+    Dpi_Angular => dMon.Dpi(this.Hmon, MDT_ANGULAR_DPI)
 
 
     static __Item_Get_NotOrdered(N) {

@@ -1,6 +1,6 @@
 ﻿
 
-class Scrollbar {
+class dScrollbar {
 
     /**
      * @description -
@@ -63,12 +63,12 @@ class Scrollbar {
 
     static SetScrollInfo(GuiObj, MinMax, NewWidth, NewHeight) {
         ; Get the dimensions for a line of text.
-        Win.GetTextExtentPoint32('ABCDEFGHIJKLMNOPQRSTUVWXYZ', GuiObj.PageSizeDataCtrl.Hwnd, &TextW, &TextH)
+        dWin.GetTextExtentPoint32('ABCDEFGHIJKLMNOPQRSTUVWXYZ', GuiObj.PageSizeDataCtrl.Hwnd, &TextW, &TextH)
         GuiObj.UpdateText('text extent point. horz: ' TextW '    vert: ' TextH, A_ThisFunc, A_LineNumber, A_LineFile)
 
         ; Get the bounding rect for all controls in the window.
-        rc := Win.GetChildrenBoundingRect(GuiObj.Hwnd)
-        GuiObj.UpdateText('GetChildrenBoundingRect: ' Format('l{} t{} r{} b{} w{} h{}', rc.l, rc.t, rc.r, rc.b, rc.w, rc.h), A_ThisFunc, A_LineNumber, A_LineFile)
+        ScrollInfo := dWin.GetChildrenBoundingRect(GuiObj.Hwnd)
+        GuiObj.UpdateText('GetChildrenBoundingRect: ' Format('l{} t{} r{} b{} w{} h{}', ScrollInfo.l, ScrollInfo.t, ScrollInfo.r, ScrollInfo.b, ScrollInfo.w, ScrollInfo.h), A_ThisFunc, A_LineNumber, A_LineFile)
 
         ;Vertical
         ; One line of text = 1 page unit.
@@ -80,7 +80,7 @@ class Scrollbar {
         ; Set SIF_RANGE using the number of lines occupied by all controls in the window, including
         ; controls that are not visible.
         NumPut('int', GuiObj.ScrollRangeMinV := 1, ScrollInfo, 8) ; `nMin := 1` :: CIF_RANGE
-        NumPut('int', GuiObj.ScrollRangeMaxV := rc.H / TextH, ScrollInfo, 12) ; `nMax := Totalheight / TextHeight` for SIF_RANGE
+        NumPut('int', GuiObj.ScrollRangeMaxV := ScrollInfo.H / TextH, ScrollInfo, 12) ; `nMax := Totalheight / TextHeight` for SIF_RANGE
         GuiObj.UpdateText('Min and MaxV - ' GuiObj.ScrollRangeMinV '   ' GuiObj.ScrollRangeMaxV, A_ThisFunc, A_LineNumber, A_LineFile)
         DllCall('SetScrollInfo', 'ptr', GuiObj.Hwnd, 'int', SB_VERT, 'ptr', ScrollInfo, 'int', 1, 'int')
 
@@ -95,7 +95,7 @@ class Scrollbar {
         ; Set SIF_RANGE using the number of characters occupied by all controls in the window, including
         ; controls that are not visible.
         NumPut('int', GuiObj.ScrollRangeMinH := 1, ScrollInfo, 8) ; `nMin := 1` :: CIF_RANGE
-        NumPut('int', GuiObj.ScrollRangeMaxH := rc.W / TextW, ScrollInfo, 12) ; `nMax := Totalwidth / TextWidth` for SIF_RANGE
+        NumPut('int', GuiObj.ScrollRangeMaxH := ScrollInfo.W / TextW, ScrollInfo, 12) ; `nMax := Totalwidth / TextWidth` for SIF_RANGE
         GuiObj.UpdateText('GuiObj.ScrollRangeMinH - ' GuiObj.ScrollRangeMinH ' ' 'GuiObj.ScrollRangeMaxH - ' GuiObj.ScrollRangeMaxH, A_ThisFunc, A_LineNumber, A_LineFile)
         DllCall('SetScrollInfo', 'ptr', GuiObj.Hwnd, 'int', SB_HORZ, 'ptr', ScrollInfo, 'int', 1, 'int')
     }
@@ -119,10 +119,10 @@ class Scrollbar {
             GuiObj.UpdateText('SB_LINEUP: NewPos -= GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             case SB_LINEDOWN: NewPos += GuiObj.LinesPerScroll
             GuiObj.UpdateText('SB_LINEDOWN: NewPos += GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
-            case SB_PAGEUP: NewPos -= rc.H - GuiObj.LinesPerScroll
-            GuiObj.UpdateText('SB_PAGEUP: NewPos -= rc.H - GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
-            case SB_PAGEDOWN: NewPos += rc.H - GuiObj.LinesPerScroll
-            GuiObj.UpdateText('SB_PAGEDOWN: NewPos += rc.H - GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
+            case SB_PAGEUP: NewPos -= ScrollInfo.H - GuiObj.LinesPerScroll
+            GuiObj.UpdateText('SB_PAGEUP: NewPos -= ScrollInfo.H - GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
+            case SB_PAGEDOWN: NewPos += ScrollInfo.H - GuiObj.LinesPerScroll
+            GuiObj.UpdateText('SB_PAGEDOWN: NewPos += ScrollInfo.H - GuiObj.LinesPerScroll - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             case SB_THUMBTRACK: NewPos := wParam >> 16
             GuiObj.UpdateText('SB_THUMBTRACK: NewPos := wParam >> 16 - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             default: return
@@ -155,10 +155,10 @@ class Scrollbar {
                 GuiObj.UpdateText('SB_LINELEFT: NewPos -= GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             case SB_LINERIGHT: NewPos += GuiObj.PageUnitH
                 GuiObj.UpdateText('SB_LINERIGHT: NewPos += GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
-            case SB_PAGELEFT: NewPos -= rc.W - GuiObj.PageUnitH
-                GuiObj.UpdateText('SB_PAGELEFT: NewPos -= rc.W - GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
-            case SB_PAGERIGHT: NewPos += rc.W - GuiObj.PageUnitH
-                GuiObj.UpdateText('SB_PAGERIGHT: NewPos += rc.W - GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
+            case SB_PAGELEFT: NewPos -= ScrollInfo.W - GuiObj.PageUnitH
+                GuiObj.UpdateText('SB_PAGELEFT: NewPos -= ScrollInfo.W - GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
+            case SB_PAGERIGHT: NewPos += ScrollInfo.W - GuiObj.PageUnitH
+                GuiObj.UpdateText('SB_PAGERIGHT: NewPos += ScrollInfo.W - GuiObj.PageUnitH - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             case SB_THUMBTRACK: NewPos := wParam >> 16
                 GuiObj.UpdateText('SB_THUMBTRACK: NewPos := wParam >> 16 - ' NewPos, A_ThisFunc, A_LineNumber, A_LineFile)
             default: return
