@@ -29,3 +29,4 @@ class SIZE extends Buffer {
         Set => NumPut('int', Value, this, 4)
     }
 }
+

@@ -1,4 +1,11 @@
-﻿
+﻿/**
+    "Unicode supplementary characters (where Number is in the range 0x10000 to 0x10FFFF) are counted
+    as two characters. That is, the length of the return value as reported by StrLen may be 1 or 2.
+    For further explanation, see String Encoding."
+    {@link https://www.autohotkey.com/docs/v2/lib/Chr.htm}
+    {@link https://www.autohotkey.com/docs/v2/Concepts.htm#string-encoding}
+*/
+
 /**
  * @description - Gets the height and width in pixels of the string contents of a Gui control.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
@@ -10,13 +17,11 @@ ControlGetTextExtent(Ctrl) {
     if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
         throw OSError('``GetDC`` failed.', -1, A_LastError)
     }
-    ; This counts how many surrogate pairs are in the string.
-    RegExReplace(Ctrl.Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
     ; Measure the text
     Result := DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
         , 'Ptr', hDC
         , 'Ptr', StrPtr(Text)
-        , 'Int', StrLen(Text) + Count
+        , 'Int', StrLen(Text)
         , 'Ptr', sz := SIZE()
     )
     if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
@@ -57,13 +62,11 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             }
         }
     } else {
-        ; This counts how many surrogate pairs are in the string.
-        RegExReplace(Ctrl.Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', hDC
             , 'Ptr', StrPtr(Ctrl.Text)
-            , 'Int', StrLen(Ctrl.Text) + Count
+            , 'Int', StrLen(Ctrl.Text)
             , 'Ptr', sz := SIZE()
         ) {
             Result.Push({ Index: Index, Size: sz })
@@ -76,13 +79,11 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
     return Result
 
     _Proc() {
-        ; This counts how many surrogate pairs are in the string.
-        RegExReplace(Ctrl.Text[Index], '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', hDC
             , 'Ptr', StrPtr(Ctrl.Text[Index])
-            , 'Int', StrLen(Ctrl.Text[Index]) + Count
+            , 'Int', StrLen(Ctrl.Text[Index])
             , 'Ptr', sz := SIZE()
         ) {
             sz.Index := Index
@@ -113,13 +114,11 @@ ControlGetTextExtent_Link(Ctrl) {
     }
     ; Remove the html anchor tags
     Text := RegExReplace(Ctrl.Text, '<.+?"[ \t]*>(.+?)</a>', '$1')
-    ; This counts how many surrogate pairs are in the string.
-    RegExReplace(Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
     ; Measure the text
     Result := DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
         , 'Ptr', hDC
         , 'Ptr', StrPtr(Text)
-        , 'Int', StrLen(Text) + Count
+        , 'Int', StrLen(Text)
         , 'Ptr', sz := SIZE()
     )
     ; Release the DC.
@@ -193,13 +192,11 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
     return Result
 
     _Proc() {
-        ; This counts how many surrogate pairs are in the string.
-        RegExReplace(Ctrl.GetText(r, c), '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', hDC
             , 'Ptr', StrPtr(Ctrl.GetText(r, c))
-            , 'Int', StrLen(Ctrl.GetText(r, c)) + Count
+            , 'Int', StrLen(Ctrl.GetText(r, c))
             , 'Ptr', sz := SIZE()
         ) {
             sz.Row := r
@@ -262,13 +259,11 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
     return Result
 
     _Proc() {
-        ; This counts how many surrogate pairs are in the string.
-        RegExReplace(Ctrl.GetText(_id), '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', hDC
             , 'Ptr', StrPtr(Ctrl.GetText(_id))
-            , 'Int', StrLen(Ctrl.GetText(_id)) + Count
+            , 'Int', StrLen(Ctrl.GetText(_id))
             , 'Ptr', sz := SIZE()
         ) {
             sz.Id := _id
@@ -308,9 +303,7 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
  * @returns {SIZE} - The `SIZE` object with properties { Width, Height }.
  */
 ControlGetTextExtentEx(Ctrl, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
-    ; This counts how many surrogate pairs are in the string.
-    RegExReplace(Ctrl.Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text), StrLen(Ctrl.Text) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text), StrLen(Ctrl.Text), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
 }
 
 /**
@@ -331,12 +324,9 @@ ControlGetTextExtentEx(Ctrl, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoint
  */
 ControlGetTextExtentEx_LB(Ctrl, Index?, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if IsSet(Index) {
-        ; This counts how many surrogate pairs are in the string.
-        RegExReplace(Ctrl.Text[Index], '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-        return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text[Index]), StrLen(Ctrl.Text[Index]) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+        return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text[Index]), StrLen(Ctrl.Text[Index]), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
     } else {
-        RegExReplace(Ctrl.Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-        return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text), StrLen(Ctrl.Text) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+        return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.Text), StrLen(Ctrl.Text), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
     }
 }
 
@@ -357,9 +347,7 @@ ControlGetTextExtentEx_LB(Ctrl, Index?, nMaxExtent := 0, &OutCharacterFit?, &Out
 CtrlTextExtentExPoint_Link(Ctrl, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     ; Remove the html anchor tags
     Text := RegExReplace(Ctrl.Text, '<a\s*(?:href|id)=".+?">(.+?)</a>', '$1')
-    ; This counts how many surrogate pairs are in the string.
-    RegExReplace(Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-    return __ControlGetTextExtentEx_Process(StrPtr(Text), StrLen(Text) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+    return __ControlGetTextExtentEx_Process(StrPtr(Text), StrLen(Text), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
 }
 
 /**
@@ -378,9 +366,7 @@ CtrlTextExtentExPoint_Link(Ctrl, nMaxExtent := 0, &OutCharacterFit?, &OutExtentP
  * @returns {SIZE} - The `SIZE` object with properties { Width, Height }.
  */
 ControlGetTextExtentEx_LV(Ctrl, RowNumber, ColumnNumber, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
-    ; This counts how many surrogate pairs are in the string.
-    RegExReplace(Ctrl.GetText(RowNumber, ColumnNumber), '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.GetText(RowNumber, ColumnNumber)), StrLen(Ctrl.GetText(RowNumber, ColumnNumber)) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.GetText(RowNumber, ColumnNumber)), StrLen(Ctrl.GetText(RowNumber, ColumnNumber)), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
 }
 
 /**
@@ -399,12 +385,10 @@ ControlGetTextExtentEx_LV(Ctrl, RowNumber, ColumnNumber, nMaxExtent := 0, &OutCh
  * @returns {SIZE} - The `SIZE` object with properties { Width, Height }.
  */
 ControlGetTextExtentEx_TV(Ctrl, Id := 0, nMaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
-    ; This counts how many surrogate pairs are in the string.
     if !Id {
         Id := Ctrl.GetChild(0)
     }
-    RegExReplace(Ctrl.GetText(Id), '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.GetText(Id)), StrLen(Ctrl.GetText(Id)) + Count, &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
+    return __ControlGetTextExtentEx_Process(StrPtr(Ctrl.GetText(Id)), StrLen(Ctrl.GetText(Id)), &nMaxExtent, &OutCharacterFit, &OutExtentPoints)
 }
 
 __ControlGetTextExtentEx_Process(Ptr, cchString, &nMaxExtent, &OutCharacterFit, &OutExtentPoints) {
@@ -545,9 +529,7 @@ ControlWrapText(Ctrl, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := fals
         throw OSError('``GetDC`` failed.', -1, A_LastError)
     }
     ; Get the length of the string in WORDs.
-    ; This counts the number of surrogate pairs in the string.
-    RegExReplace(Text, '[\x{D800}-\x{DBFF}][\x{DC00}-\x{DFFF}]', , &Count)
-    cchString := Len + Count
+    cchString := Len
 
     pattern := '(?:(?<breakchar>[' BreakChars '])|(?<whitespace>[`s`t])).*$'
     Str := ''
