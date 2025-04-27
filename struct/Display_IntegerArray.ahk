@@ -89,10 +89,7 @@ class IntegerArray extends Buffer {
         if Values.Length > Capacity {
             throw ValueError('Insufficient size allocated for quantity of values.', -1, 'Capacity: ' Capacity '; Quantity: ' Values.Length)
         }
-        /**
-         * @property Size - The size of the buffer in number of bytes.
-         */
-        this.Size := Capacity * 4
+        this.Capacity := Capacity
         /**
          * @property Type - The integer type to use with `NumGet` and `NumPut`.
          */
@@ -139,9 +136,14 @@ class IntegerArray extends Buffer {
      * can be contained in the IntegerArray.
      */
     Capacity {
-        Get => this.Size * 4
+        Get => this.Size / 4
         Set => this.Size := Value * 4
     }
+
+    /**
+     * @property Size - The size of the buffer in number of bytes. `Size` is on the base object,
+     * and so is not actually seen here.
+     */
 
     /**
      * @property IntegerArray.Prototype.__Item - Gets or sets an integer using an index position.

@@ -1,7 +1,18 @@
 ﻿
 ; Dependencies:
+#Include ..\src\Display_dDefaultOptions.ahk
 #Include ..\struct\Display_SIZE.ahk
 #Include ..\struct\Display_IntegerArray.ahk
+
+dDefaultOptions.DefineProp('WrapText', { Value: {
+    AdjustObject: false
+  , BreakChars: '-'
+  , HyphenateAlpha: true
+  , HyphenateNumbers: true
+  , MaxExtent: ''
+  , MinExtent: ''
+  , Newline: '`r`n'
+}})
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -11,10 +22,10 @@
     For further explanation, see String Encoding."
     {@link https://www.autohotkey.com/docs/v2/Concepts.htm#string-encoding}
 
-    ; The functions all require a device context handle. You can get an `hDC` from a control, gui, or
-    ; even external windows.
+    ; The functions all require a device context handle. You can get an `hDC` from a control, gui,
+    ; or non-AHK windows.
    @example
-    if hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd) {
+    if hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd, 'Ptr') {
         ; do something
     } else {
         err := OSError()
@@ -28,7 +39,7 @@
     code should release it as soon as it completes its last action that requires the handle.
 
    @example
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
+    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'Int') {
         err := OSError()
         ; handle error
     }
@@ -50,19 +61,21 @@
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {Integer} hDC - A handle to the device context you want used to measure the string.
  * @param {String} Str - The string to measure.
- * @param {VarRef} OutSIZE - A variable that will receive a SIZE object with properties { Width, Height }
- * @returns {Boolean} - If the function succeeds, the return value is nonzero. If the function fails,
- * the return value is zero.
+ * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
-GetTextExtentPoint32(hDC, Str, &OutSIZE) {
+GetTextExtentPoint32(hDC, Str) {
     ; Measure the text
-    return DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+    if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
         , 'Ptr', hDC
         , 'Ptr', StrPtr(Str)
         , 'Int', StrLen(Str)
-        , 'Ptr', OutSIZE := SIZE()
+        , 'Ptr', sz := SIZE()
         , 'Int'
-    )
+    ) {
+        return sz
+    } else {
+        throw OSError()
+    }
 }
 
 /**
@@ -73,7 +86,7 @@ GetTextExtentPoint32(hDC, Str, &OutSIZE) {
  * An example function call is available in file {@link examples\example_Text_GetTextExtentExPoint.ahk}
  * @param {String} Str - The string to measure.
  * @param {Integer} hDC - The handle to the device context you want to use when measuring the string.
- * @param {Integer} [nMaxExtent=0] - The maximum width of the string. When nonzero,
+ * @param {Integer} [MaxExtent=0] - The maximum width of the string. When nonzero,
  * `OutCharacterFit` is set to the number of characters that fit within the `nMaxExtent` pixels
  * in the context of the control, and `OutExtentPoints` will only contain extent points up to
  * `OutCharacterFit` number of characters. If 0, `nMaxExtent` is ignored, `OutCharacterFit` is
@@ -81,7 +94,6 @@ GetTextExtentPoint32(hDC, Str, &OutSIZE) {
  * string.
  * @param {VarRef} [OutCharacterFit] - A variable that will receive the number of characters
  * that fit within the given width. If `nMaxExtent` is 0, this will be set to 0.
- * @param {VarRef} [OutSIZE] - A variable that will receive a SIZE object with properties { Width, Height }
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`, a buffer
  * object containing the partial string extent points (the cumulative width of the string at
  * each character from left to right measured from the beginning of the string to the right-side of
@@ -90,148 +102,191 @@ GetTextExtentPoint32(hDC, Str, &OutSIZE) {
  * point for every character in the string. `OutExtentPoints` is not an instance of `Array`; it has
  * only one method, `__Enum`, which you can use by calling it in a loop, and it has one property,
  * `__Item`, which you can use to access items by index.
+ * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
-GetTextExtentExPoint(Str, hDC, nMaxExtent := 0, &OutCharacterFit?, &OutSIZE?, &OutExtentPoints?) {
-    Result := DllCall('Gdi32.dll\GetTextExtentExPoint'
+GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
+    if DllCall('Gdi32.dll\GetTextExtentExPoint'
         , 'ptr', hDC
         , 'ptr', StrPtr(Str)                                    ; String to measure
         , 'int', StrLen(Str)                                    ; String length in WORDs
-        , 'int', nMaxExtent                                     ; Maximum width
-        , 'ptr', lpnFit := nMaxExtent ? Buffer(4) : 0           ; To receive number of characters that can fit
-        , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str)  * 4) ; An array to receives partial string extents. Here it's null.
-        , 'ptr', OutSIZE := SIZE()                              ; To receive the dimensions of the string.
+        , 'int', MaxExtent                                      ; Maximum width
+        , 'ptr', lpnFit := MaxExtent ? Buffer(4) : 0            ; To receive number of characters that can fit
+        , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
+        , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
         , 'ptr'
-    )
-    DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
-    if Result {
-        OutCharacterFit := nMaxExtent ? NumGet(lpnFit, 0, 'int') : 0
+    ) {
+        OutCharacterFit := MaxExtent ? NumGet(lpnFit, 0, 'int') : 0
+        return sz
     } else {
-        return 1
+        throw OSError()
     }
 }
 
 /**
- * @description - Wraps text to a maximum width in pixels, breaking at break points defined by the
- * `BreakChars` parameter. Any newline characters contained in the input string are replaced
- * with a space character prior to processing.
- * @param {Gui.Control|Integer} hDC_or_Control - Either a device context to use to measure the text,
- * or a control object that will be used to obtain the device context.
- * @param {VarRef} Str - A variable that will receive the result string.
- * - If you set `Str` with a string value, `WrapText` processes that value.
- * - If `hDC_or_Control` is a `Gui.Control` object, then `Str` is optional. If you leave it unset,
- * or pass it as an unset VarRef / empty string VarRef, then `WrapText` processes the contents of
- * `hDC_or_Control.Text`.
- * Example using a control object, handling the adjustment in our own code:
+ * @description - Wraps text to a maximum width in pixels, breaking the string at either a whitespace
+ * character, or any characters defined by the `BreakChars` option. This is the function's process:
+ * - If one or more characters between `Options.MinExtent` and `Options.MaxExtent` are break
+ * characters, then:
+ *   - If the break character closest to `Options.MaxExtent` is a whitespace character, then the line
+ * wraps before the whitespace character. Any extra whitespace characters are trimmed from each line.
+ *   - Else, the line wraps after the break character.
+ * - Else, the line is wrapped after the character closest to `Options.MaxExtent`. A hyphen may be
+ * added depending on the character and the input options. `WrapText` ensures that adding a hyphen does
+ * not cause the line to exceed `Options.MaxExtent`.
+ * Additional details:
+ * - All consecutive newline characters are converted to a single space character prior to processing.
+ * - When making the decision to add additional characters to `Options.BreakChars`, keep in mind that,
+ * if a break character will always be followed by a whitespace character, then adding it to
+ * `Options.BreakChars` will only change the amount of time it takes `WrapText` to process the input.
+ * It will not change the output string. If there is a possibility that the character is followed by
+ * a non-whitespace character, and its a character that you believe is a natural break character for
+ * your project, then you should add it to the list.
+ * - There's no harm if the input string ultimately does not contain one or more of the characters
+ * from `Options.BreakChars`; the string is checked to see if it contains at least one of each
+ * character. If any character is absent, it is purged from the list of possible break characters to
+ * save processing time.
+ * - If `Options.BreakChars` is empty or zero, `WrapText` processes the input checking only for
+ * whitespace characters, which will perform comparatively better.
+ * - A hyphen is never added after a break character, even if the break character is alphanumeric and
+ * the related option is true.
+ * @param {Gui.Control|Integer|Object} Context - Either a handle to the device context to use to
+ * measure the text, a `Gui.Control` object, or an object with an `hWnd` property.
+ * @param {VarRef} [Str] - A variable that will receive the result string.
+ * - If you set `Str` with a string value before passing the VarRef, `WrapText` processes that value.
+ * and sets the variable with the resulting string.
+ * - If `Context` is an object, then `Str` is optional. If you leave it unset, or pass it as an unset
+ * VarRef / empty string VarRef, then `WrapText` processes the contents of `Context.Text`. If the
+ * object does not have a `Text` property, AHK will throw an error.
+ * @param {Object} [Options] - An object containing zero or more options as properties.
+ * It should be documented that `WrapText` changes the base of your `Options` object. In most cases
+ * this information be safely ignored; I included it for completeness. See
+ * src/Display_dDefaultOptions.ahk for more information.
+ * @param {Boolean} [Options.AdjustObject=false] - If `Context` is an object with a `Text` property
+ * and a `Move` method, such as a `Gui.Control` object, and if `Options.AdjustObject == true`, the
+ * aforementioned properties are used to adjust the object before `WrapText` returns. The height of
+ * the object is set to the height of the string in pixels, and the `Text` property is set with the
+ * string value.
+ * @param {String} [Options.BreakChars='-'] - `BreakChars` is a list of characters that defines defines
+ * what characters are valid breakpoints for splitting a line other than a space or tab. Do not include
+ * any separators between the characters. See the function description for a full description of
+ * `WrapText`'s process.
+ * @param {Boolean} [Options.HyphenateAlpha=true] - When true, `WrapText` hyphenates the line if
+ * the last character in the line causes `IsAlpha(char)` to return true.
+ * @param {Boolean} [Options.HyphenateNumbers=true] - When true, `WrapText` hyphenates the line if
+ * the last character in the line causes `IsNumber(char)` to return true.
+ * @param {Integer} [Options.MaxExtent] - The maximum width of a line in pixels. This is optional when
+ * `Context` is an object with a `GetPos` method, such as a `Gui.Control` object. If `Options.MaxExtent`
+ * is unset, `Context.GetPos(, , &MaxExtent)` is called. The maximum width must be at least three times
+ * the width of a "W" character in the device context.
+ * @param {Number} [Options.MinExtent] - If set, either an integer, or a float between 0 and 1.
+ * - If less than 1, the minimum width is set to `Ceil(Options.MinExtent * Options.MaxExtent)`.
+ * - If greater than 1, the minimum width is set to the value.
+ * `MinExtent` directs `WrapText` to break each line at an extent point no less than the minimum.
+ * This is useful in most situations, but particularly in situations where the input string contains
+ * words/substrings that are generally pretty long relative to `MaxExtent`. `WrapText`'s default
+ * behavior might cause a line to be very short, in a way that would be aesthetically unnatural or
+ * displeasing. When `MinExtent` is set, if a substring does not contain a valid breakpoint between
+ * `MinExtent` and `MaxExtent`, then it will wrap the line at or around `MaxExtent` (depending on the
+ * values of the other options) as if there were no breakpoints in the entire line. The example below
+ * depicts the default behavior without `MinExtent`.
  * @example
- *  G := Gui()
- *  Txt := G.Add('Text', , 'Original text.')
- *  ; User does some action that changes the text content of Txt
- *  Txt.Text := 'New text that needs to stay the same width.'
- *  ; We need to adjust the height of the control, keeping the width constant
- *  NewSize := WrapText(Txt, &NewStr)
- *  ; Perhaps we want to validate the size of the text before adjusting the control
- *  if NewSize.Height <= ArbitraryMaximum {
- *      Txt.Text := NewStr
- *      Txt.Move(, , , NewSize.Height)
- *  } else {
- *      HandleTooLargeInputFromUser(Txt, NewSize, NewStr)
- *  }
+ *  Ctrl := (G := Gui()).AddText()
+ *  Ctrl.Text := 'She sang supercalifradulisticexpialidocious then went on her merry way.'
+ *  hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd, 'Ptr')
+ *  sz := GetTextExtentPoint32(hDC, 'She sang supercalifradulisticexpialidoc')
+ *  LineCount := WrapText(Ctrl, &Str, { MaxExtent: sz.Width, AdjustObject: true })
+ *  Split := StrSplit(Ctrl.Text, '`r`n')
+ *  MsgBox(Split[1]) ; She sang
+ *  MsgBox(Split[2]) ; supercalifradulisticexpialidocious then
+ *  MsgBox(Split[3]) ; went on her merry way.
  * @
- * Example using a control object, allowing `WrapText` to make the adjustments:
- * @example
- *  G := Gui()
- *  Txt := G.Add('Text', , 'Original text.')
- *  ; User does some action that changes the text content of Txt
- *  Txt.Text := 'New text that needs to stay the same width.'
- *  ; Pass `true` to have `WrapText` update the control automatically
- *  WrapText(Txt, , , , true)
- * @
- * Example usign an input string:
- * @example
- *  ; My code needs to dynamically add a control containing some arbitrary text. I know the maximum
- *  ; width, but the actual text is unknown until the user does some action. I also know that the
- *  ; control will be using the same font as another control, so we can use that as the device
- *  ; context.
- *  Str :=
- * @param {Integer} [MaxWidth] - The maximum width in pixels to wrap the text to. If unset and if
- * `hDC_or_Control` is a `Gui.Control` object, the control's current width is used.
- * @param {Func} [BreakChars='[-]'] - `BreakChars` is a RegEx character class that
- * defines what characters are valid breakpoints for splitting a line. When this function breaks
- * a line, it will do so at the greatest breakpoint that does not cause the line to exceed `MaxWidth`
- * pixels. If a single sequence of non-breakpoint characters exceeds `MaxWidth` pixels, the
- * characters are split and hyphenated, typically at the character previous to the character which
- * causes the line to exceed `MaxWidth`, but if that character is particularly thin (like an "i" in
- * a non-monospaced font) then it may be two characters previous. Newline characters are ignored
- * because they are removed from the string prior to processing anyway, and space and tab characters
- * are always considered breakpoints but they are handled separately because if a line breaks on
- * a tab or space character, the line breaks and the character is removed from the string. If a line
- * breaks on any other type of breakpoint character, the line breaks after the character and any
- * subsequent consecutive spaces or tabs are removed if any are present, and if none are present
- * nothing is removed. Since most natural breaking characters are followed by a space anyway, there's
- * there's often little need to define additional breaking characters because they would not
- * influence any new behavior from the function. The primary character for which this is not true is
- * the hyphen, which itself is a natural breakpoint character and is not usually followed by a space
- * or tab. This parameter should be defined as a character class (i.e. enclosed by square brackets)
- * because `WrapText` will add a negating '^' to the pattern string to process the input.
+ * @param {String} [Options.Newline='`r`n'] - The newline character(s) to use.
+ * @param {VarRef} [OutWidth] - A variable that will receive the width of the output string. This is
+ * generally expected to be within a few pixels of `Options.MaxExtent`.
+ * @param {VarRef} [OutHeight] - A variable that will receive the height of a single line.
+ * @returns {Integer} - The number of lines the text was split into.
  */
-WrapText(Context, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := false, Newline := '`r`n', &OutLineCount?) {
+WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
+    static W := 'W'
+    , Wptr := StrPtr(W)
+    local Pos
+    Options := dDefaultOptions(Options ?? {}, dDefaultOptions.WrapText, dWrapTextConfig ?? unset)
     if IsObject(Context) {
         if HasProp(Context, 'hWnd') {
-            ; If MaxWidth is unset, use the width of the control.
-            if !IsSet(MaxWidth) {
-                Context.GetPos(, , &MaxWidth)
+            ; If MaxExtent is unset, use the width of the control.
+            if Options.MaxExtent {
+                MaxExtent := Options.MaxExtent
+            } else {
+                Context.GetPos(, , &MaxExtent)
             }
             if IsSet(Str) {
-                Text := RegExReplace(Str, '\R', ' ')
+                Text := RegExReplace(Str, '\R+', ' ')
+            } else if IsObject(Context.Text) {
+                throw TypeError('``Context.Text`` returned an object.', -1
+                , 'Type(Context.Text) == ' Type(Context.Text))
             } else {
-                if IsObject(Context.Text) {
-                    throw TypeError('``Context.Text`` returned an object.', -1, 'Type(Context.Text) == ' Type(Context.Text))
-                } else {
-                    Text := RegExReplace(Context.Text, '\R', ' ')
-                }
+                Text := RegExReplace(Context.Text, '\R+', ' ')
             }
             if !(hDC := DllCall('GetDC', 'Ptr', Context.hWnd)) {
-                throw OSError('``GetDc`` failed.', -1, A_LastError)
+                throw OSError()
             }
+            ; Set error handler to release dc before throwing the error
+            OnError(_ReleaseDC, -1)
         } else {
             _Throw(1, A_LineNumber, A_ThisFunc)
         }
     } else if IsNumber(Context) {
-        if !IsSet(Str) || !IsSet(MaxWidth) {
+        if !IsSet(Str) || !Options.MaxExtent {
             _Throw(2, A_LineNumber, A_ThisFunc)
         }
+        MaxExtent := Options.MaxExtent
         hDC := Context
-        Text := RegExReplace(Str, '\R', ' ')
+        Text := RegExReplace(Str, '\R+', ' ')
     } else {
         _Throw(1, A_LineNumber, A_ThisFunc)
     }
 
+    ; Set MinExtent
+    if IsNumber(Options.MinExtent) {
+        if Options.MinExtent < 1 {
+            MinExtent := Ceil(MaxExtent * Options.MinExtent)
+        } else {
+            MinExtent := Options.MinExtent
+        }
+    } else {
+        MinExtent := 0
+    }
+
+    ; Initialize the buffers
+    fitBuf := Buffer(4)
+    Extent := IntegerArray(StrLen(Text))
+    sz := SIZE()
+
     ; Measure the width of a hyphen
     hyphen := '-'
     if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-        , hDC, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', lpSize := Buffer(8)) {
-        throw OSError('``GetTextExtentPoint32`` failed.', -1, A_LastError)
+        , hDC, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', sz, 'Int') {
+        throw OSError()
     }
-    hyphen := NumGet(lpSize, 0, 'uint')
+    hyphen := sz.Width
 
-    ; `MaxWidth` must at least be large enough such that the loops can iterate once or twice
-    ; before reaching the beginning of the substring. I decided I'll use "W" as my baseline for
-    ; this.
-    W := 'W'
+    ; `MaxExtent` must at least be large enough such that the loops can iterate once or twice
+    ; before reaching the beginning of the substring.
     if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-        , hDC, 'Ptr', StrPtr(W), 'Int', 1, 'Ptr', lpSize) {
-        throw OSError('``GetTextExtentPoint32`` failed.', -1, A_LastError)
+        , hDC, 'Ptr', Wptr, 'Int', 1, 'Ptr', sz, 'Int') {
+        throw OSError()
     }
-    W := NumGet(lpSize, 0, 'uint')
-    if MaxWidth < W * 3 + hyphen {
-        throw ValueError('``MaxWidth`` must be at least three times the width of "W" plus the width of "-" in the device context.', -1, 'Input ``MaxWidth``: ' MaxWidth '; Minimum: ' (W * 3 + hyphen))
+    if MaxExtent < sz.Width * 3 {
+        throw ValueError('``MaxExtent`` must be at least three times the width of "W" in the device'
+        ' context.', -1, '``MaxExtent``: ' MaxExtent '; Function minimum: ' (sz.Width * 3))
     }
 
     ; Check the string for the presence of break characters
+    BreakChars := ''
     z := InStr(Text, '`t') ? 1 : 0
-    if BreakChars {
+    if Options.BreakChars {
         _BreakChars := ''
-        for ch in StrSplit(BreakChars) {
+        for ch in StrSplit(Options.BreakChars) {
             if InStr(Text, ch) {
                 _BreakChars .= ch
             }
@@ -255,67 +310,97 @@ WrapText(Context, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := false, N
         case 6: Proc := _Proc_3.Bind('`s')      ; Spaces + break chars
         case 7: Proc := _Proc_5                 ; Spaces + tabs + break chars
     }
-    OutLineCount := 0
-    loop {
-        OutLineCount++
-        cchString := StrLen(Text)
-        if !DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC                                            ; Device context
-            , 'ptr', StrPtr(Text)                                   ; String to measure
-            , 'int', cchString                                      ; String length in WORDs
-            , 'int', MaxWidth                                       ; Maximum width
-            , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
-            , 'ptr', lpnDx := IntegerArray(cchString * 4)           ; An array to receives partial string extents. Here it's null.
-            , 'ptr', lpSize                                         ; To receive the dimensions of the string.
-            , 'ptr'
-        ) {
-            throw OSError('``GetTextExtentExPoint`` failed.', -1, A_LastError)
-        }
-        if NumGet(lpnFit, 0, 'uint') >= cchString {
-            break
-        }
-        fit := NumGet(lpnFit, 0, 'uint')
-        Proc()
-    }
-    Str .= Text
-    if AdjustControl {
-        Context.Move(, , , OutLineCount * NumGet(lpSize, 4, 'uint'))
-        Context.Text := Str
+
+    ; Set the condition determining whether a hyphen is used.
+    if Options.HyphenateAlpha {
+        Hyphenate := Options.HyphenateNumbers
+        ? () => IsAlnum(SubStr(Text, Pos, 1))
+        : () => IsAlpha(SubStr(Text, Pos, 1))
+    } else {
+        Hyphenate := Options.HyphenateNumbers
+        ? () => IsNumber(SubStr(Text, Pos, 1))
+        : () => 0
     }
 
-    return OutLineCount * NumGet(lpSize, 4, 'uint')
+    LineCount := 1
+    OutWidth := 0
+
+    ; Core loop
+    loop {
+        LineCount++
+        Len := StrLen(Text)
+        ptr := StrPtr(Text)
+        Extent := IntegerArray(Len)
+        if !DllCall('Gdi32.dll\GetTextExtentExPoint'
+            , 'ptr', hDC                ; Device context
+            , 'ptr', ptr                ; String to measure
+            , 'int', Len                ; String length in WORDs
+            , 'int', MaxExtent          ; Maximum width
+            , 'ptr', fitBuf             ; To receive number of characters that can fit
+            , 'ptr', Extent             ; A buffer to receives partial string extents.
+            , 'ptr', sz                 ; To receive the dimensions of the string.
+            , 'ptr'
+        ) {
+            throw OSError()
+        }
+        if (fit := NumGet(fitBuf, 0, 'uint')) >= Len {
+            break
+        }
+        if Proc() {
+            break
+        }
+    }
+
+    ; Add last piece to the string
+    Str .= Trim(Text, '`s`t')
+
+    ; Release dc, disable error handler
+    if IsObject(Context) {
+        if Options.AdjustObject {
+            Context.Move(, , , sz.height)
+            Context.Text := Str
+        }
+        OnError(_ReleaseDC, 0)
+    }
+
+    OutHeight := sz.Height
+
+    return LineCount
 
     ; No break characters or whitespace
     _Proc_0() {
-        local n := 0
-        ; a := []
-        ; for z in lpnDx {
-        ;     a.Push(z)
-        ; }
-        ; sleep 1
+        Pos := fit
+        ; The loop checks if a hyphen should be added given the last character, and if so,
+        ; checks if adding the hyphen will cause the line to exceed `MaxExtent`.
         loop fit - 1 {
-            if lpnDx[fit - n] + hyphen <= MaxWidth {
+            if Hyphenate() {
+                if Extent[Pos] + hyphen <= MaxExtent {
+                    Str .= Trim(SubStr(Text, 1, Pos), '`s`t') '-' Options.Newline
+                    OutWidth := Max(OutWidth, Extent[Pos] + hyphen)
+                    break
+                } else {
+                    Pos--
+                }
+            } else {
+                Str .= Trim(SubStr(Text, 1, Pos), '`s`t') Options.Newline
+                OutWidth := Max(OutWidth, Extent[Pos])
                 break
             }
-            n++
         }
-        Str .= SubStr(Text, 1, fit - n) '-' Newline
-        Text := SubStr(Text, fit + n + 2)
+        Text := SubStr(Text, Pos + 1)
     }
     ; Has spaces or tabs
     _Proc_1(ch) {
-        if (Pos := InStr(SubStr(Text, 1, fit), ch, , , -1)) && Pos <= fit {
-            Str .= SubStr(Text, 1, Pos - 1) Newline
-            Text := SubStr(Text, Pos + 1)
+        if (Pos := InStr(SubStr(Text, 1, fit), ch, , , -1)) && Extent[Pos] >= MinExtent {
+            _Proc_W()
         } else {
             _Proc_0()
         }
     }
     ; Has break characters
     _Proc_2() {
-        if RegExMatch(SubStr(Text, 1, fit), BreakChars, &Match) {
-            Str .= SubStr(Text, 1, Match.Pos) Newline
-            Text := SubStr(Text, Match.Pos + 1)
+        if (Pos := RegExMatch(SubStr(Text, 1, fit), BreakChars)) && Extent[Pos] >= MinExtent {
+            _Proc_B()
         } else {
             _Proc_0()
         }
@@ -323,25 +408,21 @@ WrapText(Context, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := false, N
     ; Has either spaces / tabs, and break characters
     _Proc_3(ch) {
         Part := SubStr(Text, 1, fit)
-        Pos_W := InStr(Part, ch, , , -1)
-        Pos_B := RegExMatch(Part, BreakChars, &Match)
-        if Pos_W > Pos_B {
-            Str .= SubStr(Text, 1, Pos_W - 1) Newline
-            Text := SubStr(Text, Pos_W + 1)
-        } else if Pos_B > Pos_W {
-            Str .= SubStr(Text, 1, Match.Pos) Newline
-            Text := SubStr(Text, Match.Pos + 1)
-        } else {
+        Pos := Max(Pos_B := RegExMatch(Part, BreakChars), Pos_W := InStr(Part, ch, , , -1))
+        if !Pos || Extent[Pos] < MinExtent {
             _Proc_0()
+        } else if Pos_W > Pos_B {
+            _Proc_W()
+        } else {
+            _Proc_B()
         }
     }
     ; Has spaces and tabs
     _Proc_4() {
         Part := SubStr(Text, 1, fit)
         Pos := Max(InStr(Part, '`t', , , -1), InStr(Part, '`s', , , -1))
-        if Pos {
-            Str .= SubStr(Text, 1, Pos - 1) Newline
-            Text := SubStr(Text, Pos + 1)
+        if Pos && Extent[Pos] >= MinExtent {
+            _Proc_W()
         } else {
             _Proc_0()
         }
@@ -349,19 +430,51 @@ WrapText(Context, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := false, N
     ; Has spaces, tabs, and break characters
     _Proc_5() {
         Part := SubStr(Text, 1, fit)
-        Pos_W := Max(InStr(Part, '`t', , , -1), InStr(Part, '`s', , , -1))
-        Pos_B := RegExMatch(Part, BreakChars, &Match)
-        if Pos_W > Pos_B {
-            Str .= SubStr(Text, 1, Pos_W - 1) Newline
-            Text := SubStr(Text, Pos_W + 1)
-        } else if Pos_B > Pos_W {
-            Str .= SubStr(Text, 1, Match.Pos) Newline
-            Text := SubStr(Text, Match.Pos + 1)
-        } else {
+        Pos := Max(Pos_B := RegExMatch(Part, BreakChars)
+            , Pos_W := Max(InStr(Part, '`t', , , -1), InStr(Part, '`s', , , -1)))
+        if !Pos || Extent[Pos] < MinExtent {
             _Proc_0()
+        } else if Pos_W > Pos_B {
+            _Proc_W()
+        } else {
+            _Proc_B()
         }
     }
-
+    _Proc_B() {
+        Str .= SubStr(Text, 1, Pos) Options.Newline
+        OutWidth := Max(OutWidth, Extent[Pos])
+        ; Trim whitespace right
+        while NumGet(ptr, Pos * 2, 'str') < 33 {
+            Pos++
+            if Pos > Len {
+                Text := ''
+                return 1
+            }
+        }
+        Text := SubStr(Text, Pos + 1)
+    }
+    _Proc_W() {
+        ; Trim whitespace left, necessary to ensure the line is not too small.
+        while NumGet(ptr, (Pos - 2) * 2, 'str') < 33 {
+            Pos--
+        }
+        if Extent[Pos - 1] < MinExtent {
+            _Proc_0()
+        } else {
+            Str .= SubStr(Text, 1, Pos - 1) Options.Newline
+            OutWidth := Max(OutWidth, Extent[Pos - 1])
+            ; Trim whitespace right
+            while NumGet(ptr, Pos * 2, 'str') < 33 {
+                Pos++
+            }
+            Text := SubStr(Text, Pos + 1)
+        }
+    }
+    _ReleaseDC(Thrown, *) {
+        DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hDC, 'Int')
+        OnError(_ReleaseDC, 0)
+        throw Thrown
+    }
     _Throw(Id, Line, Fn) {
         switch Id {
             case 1: err := TypeError('``Context`` must be either a number representing a handle to'
@@ -369,13 +482,13 @@ WrapText(Context, &Str?, MaxWidth?, BreakChars := '-', AdjustControl := false, N
                 Type(Context))
             case 2:
                 if IsSet(Str) {
-                    Extra := '``MaxWidth`` is unset.'
-                } else if IsSet(MaxWidth) {
+                    Extra := '``Options.MaxExtent`` is unset.'
+                } else if Options.MaxExtent {
                     Extra := '``Str`` is unset.'
                 } else {
-                    Extra := '``Str`` and ``MaxWidth`` are unset.'
+                    Extra := '``Str`` and ``Options.MaxExtent`` are unset.'
                 }
-                err := UnsetError('``Str`` and ``MaxWidth`` must be set when ``Context`` is a number.', -2, Extra)
+                err := UnsetError('``Str`` and ``Options.MaxExtent`` must be set when ``Context`` is a number.', -2, Extra)
         }
         err.What := Fn
         err.Line := Line

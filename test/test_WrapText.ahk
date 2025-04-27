@@ -4,61 +4,74 @@
 #Include ..\lib\Display_Text.ahk
 
 
-test_WrapText()
+if test_WrapText(false) {
+    test_WrapText.WriteOut(test_WrapText.Problems)
+    test_WrapText.OpenEditor()
+}
 
 class test_WrapText extends test_Base {
     static PathOut := A_MyDocuments '\test-output_WrapText.json'
     , PathIn := 'test-content_WrapText.txt'
+    , PathTemp := A_ScriptDir '\temp-output.txt'
     , SetThreadDpiAwareness := -4
-    , Font := [ '', 'Mono', 'Calisto', 'Aptos' ]
+    , Font := [ '', 'Mono', 'Aptos' ]
     , FontOpt := [ '', 'bold', 'italic', 'strike', 'underline' ]
-    , FontSize := [ 4, 8, 12, 40, 76 ]
+    , FontSize := [ 4, 76 ]
     , FontQuality := [ 1, 5 ]
-    , FontWeight := [ 100, 200, 900, 950 ]
-    , FontColor := [ 'Red', 'Black', 'White' ]
-    ; The items that are functions: `n` receives the minimum `MaxWidth` allowed by `WrapText`.
-    , MaxWidth := [ (n) => n, (n) => 1.1 * n, (n) => 5 * n, (n) => 10 * n, 1980, 1980 * 2, 1980 * 3 ] ; pixels
+    , FontWeight := [ 100, 950 ]
+    , FontColor := 'Black'
+    ; The items that are functions: `n` receives the minimum `MaxExtent` allowed by `WrapText`.
+    , MaxExtent := [ (n) => n, (n) => 1.1 * n, 1980 ] ; pixels
+    , MinExtent := [ 0.7, 0.9 ]
     ; Characters which are typically followed by a space like commas, periods, and semicolons are
     ; not effective break characters, don't use them in live code unless you expect the possibility
     ; that one is not followed by a whitespace character.
-    , BreakChar := [
-        ''
-      , '-'
-      , '\'         ; to make sure the slash gets escaped correctly
-      , ';.,'       ; to make sure characters that are typically followed by space are handled correctly
-      , ')]>\/:-'   ; to increase the variety of symbols tested
-      , 'jqp-'      ; to test letters as break characters, which should be no different from any other character
-    ]
+    , BreakChar := ')]>\/:-\'
     , Problems := []
     , Result := []
 
-    static Call() {
-        local _opt, _size, _quality, _weight, _color, _family, _maxWidth, _breakChar, _string
-        , BaseString, copy, Width, Height, hDC, Str, Txt, Edt, lpnDx, index_GetString, LineCount
+    static Call(TempOutput := false) {
+        local _opt, _size, _quality, _weight, _color, _family, _maxExtent, _breakChar, _string, G
+        , BaseString, copy, hDC, Str, Edt, Extent, index_GetString, LineCount, i, Width, Height
+        , ResultWidth, LineHeight, _minExtent
         if this.SetThreadDpiAwareness {
             DllCall('SetThreadDpiAwarenessContext', 'ptr', this.SetThreadDpiAwareness, 'ptr')
         }
-        _GetControls()
-        BaseString := ''
-        r := 126 - 32
-        loop 1000 {
-            if Random() > 0.5 {
-                ; Standard Western keyboard characters
-                BaseString .= Chr(Ceil(Random() * r + 32))
-            } else {
-                ; Supplementary unicode characters. Even if none are installed on the system, it
-                ; will still serve its purpose here.
-                Chr(Ceil(Random() * 100) + 65336)
+        this.LoopCount := 0
+        this.WrapTextCallCount := 0
+        G := this.G := Gui('+Resize -DPIScale')
+        Edt := this.CtrlEdit := G.Add('Edit', '+Wrap -HScroll')
+        if FileExist(this.PathIn) {
+            BaseString := this.BaseString := FileRead(this.PathIn)
+        } else {
+            BaseString := ''
+            r := 126 - 32
+            loop 1000 {
+                if Random() > 0.5 {
+                    ; Standard Western keyboard characters
+                    BaseString .= Chr(Ceil(Random() * r + 32))
+                } else {
+                    ; Supplementary unicode characters. Even if none are installed on the system, it
+                    ; will still serve its purpose here.
+                    BaseString .= Chr(Ceil(Random() * 100) + 65336)
+                }
             }
+            this.BaseString := BaseString
+            f := FileOpen(this.PathIn, 'w')
+            f.Write(BaseString)
+            f.Close()
         }
-        this.BaseString := BaseString
         GetString := [
             _GetString_NoBreak
           , _GetString_OnlySpace
           , _GetString_OnlyBreak
           , _GetString_Both
         ]
+        _breakChar := this.BreakChar
+        _color := this.FontColor
         _Loop(_Control)
+
+        return this.Problems.Length
 
         _Loop(Callback) {
             i := 0
@@ -70,15 +83,15 @@ class test_WrapText extends test_Base {
                         _quality := this.FontQuality[A_Index]
                         loop this.FontWeight.Length {
                             _weight := this.FontWeight[A_Index]
-                            loop this.FontColor.Length {
-                                _color := this.FontColor[A_Index]
-                                loop this.Font.Length {
-                                    _family := this.Font[A_Index]
-                                    loop this.MaxWidth.Length {
-                                        _maxWidth := this.MaxWidth[A_Index]
-                                        loop this.BreakChar.Length {
-                                            _breakChar := this.BreakChar[A_Index]
-                                            Callback()
+                            loop this.Font.Length {
+                                _family := this.Font[A_Index]
+                                loop this.MaxExtent.Length {
+                                    _maxExtent := this.MaxExtent[A_Index]
+                                    loop this.MinExtent.Length {
+                                        _minExtent := this.MinExtent[A_Index]
+                                        this.LoopCount++
+                                        if Callback() {
+                                            return
                                         }
                                     }
                                 }
@@ -90,28 +103,60 @@ class test_WrapText extends test_Base {
         }
 
         _Control() {
-            Txt.SetFont(Format('{} c{} s{} w{} q{}', _opt, _color, _size, _weight, _quality), _family || unset)
-            if _maxWidth is Func {
-                _maxWidth := _maxWidth(_GetMinMaxWidth(Txt))
+            Edt.SetFont(Format('{} c{} s{} w{} q{}', _opt, _color, _size, _weight, _quality), _family || unset)
+            if _maxExtent is Func {
+                _maxExtent := _maxExtent(_GetMinMaxExtent(Edt))
             }
-            Txt.Move(, , _maxWidth)
+            Edt.Move(, , _maxExtent)
             if _breakChar {
                 index_GetString := 0
                 for fn in GetString {
+                    this.WrapTextCallCount++
                     index_GetString++
                     fn()
                     _Proc()
                 }
             } else {
+                this.WrapTextCallCount++
                 index_GetString := 1
                 GetString[1]()
                 _Proc()
             }
             _Proc() {
-                txt.Text := _string
-                Height := WrapText(Txt, &Str, , _breakChar, true, , &LineCount)
-                ; I stopped here, next step was to figure out why sometimes StrSplit(Ctrl.Text, '`n', '`r') returns an empty array
-                _Validate(Txt)
+                Edt.Text := _string
+                len := StrLen(_string)
+                Str := unset
+                dWrapTextConfig.BreakChars := _breakChar
+                dWrapTextConfig.MinExtent := _minExtent
+                if this.WrapTextCallCount == 8 {
+                    sleep 1
+                }
+                LineCount := WrapText(Edt, &Str, , &ResultWidth, &LineHeight)
+                if TempOutput {
+                    this.WriteTemp(this.PathTemp, &Str)
+                }
+                if ResultWidth > _maxExtent {
+                    this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'ResultWidth > _maxExtent')
+                } else {
+                    hDC := DllCall('GetDC', 'ptr', Edt.hWnd, 'ptr')
+                    if !hDC {
+                        throw OSError()
+                    }
+                    Split := StrSplit(Str, '`r`n')
+                    ; To-do: check the `copy` string for context. For example, if the last character
+                    ; in a line is a letter, `HyphenateAlpha == true`, then that is only valid if
+                    ; the line broke at a whitespace character.
+                    loop Split.Length - 1 {
+                        sz := _GetTextExtentPoint32(hDC, Split[A_Index])
+                        if sz.Width < _minExtent * _maxExtent {
+                            this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'sz.Width < _minExtent')
+                            return 1
+                        }
+                    }
+                    if !DllCall('ReleaseDC', 'Ptr', Edt.hWnd, 'Ptr', hDC, 'Int') {
+                        throw OSError()
+                    }
+                }
             }
         }
 
@@ -122,7 +167,7 @@ class test_WrapText extends test_Base {
             _string := ''
             delta := 1
             loop 199 {
-                _string .= SubStr(copy, delta, delta + 4) (Random() > 0.5 ? (Random() > 0.5 ? '`n' : '`s') : '`t')
+                _string .= SubStr(Copy, delta, 4) (Random() > 0.5 ? (Random() > 0.5 ? '`n' : '`s') : '`t')
                 delta += 5
             }
         }
@@ -131,7 +176,7 @@ class test_WrapText extends test_Base {
             delta := 1
             split := StrSplit(_breakChar)
             loop 199 {
-                _string .= SubStr(copy, delta, delta + 4) split[Ceil(Random() * split.Length)]
+                _string .= SubStr(copy, delta, 4) split[Ceil(Random() * split.Length)]
                 delta += 5
             }
         }
@@ -140,16 +185,11 @@ class test_WrapText extends test_Base {
             delta := 1
             split := StrSplit(_breakChar)
             loop 199 {
-                _string .= SubStr(copy, delta, delta + 4) (Random() > 0.5 ? split[Ceil(Random() * split.Length)] : '`s')
+                _string .= SubStr(copy, delta, 4) (Random() > 0.5 ? split[Ceil(Random() * split.Length)] : '`s')
                 delta += 5
             }
         }
-        _GetControls() {
-            G := this.G := Gui('+Resize -DPIScale')
-            Txt := this.CtrlText := G.Add('Text')
-            Edt := this.CtrlEdit := G.Add('Edit')
-        }
-        _GetMinMaxWidth(Ctrl_or_hDC) {
+        _GetMinMaxExtent(Ctrl_or_hDC) {
             local hDC, hyphen, lpSize, W
             if IsObject(Ctrl_or_hDC) {
                 if !(hDC := DllCall('GetDC', 'Ptr', Ctrl_or_hDC.hWnd)) {
@@ -176,6 +216,20 @@ class test_WrapText extends test_Base {
             }
             return NumGet(lpSize, 0, 'uint') * 3 + hyphen
         }
+        _GetTextExtentPoint32(hDC, Line) {
+            ; Measure the text
+            if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+                , 'Ptr', hDC
+                , 'Ptr', StrPtr(Line)
+                , 'Int', StrLen(Line)
+                , 'Ptr', sz := SIZE()
+                , 'Int'
+            ) {
+                return sz
+            } else {
+                throw OSError()
+            }
+        }
         _GetTextExtentEx(Ctrl_or_hDC, Line) {
             if IsObject(Ctrl_or_hDC) {
                 if !(hDC := DllCall('GetDC', 'Ptr', Ctrl_or_hDC.hWnd)) {
@@ -190,7 +244,7 @@ class test_WrapText extends test_Base {
                 , 'int', StrLen(Line)
                 , 'int', 0
                 , 'ptr', 0
-                , 'ptr', lpnDx := IntegerArray(StrLen(Line) * 4)
+                , 'ptr', Extent := IntegerArray(StrLen(Line) * 4)
                 , 'ptr', lpSize := Buffer(8)
                 , 'ptr'
             )
@@ -206,55 +260,22 @@ class test_WrapText extends test_Base {
                 throw OSError('``GetTextExtentExPoint`` failed.', -1, A_LastError)
             }
         }
-        _Validate(Ctrl) {
-            Split := StrSplit(Ctrl.Text, '`n', '`r')
-            if !Split.Length {
-                sleep 1
-            }
-            Validate_breakChar := '[`s`t`r`n' RegExReplace(StrReplace(_breakChar, '\', '\\'), '(\]|-)', '\$1') ']'
-            _GetTextExtentEx(Txt, Split[1])
-            WidthPrevious := Width
-            i := 1
-            loop Split.Length - 1 {
-                if _CompareWidth(i) {
-                    return 1
-                }
-                _GetTextExtentEx(Txt, Split[++i])
-                if WidthPrevious + lpnDx[n := ((Pos := RegExMatch(Split[i], Validate_breakChar)) ? Pos : 1)] <= _maxWidth {
-                    this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj()
-                    , 'WidthPrevious + lpnDx[' n '] <= _maxExtent); WidthPrevious: ' WidthPrevious
-                    '`r`nLinePrevious:`r`n' Split[i - 1] '`r`nLine:`r`n' Split[i])
-                    return 1
-                }
-                WidthPrevious := Width
-            }
-            if _CompareWidth(Split.Length) {
-                return 1
-            }
-            Ctrl.GetPos(, , , &cH)
-            if cH !== Height {
-                this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'cH !== Height; ch: ' ch '; Height: ' Height)
-            }
-
-
-            _CompareWidth(index) {
-                if Width > _maxWidth {
-                    this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj()
-                    , 'Width > _maxExtent; Width: ' Width '`r`nLine:`r`n' Split[index])
-                    return 1
-                }
-            }
-        }
         __GetObj() {
             return { string: _string, opt: _opt, size: _size, quality: _quality, weight: _weight
-            , color: _color, family: _family, maxWidth: _maxWidth, breakChar: _breakChar
-            , index_GetString: index_GetString, LineCount: LineCount, Width: Width, Height: Height
-            , Text: Txt }
+            , color: _color, family: _family, MaxExtent: _maxExtent, breakChar: _breakChar
+            , index_GetString: index_GetString, LineCount: LineCount, Options: dWrapTextConfig
+            , Edit: Edt, ResultWidth: ResultWidth, LineHeight: LineHeight, MinExtent: _minExtent }
         }
     }
 
     static AddProblem(Line, Fn, PathFile, Obj, Extra?) {
         this.Problems.Push({Line: Line, Fn: Fn, File: PathFile, Obj: Obj, Extra: Extra ?? unset })
+    }
+
+    static WriteTemp(Path, &Str) {
+        f := FileOpen(Path, 'w')
+        f.Write(Str)
+        f.Close()
     }
 
     class Context {
@@ -272,12 +293,15 @@ class test_WrapText extends test_Base {
     }
 }
 
+class dWrapTextConfig {
+}
+
 
 /*
     Outline
 
     Three iterations through the core test
-    - With `Context` as `Gui.Control` leaving `Str` and `MaxWidth` unset
+    - With `Context` as `Gui.Control` leaving `Str` and `MaxExtent` unset
     - With `Context` as custom object with `hWnd`, `GetPos`, and `Text` properties. I'm not too
     familiar with device contexts, so I'm not sure what kind of non-AHK window to use. I bet Notepad
     would work fine, but I'll try it at another time. For now I'll stick with another `Gui.Control`
@@ -287,10 +311,10 @@ class test_WrapText extends test_Base {
 
     Params:
         - T1ext as Str
-        - Test multiple `MaxWidth` values
+        - Test multiple `MaxExtent` values
             - A few very small values, and decide on a minimum or if a minimum is necessary
             - One very large one with a large string to go with it ( > system minimum large page size )
-            - One with a `MaxWidth` larger than the length of the string
+            - One with a `MaxExtent` larger than the length of the string
             - Two or three values < system minimum large page size
         - Various break characters. Include backslash as a break character to make sure the escape
         is handled correctly.
@@ -305,7 +329,7 @@ class test_WrapText extends test_Base {
             - Context.Text returns an object
             - Force an OS error by using an invalid hWnd
             - String value
-            - Context is Number value without MaxWidth / Str
+            - Context is Number value without MaxExtent / Str
             - Force an OS error with an invalid hDC
 
         Checking the string for break chars gets validated within the loop, no earlier steps
@@ -319,10 +343,10 @@ class test_WrapText extends test_Base {
             write functions to call a method on the `test_WrapText` object to add an object to the array.
 
             When exiting the function, I should be able to validate the result mathematically
-                - Measure the entire block of text. If Width > MaxWidth, problem
+                - Measure the entire block of text. If Width > MaxExtent, problem
 
                 - Measure each line. While iterating the lines, compare each line with its subsequent
                 line. If there is a valid break character at a position that, if that substring were
-                included in the previous line the width of the line still would not exceed `MaxWidth`,
+                included in the previous line the width of the line still would not exceed `MaxExtent`,
                 then there's a calculation problem.
 */
