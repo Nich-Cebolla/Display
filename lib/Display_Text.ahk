@@ -7,11 +7,13 @@
 dDefaultOptions.DefineProp('WrapText', { Value: {
     AdjustObject: false
   , BreakChars: '-'
-  , HyphenateAlpha: true
+  , HyphenateLetters: true
   , HyphenateNumbers: true
   , MaxExtent: ''
+  , MeasureLines: false
   , MinExtent: ''
   , Newline: '`r`n'
+  , RespectSoftHyphen: true
 }})
 
 /**
@@ -22,10 +24,10 @@ dDefaultOptions.DefineProp('WrapText', { Value: {
     For further explanation, see String Encoding."
     {@link https://www.autohotkey.com/docs/v2/Concepts.htm#string-encoding}
 
-    ; The functions all require a device context handle. You can get an `hDC` from a control, gui,
-    ; or non-AHK windows.
+    The functions all require a device context handle. You can get an `hDC` from a control, gui,
+    or non-AHK windows.
    @example
-    if hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd, 'Ptr') {
+    if hDC := DllCall('GetDC', 'Ptr', hWnd, 'Ptr') {
         ; do something
     } else {
         err := OSError()
@@ -33,13 +35,15 @@ dDefaultOptions.DefineProp('WrapText', { Value: {
     }
    @
 
-    You can use the same handle multiple times as needed if you're certain nothing else will be needing
-    to use the device context while your function is executing (i.e. the Gui window's appearence won't
-    need updated). When you call `GetDC`, the device context is locked until you release it. Your
-    code should release it as soon as it completes its last action that requires the handle.
+    You can use the same handle multiple times as needed if you're certain nothing else will be
+    needing to use the device context while your function is executing (e.g. a Gui window's
+    appearence won't need updated). When you call `GetDC`, the device context is locked until you
+    release it. Specifically, this is what Microsoft wrote about the function:
+    "Note that the handle to the DC can only be used by a single thread at any one time."
+    Your code should release it as soon as it completes its last action that requires the handle.
 
    @example
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'Int') {
+    if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'Int') {
         err := OSError()
         ; handle error
     }
@@ -57,7 +61,8 @@ dDefaultOptions.DefineProp('WrapText', { Value: {
 ; -------------------------
 
 /**
- * @description - Gets the dimensions of a string within a window's device context.
+ * @description - Gets the dimensions of a string within a window's device context. Carriage return
+ * and line feed characters are ignored, the returned height is always that of a one-line string.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {Integer} hDC - A handle to the device context you want used to measure the string.
  * @param {String} Str - The string to measure.
@@ -79,29 +84,70 @@ GetTextExtentPoint32(hDC, Str) {
 }
 
 /**
- * @description - `GetTextExtentExPoint` is similar to `GetTextExtentPoint32`, but has several additional
- * functions to work with. `GetTextExtentExPoint` measures a string's dimensions and the width (extent
- * point) in pixels of each character's position in the string.
+ * @description - Iterates an array of strings. For each string, a SIZE object is added to an array.
+ * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
+ * width, of the items.
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
+ * @param {Integer} hDC - A handle to the device context to use when measuring the string.
+ * @param {String[]} Arr - An array of strings. The array may not have unset indices.
+ * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
+ * array.
+ * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of the lines.
+ * @param {Boolean} [ReplaceItems=false] - If true, the original array is used to store the `SIZE`
+ * objects, and the strings are replaced with the objects. If false, a new array is created.
+ * @returns {SIZE[]} - An array of `SIZE` objects, each with properties { Width, Height }.
+ */
+GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
+    if ReplaceItems {
+        Result := Arr
+    } else {
+        Result := []
+        Result.Length := Arr.Length
+    }
+    OutWidth := OutHeight := 0
+    for Str in Arr {
+        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+            , 'Ptr', hDC
+            , 'Ptr', StrPtr(Str)
+            , 'Int', StrLen(Str)
+            , 'Ptr', sz := SIZE()
+            , 'Int'
+        ) {
+            Result[A_Index] := sz
+            OutWidth := Max(OutWidth, sz.Width)
+            OutHeight += sz.Height
+        } else {
+            throw OSError()
+        }
+    }
+    return Result
+}
+
+/**
+ * @description - `GetTextExtentExPoint` is similar to `GetTextExtentPoint32`, but has several
+ * additional functions to work with. `GetTextExtentExPoint` measures a string's dimensions and the
+ * width (extent point) in pixels of each character's position in the string.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointa}
  * An example function call is available in file {@link examples\example_Text_GetTextExtentExPoint.ahk}
  * @param {String} Str - The string to measure.
- * @param {Integer} hDC - The handle to the device context you want to use when measuring the string.
+ * @param {Integer} hDC - The handle to the device context to use when measuring the string.
  * @param {Integer} [MaxExtent=0] - The maximum width of the string. When nonzero,
- * `OutCharacterFit` is set to the number of characters that fit within the `nMaxExtent` pixels
+ * `OutCharacterFit` is set to the number of characters that fit within the `MaxExtent` pixels
  * in the context of the control, and `OutExtentPoints` will only contain extent points up to
- * `OutCharacterFit` number of characters. If 0, `nMaxExtent` is ignored, `OutCharacterFit` is
+ * `OutCharacterFit` number of characters. If 0, `MaxExtent` is ignored, `OutCharacterFit` is
  * assigned 0, and `OutExtentPoints` will contain the extent point for every character in the
  * string.
  * @param {VarRef} [OutCharacterFit] - A variable that will receive the number of characters
- * that fit within the given width. If `nMaxExtent` is 0, this will be set to 0.
+ * that fit within the given width. If `MaxExtent` is 0, this will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`, a buffer
  * object containing the partial string extent points (the cumulative width of the string at
  * each character from left to right measured from the beginning of the string to the right-side of
- * the character). If `nMaxExtent` is nonzer0, the number if extent points contained by`OutExtentPoints`
- * will equal `OutCharacterFit`. If `nMaxExtent` is zero, `OutExtentPoints` will contain the extent
- * point for every character in the string. `OutExtentPoints` is not an instance of `Array`; it has
- * only one method, `__Enum`, which you can use by calling it in a loop, and it has one property,
- * `__Item`, which you can use to access items by index.
+ * the character). If `MaxExtent` is nonzero, the number of extent points contained by
+ * `OutExtentPoints` will equal `OutCharacterFit`. If `MaxExtent` is zero, `OutExtentPoints` will
+ * contain the extent point for every character in the string. `OutExtentPoints` is not an instance
+ * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
+ * has properties { __Item, Capacity, Size, Type }. See struc\Display_IntegerArray.ahk for more
+ * information.
  * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
 GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
@@ -122,6 +168,53 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
     }
 }
 
+class InsertSoftHyphens {
+    /**
+     * @description - `InsertSoftHyphens` uses a simple heuristic to insert more natural hyphenation
+     * points into the input text. "Soft hyphens" are characters with unicode code point U+00AD. They
+     * are supposed to be invisible unless wrapped at that point, but the text rendering engine used
+     * by AHK gui windows seems to display them regardless, so they must be removed in that case.
+     * While not every hyphenation point will feel completely natural, the result with `WrapText`
+     * will be much more consistent with what people expect regarding hyphenated words. This is best
+     * used with strings that consist of mostly English words. Because the heuristic approximates
+     * syllable boundaries, `InsertSoftHyphens` is not intended to be used with non-word text.
+     * @param {VarRef} Str - This variable should contain the string to have soft hyphens inserted
+     * into. It will be modified directly
+     * @param {Integer} [Mode=1] - Either 1 or 2. At this time, don't use 2. It needs more work.
+     */
+    static Call(&Str, Mode := 1) {
+        Str := RegExReplace(Str, this.Pattern%Mode%, '${first}' Chr(0x00AD) '${second}')
+    }
+    static GetPattern(which) {
+        switch which, 0 {
+            case 1: return (
+                'iJ)'
+                '(?:'
+                    '(?<first>' this.vowel ')' this.boundary '(?<second>' this.consonant ')'
+                    '|(?<first>' this.consonant ')' this.boundary '(?<second>' this.vowel ')'
+                    '|(?<first>' this.vowel this.clusters this.consonant ')' this.boundary '(?<second>' this.consonant ')'
+                    '|(?<first>' this.consonant this.vowel ')' this.boundary '(?<second>' this.consonant ')'
+                    '|' this.clusters '(?<first>' this.consonant ')' this.boundary '(?<second>' this.consonant this.vowel ')'
+                ')'
+            )
+            case 2: return (
+                'iJ)'
+                '(?:'
+                    '(?<first>' this.vowel ')' this.boundary '(?<second>' this.consonant this.vowel ')'
+                    '|(?<first>' this.vowel this.clusters this.consonant ')' this.boundary '(?<second>' this.consonant this.vowel ')'
+                    '|(?<first>' this.consonant this.vowel this.clusters this.consonant ')' this.boundary '(?<second>' this.consonant ')'
+                ')'
+            )
+        }
+    }
+    static Vowel := '[aeiouy]'
+    , Consonant := '[bcdfghjklmnpqrstvwz]'
+    , Clusters := '(?!th|ch|ph|sh|wh|qu|gh|ck|ng|wr)' ; words should not be split between these
+    , Boundary := '(?<!\W|^)(?<!\W.|^.)(?!\W|$)(?!.\W|.$)' ; don't break too close to non-alphanumeric / beginning / end
+    , Pattern1 := this.GetPattern(1)
+    , Pattern2 := this.GetPattern(2)
+}
+
 /**
  * @description - Wraps text to a maximum width in pixels, breaking the string at either a whitespace
  * character, or any characters defined by the `BreakChars` option. This is the function's process:
@@ -134,26 +227,49 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
  * added depending on the character and the input options. `WrapText` ensures that adding a hyphen does
  * not cause the line to exceed `Options.MaxExtent`.
  * Additional details:
+ * - When `Options.MeasureLines` is false, and if `WrapText` is directed to use hyphens where
+ * appropriate, there is a small chance that some measurements may be off by one or two pixels. This
+ * is caused by the way I designed `WrapText` to handle hyphens. If `Options.MeasureLines` is false,
+ * any measurement that involves a hyphen is produced by adding the width of a hyphen to the width of
+ * a line. This does not account for kerning and other system-dependent conditions, and may produce
+ * an incorrect value. If your application requires precise adherence to `Options.MaxExtent`, set this
+ * to a nonzero value. When false, the possible incorrect values produced by `WrapText` are:
+ *   - The width of any line that is hyphenated can potentially be one or two pixels over
+ * `Options.MaxExtent` or one or two pixels under `Options.MinExtent`.
+ *   - The value received by `OutWidth` may be one or two pixels off in either direction from the
+ * actual width.
  * - All consecutive newline characters are converted to a single space character prior to processing.
  * - When making the decision to add additional characters to `Options.BreakChars`, keep in mind that,
  * if a break character will always be followed by a whitespace character, then adding it to
  * `Options.BreakChars` will only change the amount of time it takes `WrapText` to process the input.
  * It will not change the output string. If there is a possibility that the character is followed by
- * a non-whitespace character, and its a character that you believe is a natural break character for
+ * a non-whitespace character, and it is a character that you believe is a natural break character for
  * your project, then you should add it to the list.
  * - There's no harm if the input string ultimately does not contain one or more of the characters
  * from `Options.BreakChars`; the string is checked to see if it contains at least one of each
  * character. If any character is absent, it is purged from the list of possible break characters to
  * save processing time.
  * - If `Options.BreakChars` is empty or zero, `WrapText` processes the input checking only for
- * whitespace characters, which will perform comparatively better.
+ * whitespace characters, which may perform slightly better over thousands of calls.
+ * - If there are only spaces (and no tabs) in the input string, `WrapText` only checks for spaces
+ * when searching for whitespace, and vise-versa.
  * - A hyphen is never added after a break character, even if the break character is alphanumeric and
  * the related option is true.
+ * - If the difference between `Options.MaxExtent` and `Options.MinExtent` is relatively small
+ * (specifically, if the width of a character in the input string plus the width of a hyphen is
+ * equal to or greater than the difference) there is a possibility that no valid wrap position is
+ * available within a substring. If this occurs, `WrapText` will always choose to wrap at an extent
+ * less than `Options.MaxExtent`, resulting in a line shorter than `Options.MinExtent`.
+ * - Similar to the above point, if one or more characters before `Options.MaxExtent` is reached are
+ * whitespace characters then there is a possibility that `WrapText` produces a line shorted than the
+ * minimum because they would be trimmed if wrapping the line causes the whitespace characters to
+ * be the last or first characters in a line.
  * @param {Gui.Control|Integer|Object} Context - Either a handle to the device context to use to
  * measure the text, a `Gui.Control` object, or an object with an `hWnd` property.
- * @param {VarRef} [Str] - A variable that will receive the result string.
- * - If you set `Str` with a string value before passing the VarRef, `WrapText` processes that value.
- * and sets the variable with the resulting string.
+ * @param {VarRef} [Str] - The input string, and/or a variable that will receive the result string.
+ * - `Str` is required when `Context` is a handle to a device context.
+ * - If you set `Str` with a string value, `WrapText` always processes that value, and sets the
+ * variable with the resulting string before `WrapText` returns.
  * - If `Context` is an object, then `Str` is optional. If you leave it unset, or pass it as an unset
  * VarRef / empty string VarRef, then `WrapText` processes the contents of `Context.Text`. If the
  * object does not have a `Text` property, AHK will throw an error.
@@ -161,34 +277,49 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
  * It should be documented that `WrapText` changes the base of your `Options` object. In most cases
  * this information be safely ignored; I included it for completeness. See
  * src/Display_dDefaultOptions.ahk for more information.
- * @param {Boolean} [Options.AdjustObject=false] - If `Context` is an object with a `Text` property
- * and a `Move` method, such as a `Gui.Control` object, and if `Options.AdjustObject == true`, the
- * aforementioned properties are used to adjust the object before `WrapText` returns. The height of
- * the object is set to the height of the string in pixels, and the `Text` property is set with the
- * string value.
- * @param {String} [Options.BreakChars='-'] - `BreakChars` is a list of characters that defines defines
- * what characters are valid breakpoints for splitting a line other than a space or tab. Do not include
- * any separators between the characters. See the function description for a full description of
- * `WrapText`'s process.
- * @param {Boolean} [Options.HyphenateAlpha=true] - When true, `WrapText` hyphenates the line if
- * the last character in the line causes `IsAlpha(char)` to return true.
- * @param {Boolean} [Options.HyphenateNumbers=true] - When true, `WrapText` hyphenates the line if
- * the last character in the line causes `IsNumber(char)` to return true.
+ * @param {Boolean} [Options.AdjustObject=false] - If `Options.AdjustObject == true`, then `WrapText`
+ * expects `Context` to be an object with a `Text` property and a `Move` method, such as a `Gui.Control`
+ * object. Before `WrapText` exits, `WrapText` removes any soft hyphens from the result string, then
+ * sets the `Context.Text` property with the result string, then calls `Context.Move`. The width
+ * used is `Options.MaxExtent`. The height used depends on the value of `Options.MeasureLines`. If
+ * `Options.MeasureLines` is nonzero, then `OutHeight` is set with the cumulative height of the
+ * string, and its value gets used. If `Options.MeasureLines` is false, the height is set to
+ * `sz.Height * LineCount` where `sz` is the `SIZE` object produced from the last `GetTextExtentExPoint`
+ * function call. In general this will be pretty close to the true height of the string, but should
+ * be expected to be slightly off.
+ * @param {String} [Options.BreakChars='-'] - `BreakChars` is a list of characters that defines what
+ * characters are valid breakpoints for splitting a line other than a space or tab. Do not include
+ * any separators between the characters. Do not escape any characters. See the function description
+ * for a description of `WrapText`'s process.
+ * @param {Boolean} [Options.HyphenateLetters=true] - When true, `WrapText` hyphenates the line if
+ * the last character in the line causes `IsAlpha(char)` to return true. This option is only invoked
+ * if a line does not contain any break characters between `Options.MinExtent` and `Options.MaxExtent`.
+ * @param {Boolean} [Options.HyphenateNumbers=false] - When true, `WrapText` hyphenates the line if
+ * the last character in the line causes `IsNumber(char)` to return true. This option is only invoked
+ * if a line does not contain any break characters between `Options.MinExtent` and `Options.MaxExtent`.
  * @param {Integer} [Options.MaxExtent] - The maximum width of a line in pixels. This is optional when
  * `Context` is an object with a `GetPos` method, such as a `Gui.Control` object. If `Options.MaxExtent`
  * is unset, `Context.GetPos(, , &MaxExtent)` is called. The maximum width must be at least three times
  * the width of a "W" character in the device context.
- * @param {Number} [Options.MinExtent] - If set, either an integer, or a float between 0 and 1.
+ * @param {Boolean|Array} [Options.MeasureLines] - When a nonzero value, `WrapText` will measure
+ * each line during processing. This allows `WrapText` to set `OutHeight` with the correct height
+ * of the string, and `OutWidth` with an accurate width of the string (see the note about this
+ * in the function description). If `Options.MeasureLines` is an array object, `WrapText` will also
+ * add each `SIZE` object that is produced from the measurement to that array. For large strings
+ * or many consecutive function calls, you should set the capacity of the array to what you expect
+ * it will need prior to calling `WrapText`. If `WrapText` is false, no additional measurements occur.
+ * @param {Number} [Options.MinExtent] - Either an integer or a float between 0 and 1.
  * - If less than 1, the minimum width is set to `Ceil(Options.MinExtent * Options.MaxExtent)`.
  * - If greater than 1, the minimum width is set to the value.
- * `MinExtent` directs `WrapText` to break each line at an extent point no less than the minimum.
+ * `Options.MinExtent` directs `WrapText` to break each line at an extent point no less than the minimum.
  * This is useful in most situations, but particularly in situations where the input string contains
- * words/substrings that are generally pretty long relative to `MaxExtent`. `WrapText`'s default
+ * words/substrings that are generally pretty long relative to `Options.MaxExtent`. `WrapText`'s default
  * behavior might cause a line to be very short, in a way that would be aesthetically unnatural or
- * displeasing. When `MinExtent` is set, if a substring does not contain a valid breakpoint between
- * `MinExtent` and `MaxExtent`, then it will wrap the line at or around `MaxExtent` (depending on the
- * values of the other options) as if there were no breakpoints in the entire line. The example below
- * depicts the default behavior without `MinExtent`.
+ * displeasing. When `Options.MinExtent` is set, if a substring does not contain a valid break character
+ * between `Options.MinExtent` and `Options.MaxExtent`, then it will wrap the line at or around
+ * `Options.MaxExtent` (depending on the values of the other options) as if there were no break
+ * characters in the entire line. The example below depicts the default behavior without
+ * `Options.MinExtent`.
  * @example
  *  Ctrl := (G := Gui()).AddText()
  *  Ctrl.Text := 'She sang supercalifradulisticexpialidocious then went on her merry way.'
@@ -201,9 +332,20 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
  *  MsgBox(Split[3]) ; went on her merry way.
  * @
  * @param {String} [Options.Newline='`r`n'] - The newline character(s) to use.
- * @param {VarRef} [OutWidth] - A variable that will receive the width of the output string. This is
- * generally expected to be within a few pixels of `Options.MaxExtent`.
- * @param {VarRef} [OutHeight] - A variable that will receive the height of a single line.
+ * @param {Boolean} [Options.RespectSoftHyphen=true] - When true, if the input text contains soft
+ * hyphens (code point U+00AD, invisible characters that tell a text rendering engine that if a
+ * break is necessary, this is an appropriate place to break and hyphenate the word), soft hyphens
+ * are treated similarly to break characters. When a line breaks at a soft hyphen, the character is
+ * replaced with a visible hyphen and the line wraps after the hyphen. When false, soft hyphens
+ * are ignored and when a hard break is necessary, `WrapText` breaks the line at the greatest extent
+ * which satisfies the other options. When false and if hyphens are used, a substring may be
+ * hyphenated at any position in the word. Generally this should be left true; if no U+00AD characters
+ * are present in the input string, `WrapText` adjusts its process to avoid using resources searching
+ * for them.
+ * @param {VarRef} [OutWidth] - A variable that will receive the width of the line with the greatest
+ * width in the result string.
+ * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of each line.
+ * This only receives a value if `Options.MeasureLines` is nonzero.
  * @returns {Integer} - The number of lines the text was split into.
  */
 WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
@@ -270,6 +412,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     }
     hyphen := sz.Width
 
+
     ; `MaxExtent` must at least be large enough such that the loops can iterate once or twice
     ; before reaching the beginning of the substring.
     if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
@@ -277,8 +420,21 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         throw OSError()
     }
     if MaxExtent < sz.Width * 3 {
-        throw ValueError('``MaxExtent`` must be at least three times the width of "W" in the device'
-        ' context.', -1, '``MaxExtent``: ' MaxExtent '; Function minimum: ' (sz.Width * 3))
+        throw ValueError('``Options.MaxExtent`` must be at least three times the width of "W" in the device'
+        ' context.', -1, '``Options.MaxExtent``: ' MaxExtent '; Function minimum: ' (sz.Width * 3))
+    }
+
+    ; Set the condition determining whether a hyphen is used.
+    if Options.HyphenateLetters {
+        Hyphenate := Options.HyphenateNumbers
+        ? () => IsAlnum(SubStr(Text, Pos, 1))
+        : () => IsAlpha(SubStr(Text, Pos, 1))
+        _Proc_0 := _Proc_0_1
+    } else if Options.HyphenateNumbers {
+        Hyphenate := () => IsNumber(SubStr(Text, Pos, 1))
+        _Proc_0 := _Proc_0_1
+    } else {
+        _Proc_0 := _Proc_0_0
     }
 
     ; Check the string for the presence of break characters
@@ -291,11 +447,23 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
                 _BreakChars .= ch
             }
         }
+        if Options.RespectSoftHyphen && InStr(Text, Chr(0x00AD)) {
+            _BreakChars .= Chr(0x00AD)
+            _Proc_B := _Proc_B_1
+        } else {
+            _Proc_B := _Proc_B_0
+        }
         if _BreakChars {
             _BreakChars := RegExReplace(StrReplace(_BreakChars, '\', '\\'), '(\]|-)', '\$1')
             BreakChars := '([' _BreakChars '])[^' _BreakChars ']*$'
             z += 2
         }
+    } else if Options.RespectSoftHyphen && InStr(Text, Chr(0x00AD)) {
+        BreakChars := '([' Chr(0x00AD) '])[^' Chr(0x00AD) ']*$'
+        z += 2
+        _Proc_B := _Proc_B_1
+    } else {
+        _Proc_B := _Proc_B_0
     }
     if InStr(Text, '`s') {
         z += 4
@@ -311,26 +479,41 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         case 7: Proc := _Proc_5                 ; Spaces + tabs + break chars
     }
 
-    ; Set the condition determining whether a hyphen is used.
-    if Options.HyphenateAlpha {
-        Hyphenate := Options.HyphenateNumbers
-        ? () => IsAlnum(SubStr(Text, Pos, 1))
-        : () => IsAlpha(SubStr(Text, Pos, 1))
+    if Options.MeasureLines {
+        OutHeight := 0
+        ; I half the hyphen's width here to limit the number of instances when a line gets measured
+        ; and its width exceed `Options.MaxExtent`, causing some steps to be repeated. When preemptively
+        ; testing the width of a line, if I add the entire width of a hyphen to the line's width, this
+        ; can occasionally cause `WrapText` to skip a breakpoint that should have been used due to the
+        ; imprecise measurement. If I don't test the lines, or test the lines by adding a width that
+        ; is too small, there is a greater likelihood that some steps must be repeated. I don't
+        ; expect any fonts are designed in a way that more than half of the hyphen's width is tucked
+        ; into the previous font's space, and so I figure this is an acceptable approach.
+        hyphen *= 0.5
+        if Options.MeasureLines is Array {
+            Measurements := Options.MeasureLines
+            Set := _Set_1
+        } else {
+            Set := _Set_2
+        }
     } else {
-        Hyphenate := Options.HyphenateNumbers
-        ? () => IsNumber(SubStr(Text, Pos, 1))
-        : () => 0
+        Set := _Set_3
     }
 
-    LineCount := 1
+    nl := Options.Newline
+    LineCount := 0
     OutWidth := 0
+    Str := ''
+    VarSetStrCapacity(&Str, StrLen(Text))
 
     ; Core loop
     loop {
         LineCount++
+        if A_Index == 105 {
+            sleep 1
+        }
         Len := StrLen(Text)
         ptr := StrPtr(Text)
-        Extent := IntegerArray(Len)
         if !DllCall('Gdi32.dll\GetTextExtentExPoint'
             , 'ptr', hDC                ; Device context
             , 'ptr', ptr                ; String to measure
@@ -352,57 +535,73 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     }
 
     ; Add last piece to the string
-    Str .= Trim(Text, '`s`t')
+    if Text {
+        Set(StrLen(Text))
+        Str := Trim(Str, '`r`n`s`t')
+    }
+    LineCount++
 
     ; Release dc, disable error handler
     if IsObject(Context) {
         if Options.AdjustObject {
-            Context.Move(, , , sz.height)
-            Context.Text := Str
+            Context.Text := StrReplace(Str, Chr(0x00AD), '')
+            if Options.MeasureLines {
+                Context.Move(, , MaxExtent, OutHeight)
+            } else {
+                Context.Move(, , MaxExtent, sz.Height * LineCount)
+            }
+        }
+        if !DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hDC, 'Int') {
+            throw OSError()
         }
         OnError(_ReleaseDC, 0)
     }
 
-    OutHeight := sz.Height
-
     return LineCount
 
     ; No break characters or whitespace
-    _Proc_0() {
-        Pos := fit
+    ; With hyphens
+    _Proc_0_1() {
+        Pos := NumGet(fitBuf, 0, 'uint')
         ; The loop checks if a hyphen should be added given the last character, and if so,
-        ; checks if adding the hyphen will cause the line to exceed `MaxExtent`.
-        loop fit - 1 {
+        ; checks if adding the hyphen will possibly cause the line to exceed `MaxExtent`.
+        loop Pos - 1 {
             if Hyphenate() {
                 if Extent[Pos] + hyphen <= MaxExtent {
-                    Str .= Trim(SubStr(Text, 1, Pos), '`s`t') '-' Options.Newline
-                    OutWidth := Max(OutWidth, Extent[Pos] + hyphen)
-                    break
+                    if Set(Pos, '-') {
+                        Pos--
+                    } else {
+                        return _TrimRight()
+                    }
                 } else {
                     Pos--
                 }
             } else {
-                Str .= Trim(SubStr(Text, 1, Pos), '`s`t') Options.Newline
-                OutWidth := Max(OutWidth, Extent[Pos])
-                break
+                Set(Pos)
+                return _TrimRight()
             }
         }
-        Text := SubStr(Text, Pos + 1)
+    }
+    ; No break characters or whitespace
+    ; Without hyphens
+    _Proc_0_0() {
+        Set(NumGet(fitBuf, 0, 'uint'))
+        return _TrimRight()
     }
     ; Has spaces or tabs
     _Proc_1(ch) {
         if (Pos := InStr(SubStr(Text, 1, fit), ch, , , -1)) && Extent[Pos] >= MinExtent {
-            _Proc_W()
+            return _Proc_W()
         } else {
-            _Proc_0()
+            return _Proc_0()
         }
     }
     ; Has break characters
     _Proc_2() {
         if (Pos := RegExMatch(SubStr(Text, 1, fit), BreakChars)) && Extent[Pos] >= MinExtent {
-            _Proc_B()
+            return _Proc_B()
         } else {
-            _Proc_0()
+            return _Proc_0()
         }
     }
     ; Has either spaces / tabs, and break characters
@@ -410,11 +609,11 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         Part := SubStr(Text, 1, fit)
         Pos := Max(Pos_B := RegExMatch(Part, BreakChars), Pos_W := InStr(Part, ch, , , -1))
         if !Pos || Extent[Pos] < MinExtent {
-            _Proc_0()
+            return _Proc_0()
         } else if Pos_W > Pos_B {
-            _Proc_W()
+            return _Proc_W()
         } else {
-            _Proc_B()
+            return _Proc_B()
         }
     }
     ; Has spaces and tabs
@@ -422,58 +621,124 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         Part := SubStr(Text, 1, fit)
         Pos := Max(InStr(Part, '`t', , , -1), InStr(Part, '`s', , , -1))
         if Pos && Extent[Pos] >= MinExtent {
-            _Proc_W()
+            return _Proc_W()
         } else {
-            _Proc_0()
+            return _Proc_0()
         }
     }
     ; Has spaces, tabs, and break characters
     _Proc_5() {
         Part := SubStr(Text, 1, fit)
-        Pos := Max(Pos_B := RegExMatch(Part, BreakChars)
-            , Pos_W := Max(InStr(Part, '`t', , , -1), InStr(Part, '`s', , , -1)))
+        Pos := Max(
+            Pos_B := RegExMatch(Part, BreakChars)
+          , Pos_W := Max(
+                InStr(Part, '`t', , , -1)
+              , InStr(Part, '`s', , , -1)
+            )
+        )
         if !Pos || Extent[Pos] < MinExtent {
-            _Proc_0()
+            return _Proc_0()
         } else if Pos_W > Pos_B {
-            _Proc_W()
+            return _Proc_W()
         } else {
-            _Proc_B()
+            return _Proc_B()
         }
     }
-    _Proc_B() {
-        Str .= SubStr(Text, 1, Pos) Options.Newline
-        OutWidth := Max(OutWidth, Extent[Pos])
-        ; Trim whitespace right
-        while NumGet(ptr, Pos * 2, 'str') < 33 {
-            Pos++
-            if Pos > Len {
-                Text := ''
-                return 1
+    ; Breaking at a break character
+    ; With soft hyphen
+    _Proc_B_1() {
+        if NumGet(ptr, (Pos - 1) * 2, 'str') == 0x00AD {
+            ; If adding the hyphen does not cause the width to exceed the max
+            if Extent[Pos - 1] + hyphen <= MaxExtent {
+                if Set(Pos - 1, '-') {
+                    ; Adjust `fit` to just before the soft hyphen, then re-check the string
+                    fit := Pos - 1
+                    return Proc()
+                }
+            } else {
+                fit := Pos - 1
+                return Proc()
             }
+        } else {
+            Set(Pos)
         }
-        Text := SubStr(Text, Pos + 1)
+        return _TrimRight()
     }
+    ; Breaking at a break character
+    ; Without soft hyphen
+    _Proc_B_0() {
+        Set(Pos)
+        return _TrimRight()
+    }
+    ; Breaking at a whitespace character
     _Proc_W() {
-        ; Trim whitespace left, necessary to ensure the line is not too small.
-        while NumGet(ptr, (Pos - 2) * 2, 'str') < 33 {
-            Pos--
-        }
+        _TrimLeft()
+        ; If after trimming the whitespace, the length of the line is too short
         if Extent[Pos - 1] < MinExtent {
-            _Proc_0()
+            return _Proc_0()
         } else {
-            Str .= SubStr(Text, 1, Pos - 1) Options.Newline
-            OutWidth := Max(OutWidth, Extent[Pos - 1])
-            ; Trim whitespace right
-            while NumGet(ptr, Pos * 2, 'str') < 33 {
-                Pos++
-            }
-            Text := SubStr(Text, Pos + 1)
+            Set(Pos - 1)
+            return _TrimRight()
         }
     }
     _ReleaseDC(Thrown, *) {
         DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hDC, 'Int')
         OnError(_ReleaseDC, 0)
         throw Thrown
+    }
+    ; Measure string, add size object to array
+    _Set_1(SetPos, AddHyphen := '') {
+        Part := SubStr(Text, 1, SetPos) AddHyphen
+        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+            , 'Ptr', hDC
+            , 'Ptr', StrPtr(Part)
+            , 'Int', StrLen(Part)
+            , 'Ptr', measure_sz := SIZE()
+            , 'Int'
+        ) {
+            if measure_sz.Width > MaxExtent {
+                return 1
+            }
+            Measurements.Push(measure_sz)
+            OutWidth := Max(OutWidth, measure_sz.Width)
+            OutHeight += sz.Height
+            Str .= Part nl
+        } else {
+            throw OSError()
+        }
+    }
+    ; Measure string, no array
+    _Set_2(SetPos, AddHyphen := '') {
+        Part := SubStr(Text, 1, SetPos) AddHyphen
+        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+            , 'Ptr', hDC
+            , 'Ptr', StrPtr(Part)
+            , 'Int', StrLen(Part)
+            , 'Ptr', sz
+            , 'Int'
+        ) {
+            if sz.Width > MaxExtent {
+                return 1
+            }
+            OutWidth := Max(OutWidth, sz.Width)
+            OutHeight += sz.Height
+            Str .= Part nl
+        } else {
+            throw OSError()
+        }
+    }
+    ; Don't measure string
+    _Set_3(SetPos, AddHyphen := false) {
+        if AddHyphen {
+            if Extent[SetPos] + hyphen > MaxExtent {
+                return 1
+            }
+            Part := SubStr(Text, 1, SetPos) '-' nl
+            OutWidth := Max(OutWidth, Extent[SetPos] + hyphen)
+        } else {
+            Part := SubStr(Text, 1, SetPos) nl
+            OutWidth := Max(OutWidth, Extent[SetPos])
+        }
     }
     _Throw(Id, Line, Fn) {
         switch Id {
@@ -493,6 +758,22 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         err.What := Fn
         err.Line := Line
         throw err
+    }
+    _TrimRight() {
+        ; Trim whitespace right
+        while NumGet(ptr, Pos * 2, 'str') < 33 {
+            Pos++
+            if Pos > Len {
+                Text := ''
+                return 1
+            }
+        }
+        Text := SubStr(Text, Pos + 1)
+    }
+    _TrimLeft() {
+        while NumGet(ptr, (Pos - 2) * 2, 'str') < 33 {
+            Pos--
+        }
     }
 }
 

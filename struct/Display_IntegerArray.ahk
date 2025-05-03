@@ -2,7 +2,7 @@
 /**
  * @classdesc - A buffer object that can be used with Dll calls or other actions that require a
  * pointer to a buffer. This should only be used with 4 byte integers. You can specify the integer
- * type.
+ * type. For a more flexible array-style buffer object, see struct\BufferArray.ahk.
  *
  * This class is intended to simplify the handling of any series of integers contained in a buffer;
  * the objects can be enumerated by calling it in a `for` loop, and the items can be accessed by index,
@@ -18,7 +18,7 @@
  *  MsgBox(iArr[1]) ; 10
  *  MsgBox(iArr[-1]) ; <integer> the fourth index hasn't been set.
  *                   ; This will still return a value, albeit
- *                   ; a meaningless one.
+ *                   ; a meaningless one in the context of this app.
  *  MsgBox(iArr[-2]) ; 1991
  *  iArr[4] := 18
  *  MsgBox(iArr[-1]) ; 18
@@ -50,7 +50,7 @@
  * entire buffer even if you never added an integer to any index. If your code would benefit from
  * oversizing the object and you need to iterate a number of items that isn't known until runtime,
  * you have two options to handle this. If, at that point, the size is not expected to change again,
- * you can just resize it to the correct size and enumerate it without issue. If you expect the
+ * you can just resize it to the correct size then call it in a `for` loop. If you expect the
  * object will still have more items added to it later, you'll just need to call the `__Enum` property
  * directly, as I added an `End` parameter you can use to limit it.
  * @example
@@ -66,6 +66,8 @@
  *  }
  *  MsgBox(Trim(s, ', ')) ; 1: 10, 2: 9, 3: 10
  * @
+ * Regarding the `IntegerArray.Prototype.__Item` property, -1 will always be the last position
+ * according to the `Size` property, even if you never added a value there.
  */
 class IntegerArray extends Buffer {
     /**
@@ -74,7 +76,8 @@ class IntegerArray extends Buffer {
      * to set the `Size` property of the buffer object, which directs the AHK interpreter to allocate
      * the memory and perform other necessary actions. There is also a `Capacity` property on the
      * isntance that you can use to change the maximum number of items. Remember, when working with
-     * the `Size` property directly, use bytes (items * 4).
+     * the `Capacity` property, use indices, and when working with the `Size` property, use bytes
+     * (items * 4).
      * See {@link https://www.autohotkey.com/docs/v2/lib/Buffer.htm} for the details about
      * `BufferObj.Size`.
      * @param {String} [IntType='int'] - The type of integer. This gets used as the `Type` param
@@ -87,7 +90,8 @@ class IntegerArray extends Buffer {
      */
     __New(Capacity := 0, IntType := 'int', Values*) {
         if Values.Length > Capacity {
-            throw ValueError('Insufficient size allocated for quantity of values.', -1, 'Capacity: ' Capacity '; Quantity: ' Values.Length)
+            throw ValueError('Insufficient memory allocated for quantity of values.', -1
+            , 'Capacity: ' Capacity '; Quantity: ' Values.Length)
         }
         this.Capacity := Capacity
         /**
