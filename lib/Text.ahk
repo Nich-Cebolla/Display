@@ -1,8 +1,8 @@
 ﻿
 ; Dependencies:
-#Include ..\src\Display_dDefaultOptions.ahk
-#Include ..\struct\Display_SIZE.ahk
-#Include ..\struct\Display_IntegerArray.ahk
+#include ..\src\dDefaultOptions.ahk
+#include ..\struct\SIZE.ahk
+#include ..\struct\IntegerArray.ahk
 
 dDefaultOptions.DefineProp('WrapText', { Value: {
     AdjustObject: false
@@ -146,25 +146,43 @@ GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * `OutExtentPoints` will equal `OutCharacterFit`. If `MaxExtent` is zero, `OutExtentPoints` will
  * contain the extent point for every character in the string. `OutExtentPoints` is not an instance
  * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
- * has properties { __Item, Capacity, Size, Type }. See struc\Display_IntegerArray.ahk for more
+ * has properties { __Item, Capacity, Size, Type }. See struc\IntegerArray.ahk for more
  * information.
  * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
 GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
-    if DllCall('Gdi32.dll\GetTextExtentExPoint'
-        , 'ptr', hDC
-        , 'ptr', StrPtr(Str)                                    ; String to measure
-        , 'int', StrLen(Str)                                    ; String length in WORDs
-        , 'int', MaxExtent                                      ; Maximum width
-        , 'ptr', lpnFit := MaxExtent ? Buffer(4) : 0            ; To receive number of characters that can fit
-        , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
-        , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
-        , 'ptr'
-    ) {
-        OutCharacterFit := MaxExtent ? NumGet(lpnFit, 0, 'int') : 0
-        return sz
+    if MaxExtent {
+        if DllCall('Gdi32.dll\GetTextExtentExPoint'
+            , 'ptr', hDC
+            , 'ptr', StrPtr(Str)                                    ; String to measure
+            , 'int', StrLen(Str)                                    ; String length in WORDs
+            , 'int', MaxExtent                                      ; Maximum width
+            , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
+            , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
+            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr'
+        ) {
+            OutCharacterFit := NumGet(lpnFit, 0, 'int')
+            return sz
+        } else {
+            throw OSError()
+        }
     } else {
-        throw OSError()
+        if DllCall('Gdi32.dll\GetTextExtentExPoint'
+            , 'ptr', hDC
+            , 'ptr', StrPtr(Str)                                    ; String to measure
+            , 'int', StrLen(Str)                                    ; String length in WORDs
+            , 'int', 0
+            , 'ptr', 0
+            , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
+            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr'
+        ) {
+            OutCharacterFit := 0
+            return sz
+        } else {
+            throw OSError()
+        }
     }
 }
 
@@ -183,7 +201,7 @@ class InsertSoftHyphens {
      * @param {Integer} [Mode=1] - Either 1 or 2. At this time, don't use 2. It needs more work.
      */
     static Call(&Str, Mode := 1) {
-        Str := RegExReplace(Str, this.Pattern%Mode%, '${first}' Chr(0x00AD) '${second}')
+        Str := RegExReplace(Str, this.Pattern[Mode], '${first}' Chr(0x00AD) '${second}')
     }
     static GetPattern(which) {
         switch which, 0 {
@@ -211,8 +229,7 @@ class InsertSoftHyphens {
     , Consonant := '[bcdfghjklmnpqrstvwz]'
     , Clusters := '(?!th|ch|ph|sh|wh|qu|gh|ck|ng|wr)' ; words should not be split between these
     , Boundary := '(?<!\W|^)(?<!\W.|^.)(?!\W|$)(?!.\W|.$)' ; don't break too close to non-alphanumeric / beginning / end
-    , Pattern1 := this.GetPattern(1)
-    , Pattern2 := this.GetPattern(2)
+    , Pattern := [ this.GetPattern(1), this.GetPattern(2) ]
 }
 
 /**
@@ -276,7 +293,7 @@ class InsertSoftHyphens {
  * @param {Object} [Options] - An object containing zero or more options as properties.
  * It should be documented that `WrapText` changes the base of your `Options` object. In most cases
  * this information be safely ignored; I included it for completeness. See
- * src/Display_dDefaultOptions.ahk for more information.
+ * src/dDefaultOptions.ahk for more information.
  * @param {Boolean} [Options.AdjustObject=false] - If `Options.AdjustObject == true`, then `WrapText`
  * expects `Context` to be an object with a `Text` property and a `Move` method, such as a `Gui.Control`
  * object. Before `WrapText` exits, `WrapText` removes any soft hyphens from the result string, then
@@ -508,10 +525,6 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
 
     ; Core loop
     loop {
-        LineCount++
-        if A_Index == 105 {
-            sleep 1
-        }
         Len := StrLen(Text)
         ptr := StrPtr(Text)
         if !DllCall('Gdi32.dll\GetTextExtentExPoint'
@@ -529,6 +542,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         if (fit := NumGet(fitBuf, 0, 'uint')) >= Len {
             break
         }
+        LineCount++
         if Proc() {
             break
         }
@@ -538,8 +552,8 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     if Text {
         Set(StrLen(Text))
         Str := Trim(Str, '`r`n`s`t')
+        LineCount++
     }
-    LineCount++
 
     ; Release dc, disable error handler
     if IsObject(Context) {

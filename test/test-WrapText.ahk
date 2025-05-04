@@ -1,22 +1,27 @@
 ﻿
 #SingleInstance force
-#Include test_Base.ahk
-#Include ..\lib\Display_Text.ahk
+#include test_Base.ahk
+#include ..\lib\Text.ahk
 
 /**
     This is a non-visual test using a random string.
     This test currently validates these components:
-    - The function runs successfully with each possible `Context` option: an hDC, control, or object.
+    - The function runs successfully with `Context` as a control and `Context` as an hDC.
     - `Option.MaxExtent` correctly causes `WrapText` to return a string that has a width no greater
     than the value.
     -----
     Although I believe `WrapText`'s wrapping logic does what it is designed to do, this test does
     not validate whether `WrapText` chose the correct wrap position given the string and options.
+
+    The test takes about 20 seconds to run on my machine, performing 1152 tests.
  */
 
 if A_LineFile == A_ScriptFullPath {
     if test_WrapText(false) {
         test_WrapText.WriteOut(test_WrapText.Problems)
+        msgbox('problems: ' test_WrapText.Problems.Length)
+    } else {
+        msgbox('no problems. ' test_WrapText.WrapTextCallCount ' iterations completed.')
     }
 }
 
@@ -84,6 +89,7 @@ class test_WrapText extends test_Base {
         _breakChar := this.BreakChar
         _color := this.FontColor
         _Loop(_Control)
+        _Loop(_hdc)
 
         return this.Problems.Length
 
@@ -192,6 +198,51 @@ class test_WrapText extends test_Base {
                     ; if !DllCall('ReleaseDC', 'Ptr', Edt.hWnd, 'Ptr', hDC, 'Int') {
                     ;     throw OSError()
                     ; }
+                ; }
+            }
+        }
+        _hdc() {
+            Edt.SetFont(Format('{} c{} s{} w{} q{}', _opt, _color, _size, _weight, _quality), _family || unset)
+            if _maxExtent is Func {
+                _maxExtent := _maxExtent(_GetMinMaxExtent(Edt))
+            }
+            Edt.Move(, , _maxExtent)
+            if _breakChar {
+                index_GetString := 0
+                for fn in GetString {
+                    this.WrapTextCallCount++
+                    index_GetString++
+                    fn()
+                    _Proc()
+                }
+            } else {
+                this.WrapTextCallCount++
+                index_GetString := 1
+                GetString[1]()
+                _Proc()
+            }
+            _Proc() {
+                Edt.Text := _string
+                len := StrLen(_string)
+                Str := unset
+                dWrapTextConfig.BreakChars := _breakChar
+                dWrapTextConfig.MinExtent := _minExtent
+                dWrapTextConfig.MeasureLines := []
+                if test_WrapText.WrapTextCallCount == 10 {
+                    sleep 1
+                }
+                if !(hDC := DllCall('GetDC', 'Ptr', Edt.hWnd)) {
+                    throw OSError('``GetDC`` failed.', -1, A_LastError)
+                }
+                LineCount := WrapText(Edt, &Str, , &ResultWidth, &ResultHeight)
+                if !DllCall('ReleaseDC', 'Ptr', Edt.hWnd, 'Ptr', hDC, 'int') {
+                    throw OSError('``ReleaseDC`` failed.', -1, A_LastError)
+                }
+                if TempOutput {
+                    this.WriteTemp(this.PathTemp, &Str)
+                }
+                if ResultWidth > _maxExtent {
+                    this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'ResultWidth > _maxExtent')
                 }
             }
         }
@@ -280,6 +331,7 @@ class test_WrapText extends test_Base {
             }
         }
         _GetTextExtentEx(Ctrl_or_hDC, Line) {
+            local hDC
             if IsObject(Ctrl_or_hDC) {
                 if !(hDC := DllCall('GetDC', 'Ptr', Ctrl_or_hDC.hWnd)) {
                     throw OSError('``GetDC`` failed.', -1, A_LastError)

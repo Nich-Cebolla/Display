@@ -1,7 +1,7 @@
-﻿#Include ..\lib\Display_ControlTextExtent.ahk
-#Include ..\struct\Display_IntegerArray.ahk
-#Include ..\struct\Display_SIZE.ahk
-#Include <Object.Prototype.Stringify_V1.0.0>
+﻿#include ..\lib\ControlTextExtent.ahk
+#include ..\struct\IntegerArray.ahk
+#include ..\struct\SIZE.ahk
+#include <Object.Prototype.Stringify_V1.0.0>
 
 class test_ControlTextExtent {
     static Fonts := ['', 'Mono', 'Calisto', 'Aptos']

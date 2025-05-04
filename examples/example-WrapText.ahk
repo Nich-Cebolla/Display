@@ -1,6 +1,6 @@
 ﻿
 #SingleInstance force
-#Include ..\lib\Display_Text.ahk
+#include ..\lib\Text.ahk
 
 ; Using `WrapText` is easy.
 ; Let's set up an example Gui
@@ -32,6 +32,7 @@ class dWrapTextConfig {
 try {
     LineCount := WrapText(txt, &str, , &Width, &Height)
     ; `WrapText` will only adjust the control, not the gui
+    ; To correctly size the gui, we need to know the size of the non-client area of the gui.
     ; These next three lines aren't specific to `WrapText`, but just dealing with the non-client
     ; area of a Gui window in general.
     G.GetPos(, , , &g_h)
@@ -52,6 +53,6 @@ txt.getpos(&x2, &y2, &w2, &h2)
 G.AddText('x10 y' (Height + G.MarginY * 2) ' w300', (
     Format('x1: {}; y1: {}; w1: {}; h1: {}', x1, y1, w1, h1)
     '`r`n' Format('x2: {}; y2: {}; w2: {}; h2: {}', x2, y2, w2, h2)
-    '`r`nWidth: ' width '`r`nHeight: ' height
+    '`r`nWidth: ' width '`r`nHeight: ' height '`r`nLine count: ' LineCount
 )).GetPos(, &y3, , &h3)
 G.Move(, , , y3 + h3 + diff)

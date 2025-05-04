@@ -1,6 +1,6 @@
 ﻿/**
  * I don't recommend modifying the configuration here. It's better to create a copy of the
- * configuration file `Display_Template_ProjectConfig.ahk` and use that, because this will get
+ * configuration file `Template_ProjectConfig.ahk` and use that, because this will get
  * reset every time it updates.
  */
 
@@ -14,7 +14,7 @@ if IsSet(Mon) && !dMon.HasOwnProp('UseOrderedMonitors') {
     dMon.UseOrderedMonitors := false
 }
 
-class Display_DefaultConfig {
+class DefaultConfig {
     ; see `DisplayConfig.ahk` for details
     static NewControlSetFont := 1
     static NewGuiSetFont := true

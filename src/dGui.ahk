@@ -24,9 +24,9 @@ class dGui {
 
         if IsSet(DisplayConfig) {
             ObjSetBase(Config := {}, DisplayConfig)
-            ObjSetBase(DisplayConfig, Display_DefaultConfig)
+            ObjSetBase(DisplayConfig, DefaultConfig)
         } else {
-            ObjSetBase(Config, Display_DefaultConfig)
+            ObjSetBase(Config, DefaultConfig)
         }
 
                 ; ExcludeNewControlSetFont

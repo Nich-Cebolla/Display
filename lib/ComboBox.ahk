@@ -1,5 +1,5 @@
 ﻿
-#Include ..\definitions\Display_Define_ComboBox.ahk
+#include ..\definitions\Define_ComboBox.ahk
 
 /**
  * @description - Shows or hides the combobox's dropdown.
@@ -43,10 +43,6 @@ GuiCb_SetMinVisible(ComboBox, MinVisible) {
  * items with any changes to the text.
  *   - When 500ms passes without a change being detected, disables the timer an re-enables the
  * change event handler.
- * <br>
- * During this time the function will attempt to update the drop-down with the correct items, but in
- * general when items get added back to the control, they do not populate in the dropdown until
- * un-focusing and re-focusing the control.
  * @param {ComboBox} ComboBox - The ComboBox object to set the filter on.
  * @param {Array} Arr - The array that contains the words displayed by the combobox. This gets set
  * to `ComboBox.__Arr`.
@@ -55,7 +51,7 @@ GuiCb_SetMinVisible(ComboBox, MinVisible) {
  * `Gui.Control.Prototype.OnEvent`. Call this function with an `AddRemove` value of 0 to delete
  * the properties associated with the filter and to unset the event handlers.
  */
-GuiCb_SetFilterOnChange(ComboBox, Arr, MaxVisible := 20, AddRemove := 1, SelectionHandler?) {
+GuiCb_SetFilterOnChange(ComboBox, Arr, MaxVisible := 20, AddRemove := 1) {
     if !AddRemove {
         _DisposeFilter()
         return
@@ -153,9 +149,6 @@ GuiCb_SetFilterOnChange(ComboBox, Arr, MaxVisible := 20, AddRemove := 1, Selecti
             }
             Ctrl.OnEvent('Change', HChangeComboBox, 1)
             Time := 0
-            if IsSet(SelectionHandler) {
-                SelectionHandler(Ctrl)
-            }
         }
     }
 

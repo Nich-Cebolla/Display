@@ -1,5 +1,5 @@
 ﻿
-#Include ..\definitions\Display_Define_Dpi.ahk
+#include ..\definitions\Define_Dpi.ahk
 /**
  * @description - Determines whether two DPI_AWARENESS_CONTEXT values are identical. A
  * DPI_AWARENESS_CONTEXT contains multiple pieces of information. For example, it includes both the

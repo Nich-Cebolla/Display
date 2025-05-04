@@ -5,7 +5,7 @@
 ; MenuBarConstructor.ahk - https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MenuBarConstructor.ahk
 ; FillStr.ahk - https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/FillStr.ahk
 
-/**
+/*
 
 This document seeks to accomplish these tasks:
 - Provide an overview of what is available within this library.
@@ -21,42 +21,45 @@ as I release updates.
 
 ; Step 1: Copy this document to your project folder then open the copy and work on that one.
 
-; Step 2: Selecting source files
-; Adjust the top #Include statements to point to the "Display" directories.
-; Then comment out any files which your project is not going to use.
+; Step 2: Pointing to the correct directories
+; Adjust the top #include statements to point to the "Display" directories.
+; By "top #include statements", I mean the ones at the top of each block
+; e.g. "#include DefaultConfig.ahk" should be changed to "..\..\path\to\Display\config\DefaultConfig.ahk"
+; or "#include ..\lib" should be changed to "#include ..\..\path\to\Display\lib"
+; You can use absolute paths if necessary / more appropriate for your project
+
+; Step 3: Selecting source files
+; Comment out any files which your project is not going to use.
 ; When finished, try running this file and see if you get any unset variable warnings
 ; then adjust as needed.
 
-#Include Display_DefaultConfig.ahk
+; Note that the definition files are #included where needed, so you don't need to worry about those.
 
-#Include ..\lib
-#Include Display_ComboBox.ahk
-#Include Display_Dpi.ahk
-#Include Display_Gui.ahk
-#Include Display_Lib.ahk
-#Include Display_SetThreadDpiAwareness__Call.ahk
+#include DefaultConfig.ahk
 
-#Include ..\src
-#Include Display_dMon.ahk
-#Include Display_dGui.ahk
-#Include Display_dScrollbar.ahk
-#Include Display_dtext.ahk
-#Include Display_dWin.ahk
-#Include Display_dLv.ahk
+#include ..\lib
+#include ComboBox.ahk
+#include Dpi.ahk
+#include Gui.ahk
+#include Lib.ahk
+#include Text.ahk
+#include SetThreadDpiAwareness__Call.ahk
 
-#Include ..\struct
-#Include Display_RectBase.ahk
-#Include Display_Rect.ahk
-#Include Display_Point.ahk
-#Include Display_NumberArray.ahk
-#Include Display_LOGFONT.ahk
+#include ..\src
+#include dMon.ahk
+#include dGui.ahk
+#include dScrollbar.ahk
+#include dWin.ahk
+#include dLv.ahk
 
-#Include ..\definitions
-#Include Display_Define_ComboBox.ahk
-#Include Display_Define_Dpi.ahk
-#Include Display_Define_Font.ahk
-#Include Display_Define_Scrollbar.ahk
-#Include Display_Define_Windows.ahk
+#include ..\struct
+#include IntegerArray.ahk
+#include LOGFONT.ahk
+#include Point.ahk
+#include Rect.ahk
+#include RectBase.ahk
+#include SIZE.ahk
+#include WINDOWINFO.ahk
 
 ; Step 3: Selecting options
 ; Delete the /* below and work your way through the various options
@@ -104,7 +107,7 @@ class DisplayConfig {
     /**
      * @property {Boolean} DisplayConfig.NewGuiSetFont - **Required** Default = true <br>
      * Controls whether `Gui.Prototype.SetFont` is overridden. The new SetFont method is
-     * `GUI_SETFONT`, located in lib\Display_Gui.ahk. The new method scales font size according
+     * `GUI_SETFONT`, located in lib\Gui.ahk. The new method scales font size according
      * to dpi, handles some extra tasks required for WM_DPICHANGED to work correctly, and also
      * allows you to define multiple font families in a single SetFont call as a comma-separated
      * list of font family names (see {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm} for
@@ -115,7 +118,7 @@ class DisplayConfig {
     /**
      * @property {Boolean} DisplayConfig.NewGuiCall - **Required** Default = true <br>
      * Controls whether `Gui.Call` is overridden. The new Call method is `GUI_CALL`, located in
-     * lib\Display_Gui.ahk. The new method handles the initialization of several additional properties
+     * lib\Gui.ahk. The new method handles the initialization of several additional properties
      * required for this library's built-in WM_DPICHANGED handler. It also allows an `ExtendedParams`
      * parameter as an optional parameter. `ExtendedParams` can be an object with zero or more
      * of { MarginX, MarginY, BackColor, MenuBar, Name, OptFont, FontFamily }.
@@ -125,7 +128,7 @@ class DisplayConfig {
     /**
      * @property {Boolean} DisplayConfig.NewGuiAdd - **Required** Default = true <br>
      * Controls whether `Gui.Prototype.Add` is overridden. The new method is `GUI_ADD`, located
-     * in lib\Display_Gui.ahk. The new method handles the in
+     * in lib\Gui.ahk. The new method handles the in
      */
     static NewGuiAdd := true
 
@@ -177,7 +180,7 @@ class DisplayConfig {
     /**
      * @property {Map|Boolean} DisplayConfig.ControlGetTextExtent  - If true, the library adds a
      * method `GetTextExtent` to Gui controls. The method measures the control's text in pixels.
-     * The function objects are in lib\Display_ControlTextExtent.ahk.
+     * The function objects are in lib\ControlTextExtent.ahk.
      */
     static ControlGetTextExtent := true
 
@@ -192,14 +195,14 @@ class DisplayConfig {
 
     /**
      * @property {Boolean} DisplayConfig.GuiToggle - When true, the method `Toggle` is added to
-     * `Gui.Prototype`. The function object is `GUI_TOGGLE` locatated in lib\Display_Gui.ahk.
+     * `Gui.Prototype`. The function object is `GUI_TOGGLE` locatated in lib\Gui.ahk.
      */
     static GuiToggle := true
 
     /**
      * @property {Boolean} DisplayConfig.GuiCallWith_S - When true, the method `__Call` is added to
      * `Gui.Prototype`. The function object is `SetThreadDpiAwareness__Call` located in
-     * lib\Display_SetThreadDpiAwareness__Call.ahk. It enables the usage of the "_S" suffix when
+     * lib\SetThreadDpiAwareness__Call.ahk. It enables the usage of the "_S" suffix when
      * calling gui object methods, e.g. `GuiObj.Move_S`. When called with "_S",
      * `DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT, 'ptr')`
      * is called before calling the intended method.

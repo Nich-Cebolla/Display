@@ -1,5 +1,6 @@
-﻿#Include ..\struct\Display_IntegerArray.ahk
-#Include ..\struct\Display_SIZE.ahk
+﻿#include ..\struct\IntegerArray.ahk
+#include ..\struct\SIZE.ahk
+#include ..\lib\Text.ahk
 G := Gui()
 G.SetFont('s11 q5', 'Roboto')
 Txt := G.Add('Text', , 'Hello, world!')
@@ -27,7 +28,7 @@ if !hDC {
     }
     return
 }
-if GetTextExtentExPoint(MyStr, hDC, MaxWidth, &fit, &sz, &extentPoints) {
+if !(sz := GetTextExtentExPoint(MyStr, hDC, MaxWidth, &fit, &extentPoints)) {
     if HandleError(A_ThisFunc, A_LineFile, A_LineNumber) {
         Exit()
     }
@@ -44,8 +45,7 @@ if fit >= Len {
     Txt.Text := MyStr
 ; If greater than 80 pixels, we need to wrap the text or take some other action.
 ; I've provided a wrap text function anyway, so the below code is just to show
-; how to use the `OutExtentPoints` object and doesn't do anything meaningful
-; in the context of the example scenario.
+; how to use the `OutExtentPoints`.
 } else {
     Txt.Visible := 0
     s := ''
@@ -60,26 +60,7 @@ if fit >= Len {
 
 return
 
-
-GetTextExtentExPoint(Str, hDC, nMaxExtent := 0, &OutCharacterFit?, &OutSIZE?, &OutExtentPoints?) {
-    Result := DllCall('Gdi32.dll\GetTextExtentExPoint'
-        , 'ptr', hDC
-        , 'ptr', StrPtr(Str)                                    ; String to measure
-        , 'int', StrLen(Str)                                    ; String length in WORDs
-        , 'int', nMaxExtent                                     ; Maximum width
-        , 'ptr', lpnFit := nMaxExtent ? Buffer(4) : 0           ; To receive number of characters that can fit
-        , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str)  * 4) ; An array to receives partial string extents. Here it's null.
-        , 'ptr', OutSIZE := SIZE()                              ; To receive the dimensions of the string.
-        , 'ptr'
-    )
-    DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
-    if Result {
-        OutCharacterFit := nMaxExtent ? NumGet(lpnFit, 0, 'int') : 0
-    } else {
-        return 1
-    }
-}
 HandleError(fn, f, line) {
     msgbox(fn ' ' f ' ' line)
 }
-GetUserInput() => 'Hello!eofhofaeifhaefoaoaijfaeofj'
+GetUserInput() => 'Hello, World!'

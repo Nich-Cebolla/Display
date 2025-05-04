@@ -8,51 +8,51 @@
 
 ## Dependency chart
 
-Definition files are #Included where needed, so you don't need to worry about those.
+Definition files are #included where needed, so you don't need to worry about those.
 
 This only shows primary dependencies.
 
-### lib\Display_ComboBox.ahk
+### lib\ComboBox.ahk
 
-- definitions\Display_Define_ComboBox.ahk
+- definitions\Define_ComboBox.ahk
 
-### lib\Display_Dpi.ahk
+### lib\Dpi.ahk
 
-- definitions\Display_Define_Dpi.ahk
+- definitions\Define_Dpi.ahk
 
-### lib\Display_Gui.ahk
-- src\Display_dWin.ahk
-- src\Display_dGui.ahk
+### lib\Gui.ahk
+- src\dWin.ahk
+- src\dGui.ahk
 
-### lib\Display_Lib.ahk
+### lib\Lib.ahk
 - Definitions:             --
 - Structs:                 Rect
 - Source:                  dWin
 - Lib:                     --
 
-### lib\Display_SetThreadDpiAwareness__Call.ahk
+### lib\SetThreadDpiAwareness__Call.ahk
 - Definitions:             --
 - Structs:                 --
 - Classes:                 --
 - Lib:                     --
 Note: It requires the globalvariable `DPI_AWARENESS_CONTEXT_DEFAULT`to be set.
 
-### src\Display_Gui.ahk
+### src\Gui.ahk
 - Definitions:             --
 - Structs:                 LOGFONT
                            Rect
-- Source:                  Display_DefaultConfig
+- Source:                  DefaultConfig
                            dMon
-- Lib:                     Display_SetThreadDpiAwareness__Call
-                           Display_Gui
+- Lib:                     SetThreadDpiAwareness__Call
+                           Gui
 
-### Display_Lv.ahk
+### Lv.ahk
 - Definitions:             --
 - Structs:                 --
 - Classes:                 --
 - Lib:                     --
 
-### Display_Mon.ahk
+### Mon.ahk
 - Definitions:             --
 - Structs:                 Point
                            Rect
@@ -60,21 +60,21 @@ Note: It requires the globalvariable `DPI_AWARENESS_CONTEXT_DEFAULT`to be set.
 - Classes:                 --
 - Lib:                     --
 
-### Display_Scrollbar.ahk
+### Scrollbar.ahk
 - Definitions:             --
 - Structs:                 Point
                            Rect
 - Source:                  dWin
 - Lib:                     --
 
-### Display_Text.ahk
+### Text.ahk
 - Definitions:             --
 - Structs:                 Point
                            Rect
 - Source:                  dWin
 - Lib:                     --
 
-### Display_Win.ahk
+### Win.ahk
 - Definitions:             --
 - Structs:                 Point
                            Rect
@@ -82,37 +82,37 @@ Note: It requires the globalvariable `DPI_AWARENESS_CONTEXT_DEFAULT`to be set.
 - Source:                  dMon
 - Lib:                     --
 
-### Display_LOGFONT.ahk
+### LOGFONT.ahk
 - Definitions:             --
 - Structs:                 Point
 - Classes:                 --
 - Lib:                     --
 
-### Display_NumberArray.ahk
+### NumberArray.ahk
 - Definitions:             --
 - Structs:                 --
 - Classes:                 --
 - Lib:                     --
 
-### Display_Point.ahk
+### Point.ahk
 - Definitions:             --
 - Structs:                 --
 - Classes:                 --
 - Lib:                     --
 
-### Display_Rect.ahk
+### Rect.ahk
 - Definitions:             --
 - Structs:                 RectBase
 - Classes:                 --
 - Lib:                     --
 
-### Display_RectBase.ahk
+### RectBase.ahk
 - Definitions:             --
 - Structs:                 Point
 - Classes:                 --
-- Lib:                     Display_SetThreadDpiAwareness__Call
+- Lib:                     SetThreadDpiAwareness__Call
 
-### Display_WINDOWINFO.ahk
+### WINDOWINFO.ahk
 - Definitions:             --
 - Structs:                 Rect
 - Classes:                 --

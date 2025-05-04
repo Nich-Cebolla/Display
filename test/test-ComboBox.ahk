@@ -1,7 +1,7 @@
 ﻿
-#Include ..\lib\Display_ComboBox.ahk
+#include ..\lib\ComboBox.ahk
 
-#Include ..\..\SimpleArrayInspector\SimpleArrayInspector.ahk
+#include ..\..\SimpleArrayInspector\SimpleArrayInspector.ahk
 #SingleInstance force
 
 Test() {

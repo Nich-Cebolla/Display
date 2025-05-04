@@ -635,11 +635,11 @@ class dWin extends RectBase {
      * - name: The file name.
      * - ext: The file extension.
      * @example
-     *  G := Gui(, 'C:\Users\YourName\Documents\AutoHotkey\lib\Display_Win.ahk')
+     *  G := Gui(, 'C:\Users\YourName\Documents\AutoHotkey\lib\Win.ahk')
      *  TitleMatch := dWin.PathFromTitle(G.hWnd)
      *  MsgBox(TitleMatch.drive) ; C
      *  MsgBox(TitleMatch.dir) ; C:\Users\YourName\Documents\AutoHotkey\lib
-     *  MsgBox(TitleMatch.file) ; Display_Win
+     *  MsgBox(TitleMatch.file) ; Win
      *  MsgBox(TitleMatch.ext) ; ahk
      * @
      */
