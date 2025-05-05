@@ -17,7 +17,7 @@ str := 'This parameter may include backreferences like $1, which brings in the s
 
 ; We should always insert soft hyphens first, unless the text already has them or the text
 ; is not mostly English words.
-InsertSoftHyphens(&str)
+InsertHyphenationPoints(&str)
 
 ; Either use a config object, or pass an object literal. I like using a config object.
 ; When using a Gui.Control object for the context, `WrapText` will use the current width
@@ -38,7 +38,7 @@ try {
     G.GetPos(, , , &g_h)
     G.GetClientPos(, , , &g_h2)
     diff := g_h - g_h2
-    G.Move(, , Width, Height + diff) ; add on the height of the string + the non-client area
+    G.Move(, , Width + G.MarginX * 2, Height + diff) ; add on the height of the string + the non-client area
 } catch OSError {
     ; handle
 } catch ValueError {

@@ -23,6 +23,11 @@
 #include ControlTextExtent.ahk
 
 class dGui {
+    static __New() {
+        if this.Prototype.__Class == 'dGui' {
+            this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+        }
+    }
 
     /**
      * @description - An alternate method for creating a new Gui object. This method sets
@@ -31,11 +36,11 @@ class dGui {
      * @param {String} [Opt='-DPIScale +Resize'] - The first parameter of `Gui.Call`.
      * @param {String} [Title] - The second parameter of `Gui.Call`.
      * @param {String} [EventHandler] - The third parameter of `Gui.Call`.
-     * @param {String} [OptFont] - The first parameter of `Gui.Prototype.SetFont`.
-     * @param {String} [FontFamily] - The second parameter of `Gui.Prototype.SetFont`.
+     * @param {Object} [ExtendedParams] - An object that defines additional options. The object can
+     * have zero or more of the { BackColor, MarginX, MarginY, MenuBar, Name, OptFont, FontFamily }
      * @returns {Gui} - The new Gui object.
      */
-    static Call(Opt := '-DPIScale +Resize', Title?, EventHandler?, OptFont?, FontFamily?) {
+    static Call(Opt := '-DPIScale +Resize', Title?, EventHandler?, ExtendedParams?) {
         G := Gui(Opt, Title ?? unset, EventHandler ?? unset)
         GuiDpiChangeHelper(G)
         if IsSet(ExtendedParams) {
@@ -124,7 +129,7 @@ class dGui {
         ;@region GetTextExtent
         if Config.GetTextExtent {
             for CtrlType in [ 'Button', 'CheckBox', 'DateTime', 'Edit', 'GroupBox', 'Hotkey'
-            , 'ComboBox', 'DDL', 'Tab', 'Tab2', 'Tab3', 'Radio', 'StatusBar', 'Text' ] {
+            , 'ComboBox', 'DDL', 'Tab', 'Radio', 'StatusBar', 'Text' ] {
                 Gui.%CtrlType%.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent })
             }
             Gui.ListBox.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent_LB })
@@ -137,7 +142,7 @@ class dGui {
         ;@region GetTextExtentEx
         if Config.GetTextExtentEx {
             for CtrlType in [ 'Button', 'CheckBox', 'DateTime', 'Edit', 'GroupBox', 'Hotkey'
-            , 'ComboBox', 'DDL', 'Tab', 'Tab2', 'Tab3', 'Radio', 'StatusBar', 'Text' ] {
+            , 'ComboBox', 'DDL', 'Tab', 'Radio', 'StatusBar', 'Text' ] {
                 Gui.%CtrlType%.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx })
             }
             Gui.ListBox.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx_LB })
@@ -173,11 +178,17 @@ class dGui {
         if Config.ControlCallWith_S {
             Gui.Control.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
         }
-        if Config.GuiDpiGetter {
+        if Config.GuiDpi {
             Gui.Prototype.DefineProp('Dpi', { Get: (Self) => DllCall('GetDpiForWindow', 'ptr', Self.hWnd, 'int') })
         }
-        if Config.ControlDpiGetter {
+        if Config.ControlDpi {
             Gui.Control.Prototype.DefineProp('Dpi', { Get: (Self) => DllCall('GetDpiForWindow', 'ptr', Self.hWnd, 'int') })
+        }
+        if Config.GuiCount {
+            Gui.Prototype.DefineProp('Count', { Value: 0 })
+        }
+        if Config.GuiDpiExclude {
+            Gui.Prototype.DefineProp('DpiExclude', { Value: 0 })
         }
     }
 
@@ -285,6 +296,37 @@ class dGui {
         }
     }
 
+    /**
+     * @description - Accounts for the difference between the client area and the window area,
+     * allowing you to set the width or height according to the desired client area. The window
+     * should have been shown at least once prior to calling this.
+     * @param {Gui} GuiObj - The Gui object.
+     * @param {Integer} [X] - X coordinate.
+     * @param {Integer} [Y] - Y coordinate.
+     * @param {Integer} [W] - Width.
+     * @param {Integer} [H] - Height.
+     */
+    static GuiMoveEx(GuiObj, X?, Y?, W?, H?) {
+        GuiObj.GetPos(, , &w1, &h1)
+        GuiObj.GetClientPos(, , &w2, &h2)
+        GuiObj.Move(X ?? unset, Y ?? unset, IsSet(W) ? W + w1 - w2 : unset, IsSet(H) ? H + h1 - h2 : unset)
+    }
+
+    /**
+     * @description - Resizes a Gui window to fit a control completely in it's client area. Also
+     * adds `GuiObj.MarginX` and `GuiObj.MarginY` to the x and y dimensions, respectively. The window
+     * should have been shown at least once prior to calling this.
+     * @param {Gui.Control} Ctrl - The control to fit the window around.
+     * @param {VarRef} [OutWidth] - A variable that will receive the new width.
+     * @param {VarRef} [OutHeight] - A variable that will receive the new height.
+     */
+    static GuiFitCtrl(Ctrl, &OutW?, &OutH?) {
+        G := Ctrl.Gui
+        G.GetPos(, , , &h1)
+        G.GetClientPos(, , , &h2)
+        Ctrl.GetPos(&x, &y, &w, &h)
+        G.Move(, , OutWidth := x + w + G.MarginX, OutHeight := y + h + G.MarginY + h1 - h2)
+    }
 
     /**
      * @description - Calls `OnMessage(WM_DPICHANGED, Callback)` to set the `WM_DPICHANGED` message
@@ -373,7 +415,7 @@ ControlResizeByText(Ctrl, NewDpi, DpiRatio, &OutX?, &OutY?, &OutW?, &OutH?) {
     Ctrl.SetFont('s' Ctrl.DpiChangeHelper.FontSize, , NewDpi)
     sz := ControlGetTextExtent(Ctrl)
     ; Get scaled X and Y
-    Ctrl.DpiChangeHelper.AdjustByText(sz.Width / Width1, sz.Height / Height1, &OutX := X, &OutY := Y, &OutW := W, &OutH := H)
+    Ctrl.DpiChangeHelper.AdjustByText(Width1 / sz.Width, Height1 / sz.Height, &OutX := X, &OutY := Y, &OutW := W, &OutH := H)
 }
 
 ControlResizeByDpiRatio(Ctrl, NewDpi, DpiRatio, &OutX?, &OutY?, &OutW?, &OutH?) {
@@ -393,7 +435,7 @@ ControlResizeByDpiRatio(Ctrl, NewDpi, DpiRatio, &OutX?, &OutY?, &OutW?, &OutH?) 
  */
 ControlSetFont(Ctrl, OptFont?, FontFamily?, Dpi?) {
     if IsSet(OptFont) {
-        if RegExMatch(OptFont, '(?<opt1>[^s]*)[sS](?<n>\d+)(?<opt2>.*)', &MatchFont) {
+        if RegExMatch(OptFont, '(?<opt1>[^s]*)[sS](?<n>[\d.]+)(?<opt2>.*)', &MatchFont) {
             if !IsSet(Dpi) {
                 DllCall('Shcore\GetDpiForMonitor', 'ptr', DllCall('User32.dll\MonitorFromWindow', 'ptr', Ctrl.Hwnd, 'UInt', 0x00000000, 'Uptr'), 'UInt', 0, 'UInt*', &Dpi := 0, 'UInt*', &DpiY := 0, 'UInt')
             }

@@ -96,7 +96,7 @@ class ControlDpiChangeHelper {
      * @param {VarRef} [H] - The height of the control. This must contain the original
      * H value and will be modified to the scaled H value.
      */
-    AdjustByText(Ctrl, WidthRatio, HeightRatio, &X?, &Y?, &W?, &H?) {
+    AdjustByText(WidthRatio, HeightRatio, &X?, &Y?, &W?, &H?) {
         if IsSet(X) {
             X := Round(NewX := (X + (this.Rounded.X >= 0.5 ? this.Rounded.X*-1 : this.Rounded.X)) * WidthRatio, 0)
             this.Rounded.X := NewX - Floor(NewX)
@@ -131,7 +131,7 @@ class GuiDpiChangeHelper {
      */
     __New(GuiObj) {
         this.FontSize := 6
-        this.Dpi := GetDpi(hWnd) => DllCall('GetDpiForWindow', 'ptr', GuiObj.hWnd, 'int')
+        this.Dpi := DllCall('GetDpiForWindow', 'ptr', GuiObj.hWnd, 'int')
         this.Rounded := { F: 0 }
         GuiObj.DefineProp('DpiChangeHelper', { Value: this })
     }

@@ -23,36 +23,40 @@
 
 /**
  * @description - Calls `GetTextExtentPoint32` to get the height and width in pixels of the string
- * contents of a Gui control.
+ * contents of a Gui control. If the `Ctrl.Text` property contains multiple lines of text, the
+ * lines are split at each newline character and each line is measured individually. The value
+ * returned by this function will be an object where the height represents the sum of the height
+ * of each line, and the width is the greatest width of each line. This function assumes that new
+ * lines are either '`r`n' or '`n'.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {String} Ctrl - The `Gui.Control` object.
- * @returns {SIZE} - A `SIZE` object with properties { Height, Width }.
+ * @returns {Object} - An object with properties { Height, Width }.
  */
 ControlGetTextExtent(Ctrl) {
-    ; Get device context
     if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
         throw OSError()
     }
-    ; Measure the text
-    if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-        , 'Ptr', hDC
-        , 'Ptr', StrPtr(Ctrl.Text)
-        , 'Int', StrLen(Ctrl.Text)
-        , 'Ptr', sz := SIZE()
-        , 'Int'
-    ) {
-        if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-            throw OSError()
+    W := H := 0
+    sz := SIZE()
+    for line in StrSplit(Ctrl.Text, '`n', '`r') {
+        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+            , 'Ptr', hDC, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
+        ) {
+            H += sz.Height
+            W := Max(W, sz.Width)
+        } else {
+            err := OSError()
+            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
+                err2 := OSError()
+                err.Message .= '; Also: ' err2.Message
+            }
+            throw err
         }
-        return sz
-    } else {
-        err := OSError()
-        if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-            err2 := OSError()
-            err.Message .= '; Also: ' err2.Message
-        }
-        throw err
     }
+    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
+        throw OSError()
+    }
+    return { Height: H, Width: W }
 }
 
 /**

@@ -186,22 +186,22 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
     }
 }
 
-class InsertSoftHyphens {
+class InsertHyphenationPoints {
     /**
-     * @description - `InsertSoftHyphens` uses a simple heuristic to insert more natural hyphenation
-     * points into the input text. "Soft hyphens" are characters with unicode code point U+00AD. They
-     * are supposed to be invisible unless wrapped at that point, but the text rendering engine used
-     * by AHK gui windows seems to display them regardless, so they must be removed in that case.
+     * @description - `InsertHyphenationPoints` uses a simple heuristic to insert more natural hyphenation
+     * points into the input text. `InsertHyphenationPoints` uses character 0x200B, "Zero Width Space".
      * While not every hyphenation point will feel completely natural, the result with `WrapText`
-     * will be much more consistent with what people expect regarding hyphenated words. This is best
-     * used with strings that consist of mostly English words. Because the heuristic approximates
-     * syllable boundaries, `InsertSoftHyphens` is not intended to be used with non-word text.
+     * will be much more consistent with what people expect regarding hyphenated words, they probably
+     * won't notice any inconsistencies unless they're looking for them (or use your application a
+     * lot). This is best used with strings that consist of mostly English words. Because the
+     * heuristic approximates syllable boundaries, `InsertSoftHyphens` is not intended to be used
+     * with non-word text.
      * @param {VarRef} Str - This variable should contain the string to have soft hyphens inserted
      * into. It will be modified directly
      * @param {Integer} [Mode=1] - Either 1 or 2. At this time, don't use 2. It needs more work.
      */
     static Call(&Str, Mode := 1) {
-        Str := RegExReplace(Str, this.Pattern[Mode], '${first}' Chr(0x00AD) '${second}')
+        Str := RegExReplace(Str, this.Pattern[Mode], '${first}' Chr(0x200B) '${second}')
     }
     static GetPattern(which) {
         switch which, 0 {
@@ -349,20 +349,19 @@ class InsertSoftHyphens {
  *  MsgBox(Split[3]) ; went on her merry way.
  * @
  * @param {String} [Options.Newline='`r`n'] - The newline character(s) to use.
- * @param {Boolean} [Options.RespectSoftHyphen=true] - When true, if the input text contains soft
- * hyphens (code point U+00AD, invisible characters that tell a text rendering engine that if a
- * break is necessary, this is an appropriate place to break and hyphenate the word), soft hyphens
- * are treated similarly to break characters. When a line breaks at a soft hyphen, the character is
- * replaced with a visible hyphen and the line wraps after the hyphen. When false, soft hyphens
- * are ignored and when a hard break is necessary, `WrapText` breaks the line at the greatest extent
- * which satisfies the other options. When false and if hyphens are used, a substring may be
- * hyphenated at any position in the word. Generally this should be left true; if no U+00AD characters
- * are present in the input string, `WrapText` adjusts its process to avoid using resources searching
- * for them.
  * @param {VarRef} [OutWidth] - A variable that will receive the width of the line with the greatest
  * width in the result string.
  * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of each line.
  * This only receives a value if `Options.MeasureLines` is nonzero.
+ * @param {Boolean} [Options.ZeroWidthSpace=true] - When true, if the input text contains Zero Width
+ * Space characters (code point U+200B), they will be treated as soft hyphens and will be used as
+ * a break character. When a line breaks at a Zero Width Space character, a visible hyphen is placed
+ * after the Zero Width Space character and the line wraps after the hyphen. When false, Zero Width
+ * Space characters are ignored and when a hard break is necessary, `WrapText` breaks the line at the
+ * greatest extent which satisfies the other options. When false and if hyphens are used, a substring
+ * may be hyphenated at any position in the word. Generally this should be left true; if no U+200B
+ * characters are present in the input string, `WrapText` adjusts its process to avoid using resources
+ * searching for them.
  * @returns {Integer} - The number of lines the text was split into.
  */
 WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
@@ -464,8 +463,8 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
                 _BreakChars .= ch
             }
         }
-        if Options.RespectSoftHyphen && InStr(Text, Chr(0x00AD)) {
-            _BreakChars .= Chr(0x00AD)
+        if Options.RespectSoftHyphen && InStr(Text, Chr(0x200B)) {
+            _BreakChars .= Chr(0x200B)
             _Proc_B := _Proc_B_1
         } else {
             _Proc_B := _Proc_B_0
@@ -475,8 +474,8 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
             BreakChars := '([' _BreakChars '])[^' _BreakChars ']*$'
             z += 2
         }
-    } else if Options.RespectSoftHyphen && InStr(Text, Chr(0x00AD)) {
-        BreakChars := '([' Chr(0x00AD) '])[^' Chr(0x00AD) ']*$'
+    } else if Options.RespectSoftHyphen && InStr(Text, Chr(0x200B)) {
+        BreakChars := '([' Chr(0x200B) '])[^' Chr(0x200B) ']*$'
         z += 2
         _Proc_B := _Proc_B_1
     } else {
@@ -558,7 +557,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     ; Release dc, disable error handler
     if IsObject(Context) {
         if Options.AdjustObject {
-            Context.Text := StrReplace(Str, Chr(0x00AD), '')
+            Context.Text := Str
             if Options.MeasureLines {
                 Context.Move(, , MaxExtent, OutHeight)
             } else {
@@ -661,11 +660,11 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     ; Breaking at a break character
     ; With soft hyphen
     _Proc_B_1() {
-        if NumGet(ptr, (Pos - 1) * 2, 'str') == 0x00AD {
+        if NumGet(ptr, (Pos - 1) * 2, 'str') == 0x200B {
             ; If adding the hyphen does not cause the width to exceed the max
-            if Extent[Pos - 1] + hyphen <= MaxExtent {
-                if Set(Pos - 1, '-') {
-                    ; Adjust `fit` to just before the soft hyphen, then re-check the string
+            if Extent[Pos] + hyphen <= MaxExtent {
+                if Set(Pos, '-') {
+                    ; Adjust `fit` to just before the ZWS, then re-check the string
                     fit := Pos - 1
                     return Proc()
                 }
@@ -747,11 +746,13 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
             if Extent[SetPos] + hyphen > MaxExtent {
                 return 1
             }
-            Part := SubStr(Text, 1, SetPos) '-' nl
+            Part := SubStr(Text, 1, SetPos) '-'
             OutWidth := Max(OutWidth, Extent[SetPos] + hyphen)
+            Str .= Part nl
         } else {
-            Part := SubStr(Text, 1, SetPos) nl
+            Part := SubStr(Text, 1, SetPos)
             OutWidth := Max(OutWidth, Extent[SetPos])
+            Str .= Part nl
         }
     }
     _Throw(Id, Line, Fn) {
