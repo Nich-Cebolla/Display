@@ -1,136 +1,171 @@
 ﻿
+; Dependencies
+#include ..\config\DefaultConfig.ahk
+
+#include ..\definitions
+#include Define-Dpi.ahk
+
+#include ..\struct
+#include SIZE.ahk
+#include IntegerArray.ahk
+#include LOGFONT.ahk
+#include RectBase.ahk
+#include RECT.ahk
+#include POINT.ahk
+
+#include ..\src
+#include dDefaultOptions.ahk
+#include DpiChangeHelpers.ahk
+#include dMon.ahk
+
+#include ..\lib
+#include SetThreadDpiAwareness__Call.ahk
+#include ControlTextExtent.ahk
+
 class dGui {
 
-    static Initialize(Config?) {
-        ClassList := []
-        ; Programmatically getting a list of all built-in control types
-        for Prop in Gui.OwnProps() {
-            if Gui.%Prop% is Class && InStr(Gui.%Prop%.Prototype.__Class, 'Gui.') {
-                ClassList.Push(StrSplit(Gui.%Prop%.Prototype.__Class, '.')[2])
+    /**
+     * @description - An alternate method for creating a new Gui object. This method sets
+     * some defaults, like the initial `Opt` values. If the `EventHandler` is defined here, a
+     * reference to the object is defined on the gui object as `GuiObj.EventHandler`.
+     * @param {String} [Opt='-DPIScale +Resize'] - The first parameter of `Gui.Call`.
+     * @param {String} [Title] - The second parameter of `Gui.Call`.
+     * @param {String} [EventHandler] - The third parameter of `Gui.Call`.
+     * @param {String} [OptFont] - The first parameter of `Gui.Prototype.SetFont`.
+     * @param {String} [FontFamily] - The second parameter of `Gui.Prototype.SetFont`.
+     * @returns {Gui} - The new Gui object.
+     */
+    static Call(Opt := '-DPIScale +Resize', Title?, EventHandler?, OptFont?, FontFamily?) {
+        G := Gui(Opt, Title ?? unset, EventHandler ?? unset)
+        GuiDpiChangeHelper(G)
+        if IsSet(ExtendedParams) {
+            for Prop in ['MarginX', 'MarginY', 'BackColor', 'MenuBar', 'Name'] {
+                if HasProp(ExtendedParams, Prop) {
+                    G.%Prop% := ExtendedParams.%Prop%
+                }
+            }
+            if HasProp(ExtendedParams, 'OptFont') {
+                G.SetFont(ExtendedParams.OptFont)
+            }
+            if HasProp(ExtendedParams, 'FontFamily') {
+                G.SetFont(, ExtendedParams.FontFamily)
             }
         }
-        Indices := []
-        ; When looping an array to compare values from another array, and when the values in the
-        ; comparison are unique, it's slightly more efficient to use a list of indices because
-        ; if a match is found, we can remove the index from the array so its associated item doesn't
-        ; get compared anymore.
-        loop Indices.Capacity := ClassList.Length {
-            Indices.Push(A_Index)
+        if IsSet(EventHandler) {
+            G.EventHandler := EventHandler
         }
+        G.Count := 0
+        return G
+    }
 
+    static Initialize(Config?) {
+        (ClassList := []).Capacity := 30
+        ; Programmatically getting a list of all built-in control types
+        for Prop in Gui.OwnProps() {
+            if Gui.%Prop% is Class {
+                ClassList.Push(Gui.%Prop%)
+            }
+        }
         if !IsSet(Config) {
             Config := {}
         }
-
         if IsSet(DisplayConfig) {
-            ObjSetBase(Config := {}, DisplayConfig)
             ObjSetBase(DisplayConfig, DefaultConfig)
+            ObjSetBase(Config, DisplayConfig)
         } else {
             ObjSetBase(Config, DefaultConfig)
         }
 
-                ; ExcludeNewControlSetFont
-        ; Preserve the original `SetFont` method as a method on this class.
+        ;@region SetFont
+        ; Preserve the original `SetFont` methods as a method on this class.
         OriginalControlSetFont := Gui.Control.Prototype.SetFont
         this.DefineProp('ControlSetFont', { Call: (Self, GuiObj, OptFont?, FontFamily?) => OriginalControlSetFont(GuiObj, OptFont ?? unset, FontFamily ?? unset) })
-
-        if Config.ExcludeNewControlSetFont is Array {
-            for Name in _CrossReferenceListInverse(Config.ExcludeNewControlSetFont) {
-                Gui.%Name%.Prototype.DefineProp('SetFont', { Call: GUI_CONTROL_SETFONT })
-            }
-        } else if !Config.ExcludeNewControlSetFont {
-            Gui.Control.Prototype.DefineProp('SetFont', { Call: GUI_CONTROL_SETFONT })
-        }
-
-                ; NewGuiSetFont
         OriginalGuiSetFont := Gui.Prototype.SetFont
         this.DefineProp('SetFont', { Call: (Self, GuiObj, OptFont?, FontFamily?) => OriginalGuiSetFont(GuiObj, OptFont ?? unset, FontFamily ?? unset) })
-        if Config.NewGuiSetFont {
-            Gui.Prototype.DefineProp('SetFont', { Call: GUI_SETFONT })
-        }
 
-                ; NewGuiCall
-        OriginalGuiCall := Gui.Call
-        this.DefineProp('Gui_Call', { Call: (Self, GuiClass, OptGui?, Title?, EventHandler?) => OriginalGuiCall(GuiClass, OptGui?, Title?, EventHandler?) })
-        if Config.NewGuiCall {
-            Gui.DefineProp('Call', { Call: GUI_CALL })
+        ; Override the original methods
+        if Config.OverrideControlSetFont {
+            Gui.Control.Prototype.DefineProp('SetFont', { Call: ControlSetFont })
         }
+        if Config.OverrideGuiSetFont {
+            Gui.Prototype.DefineProp('SetFont', { Call: GuiSetFont })
+        }
+        ;@endregion
 
-                ; NewGuiAdd
+        ;@region GuiAdd
+        ; Preserve the original `Gui.Prototype.Add` method
         OriginalGuiAdd := Gui.Prototype.Add
-        this.DefineProp('Gui_Add', { Call: (Self, GuiObj, Type?, OptControl?, Text?) => OriginalGuiAdd(GuiObj, Type?, OptControl?, Text?) })
-        if Config.NewGuiAdd {
-            Gui.Prototype.DefineProp('Add', { Call: GUI_ADD })
+        this.DefineProp('GuiAdd', { Call: (Self, GuiObj, Type?, OptControl?, Text?) => OriginalGuiAdd(GuiObj, Type?, OptControl?, Text?) })
+        ; Override `Gui.Prototype.Add` and `Gui.Prototype.Add<Type>`
+        if Config.OverrideGuiAdd {
+            Gui.Prototype.DefineProp('Add', { Call: GuiAdd })
+            for Cls in ClassList {
+                t := StrSplit(Cls.Prototype.__Class, '.')
+                Gui.Prototype.DefineProp('Add' t[2], { Call: GuiAdd2.Bind(t[2]) })
+            }
+            Gui.Prototype.DefineProp('AddTab2', { Call: GuiAdd2.Bind('Tab2') })
+            Gui.Prototype.DefineProp('AddTab3', { Call: GuiAdd2.Bind('Tab3') })
         }
+        ;@endregion
 
-                ; ExcludeNewGuiAddType
-        if Config.ExcludeNewGuiAddType is Array {
-            Condition := (Name) => Name = 'Tab2' ? 2 : Name = 'Tab3' ? 3 : 1
-            for Name in _CrossReferenceListInverse(Config.ExcludeNewGuiAddType) {
-                Gui.Prototype.DefineProp('Add' Name, { Call: GUI_ADD2.Bind(Name) })
-            }
-            for Name in Config.ExcludeGuiAddType {
-                if Name = 'Tab2' {
-                    Flag_Tab2 := true
-                } else if Name = 'Tab3' {
-                    Flag_Tab3 := true
-                }
-            }
-            if !IsSet(Flag_Tab2) {
-                Gui.Prototype.DefineProp('AddTab2', { Call: GUI_ADD2.Bind('Tab2') })
-            }
-            if !IsSet(Flag_Tab3) {
-                Gui.Prototype.DefineProp('AddTab3', { Call: GUI_ADD2.Bind('Tab3') })
-            }
-        } else if !Config.ExcludeNewGuiAddType {
-            for CtrlType in ClassList {
-                Gui.Prototype.DefineProp('Add' CtrlType, { Call: GUI_ADD2.Bind(CtrlType) })
-            }
-            Gui.Prototype.DefineProp('AddTab2', { Call: GUI_ADD2.Bind('Tab2') })
-            Gui.Prototype.DefineProp('AddTab3', { Call: GUI_ADD2.Bind('Tab3') })
-        }
-
-                ; DpiExcludeControls
-        if Config.DpiExcludeControls is Array {
-            Gui.Control.Prototype.DefineProp('DpiExclude', { Value: false })
-            for CtrlType in Config.DpiExcludeControls {
-                Gui.%CtrlType%.Prototype.DefineProp('DpiExclude', { Value: true })
-            }
-        } else if Config.DpiExcludeControls {
+        ;@region ControlIncludeByDefault
+        if Config.ControlIncludeByDefault is Array {
             Gui.Control.Prototype.DefineProp('DpiExclude', { Value: true })
-        } else {
+            for CtrlType in Config.ControlIncludeByDefault {
+                Gui.%CtrlType%.Prototype.DefineProp('DpiExclude', { Value: false })
+            }
+        } else if Config.ControlIncludeByDefault {
             Gui.Control.Prototype.DefineProp('DpiExclude', { Value: false })
-        }
-
-                ; DefaultExcludeGui
-        if Config.DefaultExcludeGui {
-            Gui.Prototype.DefineProp('DpiExclude', { Value: true })
         } else {
-            Gui.Prototype.DefineProp('DpiExclude', { Value: false })
+            Gui.Control.Prototype.DefineProp('DpiExclude', { Value: true })
         }
-                ; GetTextExtent
+        ;@endregion
+
+        ;@region GetTextExtent
         if Config.GetTextExtent {
-            if Config.GetTextExtent is Map {
-                for CtrlType, Function in Config.GetTextExtent {
-                    Gui.%CtrlType%.Prototype.DefineProp('GetTextExtent', { Call: Function })
-                }
-            } else {
-                throw TypeError('``DisplayConfig.GetTextExtent`` must be a Map or ``false``.', -1, 'Current type: ' Type(Config.GetTextExtent))
+            for CtrlType in [ 'Button', 'CheckBox', 'DateTime', 'Edit', 'GroupBox', 'Hotkey'
+            , 'ComboBox', 'DDL', 'Tab', 'Tab2', 'Tab3', 'Radio', 'StatusBar', 'Text' ] {
+                Gui.%CtrlType%.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent })
             }
+            Gui.ListBox.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent_LB })
+            Gui.Link.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent_Link })
+            Gui.ListView.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent_LV })
+            Gui.TreeView.Prototype.DefineProp('GetTextExtent', { Call: ControlGetTextExtent_TV })
         }
-                ; ResizeByText
+        ;@endregion
+
+        ;@region GetTextExtentEx
+        if Config.GetTextExtentEx {
+            for CtrlType in [ 'Button', 'CheckBox', 'DateTime', 'Edit', 'GroupBox', 'Hotkey'
+            , 'ComboBox', 'DDL', 'Tab', 'Tab2', 'Tab3', 'Radio', 'StatusBar', 'Text' ] {
+                Gui.%CtrlType%.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx })
+            }
+            Gui.ListBox.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx_LB })
+            Gui.Link.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx_Link })
+            Gui.ListView.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx_LV })
+            Gui.TreeView.Prototype.DefineProp('GetTextExtentEx', { Call: ControlGetTextExtentEx_TV })
+        }
+        ;@endregion
+
+        ;@region HandleDpiChanged
+        if Config.HandleDpiChanged {
+            Gui.Control.Prototype.DefineProp('HandleDpiChanged', { Call: ControlResizeByDpiRatio })
+        }
+        ;@endregion
+
+        ;@region ResizeByText
         if Config.ResizeByText {
-            if Config.ResizeByText is Array {
-                for CtrlType in Config.ResizeByText {
-                    Gui.%CtrlType%.Prototype.DefineProp('ResizeByText', { Call: GUI_CONTROL_RESIZE_BY_TEXT })
-                }
-            } else {
-                throw TypeError('``DisplayConfig.ResizeByText`` must be an Array or ``false``.', -1, 'Current type: ' Type(Config.ResizeByText))
+            if !Config.GetTextExtent || !Config.HandleDpiChanged {
+                throw ValueError('``ResizeByText`` requires the options ``GetTextExtent`` and ``HandleDpiChanged``.', -1)
+            }
+            for CtrlType in Config.ResizeByText {
+                Gui.%CtrlType%.Prototype.DefineProp('HandleDpiChanged', { Call: ControlResizeByText })
             }
         }
+        ;@endregion
 
         if Config.GuiToggle {
-            Gui.Prototype.DefineProp('Toggle', { Call: GUI_TOGGLE })
+            Gui.Prototype.DefineProp('Toggle', { Call: GuiToggle })
         }
         if Config.GuiCallWith_S {
             Gui.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
@@ -142,44 +177,7 @@ class dGui {
             Gui.Prototype.DefineProp('Dpi', { Get: (Self) => DllCall('GetDpiForWindow', 'ptr', Self.hWnd, 'int') })
         }
         if Config.ControlDpiGetter {
-            Gui.Control.Prototype.DefineProp('Dpi', { Get: (Self) => dMon.Dpi.Win(Self.Hwnd) })
-        }
-
-        _CrossReferenceList(List) {
-            Result := []
-            Result.Capacity := List.Length
-            _indices := Indices.Clone()
-            for CtrlType in ClassList {
-                if !_indices.length {
-                    break
-                }
-                for i in _indices {
-                    if CtrlType = ClassList[i] {
-                        Result.Push(CtrlType)
-                        _indices.RemoveAt(A_Index)
-                        continue 2
-                    }
-                }
-            }
-            return Result
-        }
-        _CrossReferenceListInverse(List) {
-            Result := []
-            Result.Capacity := ClassList.Length - List.Length
-            _indices := Indices.Clone()
-            for CtrlType in ClassList {
-                if !_indices.length {
-                    break
-                }
-                for i in _indices {
-                    if CtrlType = ClassList[i] {
-                        _indices.RemoveAt(A_Index)
-                        continue 2
-                    }
-                }
-                Result.Push(CtrlType)
-            }
-            return Result
+            Gui.Control.Prototype.DefineProp('Dpi', { Get: (Self) => DllCall('GetDpiForWindow', 'ptr', Self.hWnd, 'int') })
         }
     }
 
@@ -187,18 +185,25 @@ class dGui {
      * @description - Contains AHK's built-in `Gui.Prototype.SetFont` method.
      */
     static SetFont(*) {
-        throw Error(A_ThisFunc ' is expected to be overridden by the constructor.', -1)
+        throw Error('``' A_ThisFunc '`` is expected to be overridden by the constructor.', -1)
     }
 
     /**
      * @description - Contains AHK's built-in `Gui.Control.Prototype.SetFont` method.
      */
     static ControlSetFont(*) {
-        throw Error(A_ThisFunc ' is expected to be overridden by the constructor.', -1)
+        throw Error('``' A_ThisFunc '`` is expected to be overridden by the constructor.', -1)
     }
 
     /**
-     * @description - Matches with a `OptFont` string and returns the `RegExMatchInfo` object.
+     * @description - Contains AHK's built-in `Gui.Prototype.Add` method.
+     */
+    static GuiAdd(*) {
+        throw Error('``' A_ThisFunc '`` is expected to be overridden by the constructor.', -1)
+    }
+
+    /**
+     * @description - Matches with an `OptFont` string and returns the `RegExMatchInfo` object.
      * The object has these subcapture groups:
      * - opt1: The first part of the font string before the size.
      * - n: The font size, if present.
@@ -207,15 +212,15 @@ class dGui {
      * @param {String} OptFont - The font string to match.
      * @returns {Object} - The `RegExMatchInfo` object.
      * @example
-        OptFont := 's12 q5'
-        if MatchFont := dGui.GetMatchFont(OptFont) {
-            MsgBox('Font size is ' MatchFont['n']) ; 12
-            MsgBox('First part of options are ' MatchFont['opt1']) ; ''
-            MsgBox('Second part of options are ' MatchFont['opt2']) ; " q5"
-        }
+     *  OptFont := 's12 q5'
+     *  if MatchFont := dGui.GetMatchFont(OptFont) {
+     *      MsgBox('Font size is ' MatchFont['n']) ; 12
+     *      MsgBox('First part of options are ' MatchFont['opt1']) ; ''
+     *      MsgBox('Second part of options are ' MatchFont['opt2']) ; " q5"
+     *  }
      */
     static GetMatchFont(OptFont) {
-        if RegExMatch(OptFont, '(?<opt1>[^s]*)[sS](?<n>\d+)(?<opt2>.*)', &MatchFont) {
+        if RegExMatch(OptFont, '(?<opt1>[^sS]*)[sS](?<n>\d+)(?<opt2>.*)', &MatchFont) {
             return MatchFont
         }
     }
@@ -256,19 +261,11 @@ class dGui {
         )
         DpiRatio := NewDpi / GuiObj.DpiChangeHelper.Dpi
         GuiObj.DpiChangeHelper.Dpi := NewDpi
-        if HasProp(GuiObj, 'WvCtrl')
         for Ctrl in GuiObj {
             if Ctrl.DpiExclude {
                 continue
             }
-            if HasMethod(Ctrl, 'ResizeByText') {
-                Ctrl.GetPos(&x, &y, &w, &h)
-                Ctrl.ResizeByText(NewDpi, DpiRatio, &X, &Y, &W, &H)
-            } else {
-                Ctrl.GetPos(&x, &y, &w, &h)
-                Ctrl.SetFont('s' (Ctrl.DpiChangeHelper.FontSize), , NewDpi)
-                Ctrl.DpiChangeHelper.Adjust(DpiRatio, &X, &Y, &W, &H)
-            }
+            Ctrl.HandleDpiChanged(NewDpi, DpiRatio, &X, &Y, &W, &H)
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
                 , 'ptr', Ctrl.Hwnd
@@ -292,35 +289,10 @@ class dGui {
     /**
      * @description - Calls `OnMessage(WM_DPICHANGED, Callback)` to set the `WM_DPICHANGED` message
      * handler. This method is called by `dGui.SetDpiChangeHandler` and `Gui.Call`. The default
-     * callback is `GUI_HANDLEDPICHANGE`, the primary built-in function for handling dpi changes.
+     * callback is `GuiHandleDpiChanged`, the primary built-in function for handling dpi changes.
      */
-    static SetDpiChangeHandler(Callback := GUI_HANDLEDPICHANGE) {
-        OnMessage(WM_DPICHANGED ?? 0x02E0, Callback)
-    }
-
-
-    /**
-     * @description - An alternate method for creating a new Gui object. This method sets
-     * some defaults, like the initial `Opt` values, and also has built-in `SetThreadDpiAwarenessContext`
-     * to `-4` for initializing per-monitor dpi-aware windows. If the `EventHandler` is defined here,
-     * it gets added to the Gui object on propert `EventHandler` (as well as passed to the constructor).
-     * @param {String} [Opt='-DPIScale +Resize'] - The first parameter of `Gui.Call`.
-     * @param {String} [Title] - The second parameter of `Gui.Call`.
-     * @param {String} [EventHandler] - The third parameter of `Gui.Call`.
-     * @param {String} [OptFont] - The first parameter of `Gui.Prototype.SetFont`.
-     * @param {String} [FontFamily] - The second parameter of `Gui.Prototype.SetFont`.
-     * @returns {Gui} - The new Gui object.
-     */
-    static Call(Opt := '-DPIScale +Resize', Title?, EventHandler?, OptFont?, FontFamily?) {
-        DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
-        G := Gui(Opt, Title ?? unset, EventHandler ?? unset)
-        if IsSet(EventHandler) {
-            G.EventHandler := EventHandler
-        }
-        if IsSet(OptFont) || IsSet(FontFamily) {
-            G.SetFont(OptFont ?? unset, FontFamily ?? unset)
-        }
-        return G
+    static SetDpiChangeHandler(Callback := GuiHandleDpiChanged) {
+        OnMessage(WM_DPICHANGED, Callback)
     }
 
     /**
@@ -334,7 +306,8 @@ class dGui {
      *  }
      * @
      * @param {Gui} G - The Gui object to enumerate.
-     * @param {String} CtrlType - The control type to enumerate.
+     * @param {String} CtrlType - The control type to enumerate, or a comma-delimited list of
+     * control types, e.g. "Text,Button,Edit".
      * @param {Integer} [VarCount] - The number of variables to return. 1 or 2.
      * - 1: Returns the control object.
      * - 2: Returns the control object and the control name.
@@ -342,23 +315,22 @@ class dGui {
      */
     static EnumerateControl(G, CtrlType, VarCount := 2) {
         List := []
+        CtrlType := ',' CtrlType ','
         for Ctrl in G {
-            if Ctrl.Type = CtrlType
+            if InStr(CtrlType, ',' Ctrl.Type ',') {
                 List.Push(Ctrl)
+            }
         }
         i := 0
-        if VarCount == 2
-            return _Enumerate2
-        else
-            return _Enumerate1
+        return _Enum%VarCount%
 
-        _Enumerate1(&Ctrl) {
+        _Enum1(&Ctrl) {
             if ++i > List.Length
                 return 0
             Ctrl := List[i]
             return 1
         }
-        _Enumerate2(&Name, &Ctrl) {
+        _Enum2(&Name, &Ctrl) {
             if ++i > List.Length
                 return 0
             Ctrl := List[i]
@@ -366,144 +338,131 @@ class dGui {
             return 1
         }
     }
+}
 
-    /**
-     * @class
-     * @description - An instance of this class is added to `Gui.Control` objects on property
-     * `DpiChangeHelper`. This implements some necessary logic for correctly scaling and responding
-     * to `WM_DPICHANGED`.
-     */
-    class ControlDpiChangeHelper {
-        /**
-         * @description - This method is used to create a new instance of the `ControlDpiChangeHelper`
-         * class. This method is called by the `Gui.Control` constructor.
-         * @param {Gui.Control} Ctrl - The control object to attach this helper to.
-         * @returns {dGui.ControlDpiChangeHelper} - The new instance of the `ControlDpiChangeHelper`.
-         */
-        __New(Ctrl) {
-            lf := LOGFONT(Ctrl.hWnd)
-            lf()
-            this.FontSize := lf.FontSize
-            this.Rounded := { X: 0, Y: 0, W: 0, H: 0, F: 0 }
-            this.Offset := { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-            Ctrl.DefineProp('DpiChangeHelper', { Value: this })
-        }
-
-        /**
-         * @description - This method is used to get the dpi-adjusted position and size values for
-         * a control. This method is to be used when scaling controls by a dpi ratio. This method
-         * prevents control drifting due to repeated rounding.
-         * @param {Float} DpiRatio - The ratio of the new dpi to the old dpi.
-         * @param {VarRef} [X] - The x coordinate of the control. This must contain the original
-         * X value and will be modified to the scaled X value.
-         * @param {VarRef} [Y] - The y coordinate of the control. This must contain the original
-         * Y value and will be modified to the scaled Y value.
-         * @param {VarRef} [W] - The width of the control. This must contain the original
-         * W value and will be modified to the scaled W value.
-         * @param {VarRef} [H] - The height of the control. This must contain the original
-         * H value and will be modified to the scaled H value.
-         */
-        Adjust(DpiRatio, &X?, &Y?, &W?, &H?) {
-            if IsSet(X) {
-                X := Round(NewX := (X + (this.Rounded.X >= 0.5 ? this.Rounded.X*-1 : this.Rounded.X)) * DPIRatio, 0)
-                this.Rounded.X := NewX - Floor(NewX)
-            }
-            if IsSet(Y) {
-                Y := Round(NewY := (Y + (this.Rounded.Y >= 0.5 ? this.Rounded.Y*-1 : this.Rounded.Y)) * DPIRatio, 0)
-                this.Rounded.Y := NewY - Floor(NewY)
-            }
-            if IsSet(W) {
-                W := Round(NewW := (W + (this.Rounded.W >= 0.5 ? this.Rounded.W*-1 : this.Rounded.W)) * DPIRatio, 0)
-                this.Rounded.W := NewW - Floor(NewW)
-            }
-            if IsSet(H) {
-                H := Round(NewH := (H + (this.Rounded.H >= 0.5 ? this.Rounded.H*-1 : this.Rounded.H)) * DPIRatio, 0)
-                this.Rounded.H := NewH - Floor(NewH)
-            }
-        }
-
-        /**
-         * @description - This method is used to get the dpi-adjusted position and size values for
-         * a control. This method is to be used when scaling controls according to their text contents.
-         * This method, when used in conjunction with text scaling functions, addresses the problem
-         * of non-linear text scaling leaving blank / empty space within and around controls that
-         * primarily contain text. When scaling using only a dpi ratio, there is often noticeable
-         * gaps between the text and the control's borders. The way to handle this is to map the
-         * interface around the control's text contents, instead of mapping the interface around
-         * the controls' relative position to one another.
-         * <br>
-         * You don't need to call this method directly if you are using the built-in WM_DPICHANGED
-         * family of functions. This method is called for any controls that are set by the
-         * `DisplayConfig.ResizeByText` property. The default value sets this for controls which have
-         * a simple `Text` property (e.g. no controls for which `Text` might return an array, or
-         * for which `Text` does not return a string).
-         * <br>
-         * This library does not provide any methods for filling the extra space that your interface
-         * gains from this process. Modern apps usually have a separate layouts defined to seamlessly
-         * fill the extra space when the dpi changes.
-         * <br>
-         * This method performs these functions:
-         * - Adjusts the size and position values according to the ratio of the a controls' new
-         * text extent to its original text extent.
-         * - Caches rounding to prevent control drifting.
-         * - Applies the `Offset` values to the width and height, if the `Offset` has been defined
-         * for the control / control type. The `Offset` can help fine-tune the size of a control
-         * when direct scaling causes the control to be too large or too small.
-         * <br>
-         * @param {Float} WidthRatio - The ratio of: NewTextExtent / OriginalTextExtent.
-         * @param {Float} HeightRatio - The ratio of: NewTextExtent / OriginalTextExtent.
-         * @param {VarRef} [X] - The x coordinate of the control. This must contain the original
-         * X value and will be modified to the scaled X value.
-         * @param {VarRef} [Y] - The y coordinate of the control. This must contain the original
-         * Y value and will be modified to the scaled Y value.
-         * @param {VarRef} [W] - The width of the control. This must contain the original
-         * W value and will be modified to the scaled W value.
-         * @param {VarRef} [H] - The height of the control. This must contain the original
-         * H value and will be modified to the scaled H value.
-         */
-        AdjustByText(WidthRatio, HeightRatio, &X?, &Y?, &W?, &H?) {
-            if IsSet(X) {
-                X := Round(NewX := (X + (this.Rounded.X >= 0.5 ? this.Rounded.X*-1 : this.Rounded.X)) * WidthRatio, 0) + this.Offset.X
-                this.Rounded.X := NewX - Floor(NewX)
-                this.Offset.X *= -1
-            }
-            if IsSet(Y) {
-                Y := Round(NewY := (Y + (this.Rounded.Y >= 0.5 ? this.Rounded.Y*-1 : this.Rounded.Y)) * HeightRatio, 0) + this.Offset.Y
-                this.Rounded.Y := NewY - Floor(NewY)
-                this.Offset.Y *= -1
-            }
-            if IsSet(W) {
-                W := Round(NewW := (W + (this.Rounded.W >= 0.5 ? this.Rounded.W*-1 : this.Rounded.W)) * WidthRatio, 0) + this.Offset.W
-                this.Rounded.W := NewW - Floor(NewW)
-                this.Offset.W *= -1
-            }
-            if IsSet(H) {
-                H := Round(NewH := (H + (this.Rounded.H >= 0.5 ? this.Rounded.H*-1 : this.Rounded.H)) * HeightRatio, 0) + this.Offset.H
-                this.Rounded.H := NewH - Floor(NewH)
-                this.Offset.H *= -1
-            }
-        }
+/**
+ * @description - A custom `Gui.Add` method that handles some initialization tasks required
+ * by this library.
+ */
+GuiAdd(GuiObj, ControlType, OptControl?, Text?, OptFont?, FontFamily?) {
+    Ctrl := dGui.GuiAdd(GuiObj, ControlType, OptControl ?? unset, Text ?? unset)
+    ControlDpiChangeHelper(Ctrl)
+    if IsSet(OptFont) | IsSet(FontFamily) {
+        Ctrl.SetFont(OptFont ?? unset, FontFamily ?? unset)
     }
+    if !Ctrl.DpiExclude {
+        GuiObj.Count++
+    }
+    return Ctrl
+}
 
-    /**
-     * @class
-     * @description - An instance of this class is added to `Gui` objects on property
-     * `DpiChangeHelper`. This implements some necessary logic for correctly scaling and responding
-     * to `WM_DPICHANGED`.
-     */
-    class GuiDpiChangeHelper {
-        /**
-         * @description - This method is used to create a new instance of the `GuiDpiChangeHelper`
-         * class. This method is called by the `Gui` constructor.
-         * @param {Gui} GuiObj - The Gui object to attach this helper to.
-         * @returns {dGui.GuiDpiChangeHelper} - The new instance of the `GuiDpiChangeHelper`.
-         */
-        __New(GuiObj) {
-            this.FontSize := 6
-            this.Dpi := dMon.Dpi.Win(GuiObj.Hwnd)
-            this.Rounded := { F: 0 }
-            GuiObj.DefineProp('DpiChangeHelper', { Value: this })
+/**
+ * @description - Used to programmatically define to `Gui.Prototype.Add<Type>` methods.
+ */
+GuiAdd2(ControlType, GuiObj, OptControl?, Text?, OptFont?, FontFamily?) {
+    return GuiAdd(GuiObj, ControlType, OptControl ?? unset, Text ?? unset, OptFont ?? unset, FontFamliy ?? unset)
+}
+
+ControlResizeByText(Ctrl, NewDpi, DpiRatio, &OutX?, &OutY?, &OutW?, &OutH?) {
+    Ctrl.GetPos(&X, &Y, &W, &H)
+    sz := ControlGetTextExtent(Ctrl)
+    Width1 := sz.Width
+    Height1 := sz.Height
+
+    ; Set scaled font.
+    Ctrl.SetFont('s' Ctrl.DpiChangeHelper.FontSize, , NewDpi)
+    sz := ControlGetTextExtent(Ctrl)
+    ; Get scaled X and Y
+    Ctrl.DpiChangeHelper.AdjustByText(sz.Width / Width1, sz.Height / Height1, &OutX := X, &OutY := Y, &OutW := W, &OutH := H)
+}
+
+ControlResizeByDpiRatio(Ctrl, NewDpi, DpiRatio, &OutX?, &OutY?, &OutW?, &OutH?) {
+    Ctrl.GetPos(&OutX, &OutY, &OutW, &OutH)
+    Ctrl.SetFont('s' Ctrl.DpiChangeHelper.FontSize, , NewDpi)
+    Ctrl.DpiChangeHelper.Adjust(DpiRatio, &OutX, &OutY, &OutW, &OutH)
+}
+
+/**
+ * @description - A modified `SetFont` function that adjusts for dpi and caches the font value.
+ * @param {String} [OptFont] - The first parameter of `Gui.Control.Prototype.SetFont`.
+ * @param {String} [FontFamily] - The second parameter of `Gui.Control.Prototype.SetFont`.
+ * @param {Integer} [Dpi] - The DPI value to use for the font size calculation. If unset, the
+ * DPI is retrieved from the monitor where the control is located.
+ * @returns {Integer} - If `OptFont` is set and contains a size value, the function returns the
+ * adjusted font size. If the font size is not used, the function returns an empty string.
+ */
+ControlSetFont(Ctrl, OptFont?, FontFamily?, Dpi?) {
+    if IsSet(OptFont) {
+        if RegExMatch(OptFont, '(?<opt1>[^s]*)[sS](?<n>\d+)(?<opt2>.*)', &MatchFont) {
+            if !IsSet(Dpi) {
+                DllCall('Shcore\GetDpiForMonitor', 'ptr', DllCall('User32.dll\MonitorFromWindow', 'ptr', Ctrl.Hwnd, 'UInt', 0x00000000, 'Uptr'), 'UInt', 0, 'UInt*', &Dpi := 0, 'UInt*', &DpiY := 0, 'UInt')
+            }
+            NewFontSize := Round(MatchFont['n'] * Dpi / A_ScreenDpi, 0)
+            Ctrl.DpiChangeHelper.FontSize := MatchFont['n']
+            dGui.ControlSetFont(Ctrl, MatchFont['opt1'] ' ' MatchFont['opt2'] ' s' NewFontSize)
+            return Floor(NewFontSize)
+        } else
+            dGui.ControlSetFont(Ctrl, OptFont)
+    }
+    if IsSet(FontFamily) {
+        for Name in StrSplit(FontFamily, ',') {
+            dGui.ControlSetFont(Ctrl, , Name)
         }
     }
 }
 
+GuiHandleDpiChanged(wParam, lParam, Message, Hwnd) {
+    GuiObj := GuiFromHwnd(Hwnd)
+    if !GuiObj || GuiObj.DpiExclude {
+        return
+    }
+    DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
+    Critical(1)
+    dGui.OnDpiChange(GuiObj, wParam & 0xFFFF, lParam)
+    Critical(0)
+}
+
+/**
+ * @description - A modified `SetFont` function that adjusts for dpi and caches the font value.
+ * @param {String} [OptFont] - The first parameter of `Gui.Prototype.SetFont`.
+ * @param {String} [FontFamily] - The second parameter of `Gui.Control.Prototype.SetFont`.
+ * @param {Integer} [Dpi] - The DPI value to use for the font size calculation. If unset, the
+ * DPI is retrieved from the monitor where the control is located.
+ * @returns {Integer} - If `OptFont` is set and contains a size value, the function returns the
+ * adjusted font size. If the font size is not used, the function returns an empty string.
+ */
+GuiSetFont(GuiObj, OptFont?, FontFamily?, Dpi?) {
+    if IsSet(OptFont) {
+        if MatchFont := dGui.GetMatchFont(OptFont) {
+            NewFontSize := ((MatchFont['n'] + GuiObj.DpiChangeHelper.Rounded.F * (GuiObj.DpiChangeHelper.Rounded.F >= 0.5 ? -1 : 1)) * (Dpi ?? _GetDpi()) / A_ScreenDpi)
+            GuiObj.DpiChangeHelper.Rounded.F := NewFontSize - Floor(NewFontSize)
+            GuiObj.DpiChangeHelper.FontSize := MatchFont['n']
+            dGui.SetFont(GuiObj, MatchFont['opt1'] ' ' MatchFont['opt2'] ' s' Floor(NewFontSize))
+            return Floor(NewFontSize)
+        } else
+            dGui.SetFont(GuiObj, OptFont)
+    }
+    if IsSet(FontFamily) {
+        for Name in StrSplit(FontFamily, ',') {
+            dGui.SetFont(GuiObj, , Name)
+        }
+    }
+    _GetDpi() {
+        if DllCall('Shcore\GetDpiForMonitor', 'ptr', DllCall('User32.dll\MonitorFromWindow', 'ptr', GuiObj.Hwnd, 'UInt', 0x00000000, 'Uptr'), 'UInt', 0, 'UInt*', &Dpi := 0, 'UInt*', &DpiY := 0, 'UInt') {
+            throw OSError('Shcore\GetDpiForMonitor failed.', -1, A_LastError)
+        }
+        return Dpi
+    }
+}
+
+/**
+ * @description - Toggles a window's visibility.
+ * @param {Boolean} [Value] - Set this to specify a value instead of toggling it.
+ */
+GuiToggle(GuiObj, Value?) {
+    if Value ?? !DllCall('IsWindowVisible', 'Ptr', GuiObj.Hwnd) {
+        GuiObj.Show()
+    } else {
+        GuiObj.Hide()
+    }
+}

@@ -1,4 +1,15 @@
 ﻿
+; Dependencies
+#include ..\lib
+#include SetThreadDpiAwareness__Call.ahk
+
+#include ..\struct
+#include Rect.ahk
+#include RectBase.ahk
+#include POINT.ahk
+
+#include ..\src\dMon.ahk
+
 /**
  * @class
  * @description - Win is a namespace for functions that interact with windows.
@@ -94,10 +105,11 @@ class dWin extends RectBase {
      * @param {Integer} [H] - The new Height of the window.
      */
     static MoveScaled(hWnd, X?, Y?, W?, H?) {
-        OriginalDpi := GetDpiForWindow(hWnd)
+        OriginalDpi := DllCall('GetDpiForWindow', 'ptr', hWnd, 'int')
         NewDpi := IsSet(X) || IsSet(Y) ? dMon.Dpi.Pt(X, Y) : OriginalDpi
-        if !NewDpi
+        if !NewDpi {
             NewDpi := dMon.Dpi.Pt(X * 96 / A_ScreenDpi, Y * 96 / A_ScreenDpi)
+        }
         DpiRatio := NewDpi / OriginalDpi
         WinMove(
             IsSet(X) ? X / DpiRatio : unset

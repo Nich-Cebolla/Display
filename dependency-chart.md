@@ -14,11 +14,11 @@ This only shows primary dependencies.
 
 ### lib\ComboBox.ahk
 
-- definitions\Define_ComboBox.ahk
+- definitions\define-ComboBox.ahk
 
 ### lib\Dpi.ahk
 
-- definitions\Define_Dpi.ahk
+- definitions\define-Dpi.ahk
 
 ### lib\Gui.ahk
 - src\dWin.ahk

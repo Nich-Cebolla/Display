@@ -1,5 +1,5 @@
 ﻿
-#include ..\definitions\Define_Dpi.ahk
+#include ..\definitions\define-Dpi.ahk
 /**
  * @description - Determines whether two DPI_AWARENESS_CONTEXT values are identical. A
  * DPI_AWARENESS_CONTEXT contains multiple pieces of information. For example, it includes both the
@@ -63,16 +63,16 @@ GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
  * The following table indicates how the results will differ based on the PROCESS_DPI_AWARENESS
  * value of your application.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/nf-shellscalingapi-getdpiformonitor}
- * @param {Integer} Hmonitor - The handle of the monitor being queried.
+ * @param {Integer} hMonitor - The handle of the monitor being queried.
  * @param {Integer} [DpiType=MDT_DEFAULT] - The type of DPI being queried. Possible values are from the
  * MONITOR_DPI_TYPE enumeration.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/ne-shellscalingapi-monitor_dpi_type}
  * @returns {Integer} - If succesful, the dpi for the monitor. If unsuccessful, an empty string.
  * An unsuccessful function call would be caused by an invalid parameter.
  */
-GetDpiForMonitor(Hmonitor, DpiType := MDT_DEFAULT ?? 0) {
+GetDpiForMonitor(hMonitor, DpiType := MDT_DEFAULT) {
     if !DllCall('Shcore\GetDpiForMonitor', 'ptr'
-    , Hmonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'uint') {
+    , hMonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'uint') {
         return DpiX
     }
 }
@@ -95,7 +95,7 @@ GetDpiForSystem() {
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
  * @param {Integer} hWnd - The window handle.
  * @returns {Integer} - The DPI for the window, which depends on the DPI_AWARENESS of the window.
- * - DPI_AWARENESS_UNAWARE - The base value of DPI is which is set to 96 (defined as `USER_DEFAULT_SCREEN_DPI`)
+ * - DPI_AWARENESS_UNAWARE - The base value of DPI which is set to 96 (defined as `USER_DEFAULT_SCREEN_DPI`)
  * - DPI_AWARENESS_SYSTEM_AWARE - The system DPI
  * - DPI_AWARENESS_PER_MONITOR_AWARE - The DPI of the monitor where the window is located.
  */
@@ -114,7 +114,7 @@ GetDpiForWindow(hWnd) {
  * - E_ACCESSDENIED - The application does not have sufficient privileges.
  */
 GetProcessDpiAwareness(&OutValue, hProcess := 0) {
-    return DllCall('Shcore\GetProcessDpiAwareness', 'ptr', hProcess, 'uint*', &OutValue := 0 'uint')
+    return DllCall('Shcore\GetProcessDpiAwareness', 'ptr', hProcess, 'uint*', &OutValue := 0, 'uint')
 }
 
 /**
@@ -171,9 +171,11 @@ IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
 
 /**
  * @description - Use this API to change the DPI_AWARENESS_CONTEXT for the thread from the default
- * value for the app.
+ * value for the app. `SetThreadDpiAwarenessContext` calls `IsValidDpiAwarenessContext` prior to
+ * setting the dpi awareness context. If `IsValidDpiAwarenessContext` returns false, this
+ * function returns an empty string and the dpi awareness context is not changed.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext}
- * @param [DPI_AWARENESS_CONTEXT=DPI_AWARENESS_CONTEXT_DEFAULT] - Use the `DPI_AWARENESS_CONTEXT_DEFAULT`
+ * @param [DPI_AWARENESS_CONTEXT=DPI_AWARENESS_CONTEXT_DEFAULT ?? -4] - Use the `DPI_AWARENESS_CONTEXT_DEFAULT`
  * global variable to define the default `DPI_AWARENESS_CONTEXT` for various functions, including
  * this one. If unset, this defaults to -4.
  * @returns {Integer} - If successful, returns the original thread `DPI_AWARENESS_CONTEXT`. If

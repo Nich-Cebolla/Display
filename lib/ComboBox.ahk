@@ -1,5 +1,6 @@
 ﻿
-#include ..\definitions\Define_ComboBox.ahk
+; Dependency
+#include ..\definitions\define-ComboBox.ahk
 
 /**
  * @description - Shows or hides the combobox's dropdown.

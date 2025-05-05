@@ -1,4 +1,15 @@
 ﻿
+; Dependencies
+#include ..\definitions\Define-Scrollbar.ahk
+
+#include ..\struct
+#include POINT.ahk
+
+#include ..\lib
+#include SetThreadDpiAwareness__Call.ahk
+#include Text.ahk
+
+#include ..\src\dWin.ahk
 
 class dScrollbar {
 
@@ -63,7 +74,10 @@ class dScrollbar {
 
     static SetScrollInfo(GuiObj, MinMax, NewWidth, NewHeight) {
         ; Get the dimensions for a line of text.
-        dWin.GetTextExtentPoint32('ABCDEFGHIJKLMNOPQRSTUVWXYZ', GuiObj.PageSizeDataCtrl.Hwnd, &TextW, &TextH)
+        if !(hDC := DllCall('GetDC', 'Ptr', GuiObj.PageSizeDataCtrl.Hwnd, 'Ptr')) {
+            throw OSError()
+        }
+        sz := GetTextExtentPoint32(hDC, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         GuiObj.UpdateText('text extent point. horz: ' TextW '    vert: ' TextH, A_ThisFunc, A_LineNumber, A_LineFile)
 
         ; Get the bounding rect for all controls in the window.

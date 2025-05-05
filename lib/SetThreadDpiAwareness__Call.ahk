@@ -1,4 +1,5 @@
 ﻿
+#include ..\definitions\Define-Dpi.ahk
 /**
  * @description - Enables the use of the "_S" suffix when calling functions that will have different
  * behavior depending on the thread dpi awareness context.

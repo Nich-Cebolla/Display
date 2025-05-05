@@ -248,16 +248,16 @@ class dLv {
     /**
      * @description - Enumerates the columns in the ListView control.
      * @example
-       ;   Name            |     Age     |   Favorite Anime Character
-       ; --------------------------------------------------------
-       ; Johnny Appleseed  |      27     |    Holo
-       ; Albert Einstein   |   Relative  |    Kurisu Makise
-       ; The Rock          |      53     |    Konata Izumi
-
-        for ColName in ListView.Cols()
-            MsgBox(ColName) ; Name, Age, Favorite Anime Character
-        for ColName, RowText in ListView.Cols(2)
-            MsgBox(RowText) ; Albert Einstein, Relative, Kurisu Makise
+     * ;   Name            |     Age     |   Favorite Anime Character
+     * ; --------------------------------------------------------
+     * ; Johnny Appleseed  |      27     |    Holo
+     * ; Albert Einstein   |   Relative  |    Kurisu Makise
+     * ; The Rock          |      53     |    Konata Izumi
+     *
+     *  for ColName in ListView.Cols()
+     *      MsgBox(ColName) ; Name, Age, Favorite Anime Character
+     *  for ColName, RowText in ListView.Cols(2)
+     *      MsgBox(RowText) ; Albert Einstein, Relative, Kurisu Makise
      * @
      * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
      * exclude this parameter.
@@ -334,8 +334,6 @@ class dLv {
             Text := Self.GetText(i, Col)
         }
     }
-
-
 
     /**
      * @description - Updates an object or an array of objects within the ListView control. The other

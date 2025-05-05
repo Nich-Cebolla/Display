@@ -32,19 +32,25 @@ class LOGFONT extends Buffer {
         this.Handle := ''
     }
 
-    Call() {
+    /**
+     * @description - Gets / updates the structure with the control's current font information.
+     */
+    Call(*) {
         if !WinExist(this.hWnd) {
             throw TargetError('Window not found.', -1, this.hWnd)
         }
         if !(hFont := SendMessage(0x0031,,, this.hWnd)) {
             throw Error('Failed to get hFont.', -1)
         }
-        if !DllCall('Gdi32.dll\GetObject', 'ptr', hFont, 'int', 92, 'ptr', this) {
+        if !DllCall('Gdi32.dll\GetObject', 'ptr', hFont, 'int', 92, 'ptr', this, 'int') {
             throw Error('Failed to get font object.', -1)
         }
-
     }
 
+    /**
+     * @description - Call `LOGFONT.Prototype.Set` after updating the structure with the desired
+     * changes.
+     */
     Set(Redraw := true) {
         if !(hFontOld := SendMessage(0x0031,,, this.hWnd)) {
             throw Error('Failed to get hFont.', -1)
@@ -61,6 +67,10 @@ class LOGFONT extends Buffer {
             DllCall('DeleteObject', 'ptr', this.Handle)
             this.Handle := 0
         }
+    }
+
+    __Delete() {
+        this.DisposeFont()
     }
 
     /**

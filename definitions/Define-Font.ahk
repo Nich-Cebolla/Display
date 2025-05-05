@@ -15,9 +15,9 @@ CLIP_DEFAULT_PRECIS := 0
 CLIP_CHARACTER_PRECIS := 1
 CLIP_STROKE_PRECIS := 2
 CLIP_MASK := 0xf
-CLIP_LH_ANGLES := (1<<4)
-CLIP_TT_ALWAYS := (2<<4)
-CLIP_EMBEDDED := (8<<4)
+CLIP_LH_ANGLES := 1<<4
+CLIP_TT_ALWAYS := 2<<4
+CLIP_EMBEDDED := 8<<4
 
 DEFAULT_QUALITY := 0
 DRAFT_QUALITY := 1
@@ -33,23 +33,13 @@ VARIABLE_PITCH := 2
 MONO_FONT := 8
 
 /** Font families */
-FF_DONTCARE := (0<<4)              ; Don't care or don't know.
-
-FF_ROMAN := (1<<4)                 ; Variable stroke width, serifed.
-                                ; Times Roman, Century Schoolbook, etc.
-
-FF_SWISS := (2<<4)                 ; Variable stroke width, sans-serifed.
-                                ; Helvetica, Swiss, etc.
-
-FF_MODERN := (3<<4)                ; Constant stroke width, serifed or sans-serifed.
-                                ; Pica, Elite, Courier, etc.
-
-FF_SCRIPT := (4<<4)                ; Cursive, etc.
-
-FF_DECORATIVE := (5<<4)            ; Old English, etc.
-
-FF_MODERN := (3<<4)                ; Constant stroke width, serifed or sans-serifed. */
-                                ; Pica, Elite, Courier, etc. */
+FF_DONTCARE := 0<<4      ; Don't care or don't know.
+FF_ROMAN := 1<<4         ; Variable stroke width, serifed. Times Roman, Century Schoolbook, etc.
+FF_SWISS := 2<<4         ; Variable stroke width, sans-serifed. Helvetica, Swiss, etc.
+FF_MODERN := 3<<4        ; Constant stroke width, serifed or sans-serifed. Pica, Elite, Courier, etc.
+FF_SCRIPT := 4<<4        ; Cursive, etc.
+FF_DECORATIVE := 5<<4    ; Old English, etc.
+FF_MODERN := 3<<4        ; Constant stroke width, serifed or sans-serifed. Pica, Elite, Courier, etc.
 
 /* Font Weights */
 FW_DONTCARE := 0

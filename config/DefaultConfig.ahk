@@ -23,21 +23,6 @@ class DefaultConfig {
     static ExcludeNewGuiAddType := false
     static DpiExcludeControls := false
     static DefaultExcludeGui := false
-    static GetTextExtent := Map(
-        'Link', GUI_CONTROL_TEXTEXTENT_LINK
-      , 'ListBox', GUI_CONTROL_TEXTEXTENT_LISTBOX
-      , 'ListView', GUI_CONTROL_TEXTEXTENT_LISTVIEW
-      , 'TreeView', GUI_CONTROL_TEXTEXTENT_TREEVIEW
-      , 'Button', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'CheckBox', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'ComboBox', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'DDl', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'Edit', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'GroupBox', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'Radio', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'StatusBar', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'Tab', GUI_CONTROL_TEXTEXTENT_TEXT
-      , 'Text', GUI_CONTROL_TEXTEXTENT_TEXT
-    )
+    static GetTextExtent := true
     static ResizeByText := ['Button', 'CheckBox', 'ComboBox', 'DDl', 'Edit', 'GroupBox', 'Radio', 'StatusBar', 'Tab', 'Text']
 }

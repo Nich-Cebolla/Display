@@ -1,4 +1,8 @@
 ﻿
+; Dependencies:
+#include ..\src\dDefaultOptions.ahk
+#include ..\struct\SIZE.ahk
+#include ..\struct\IntegerArray.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -377,7 +381,7 @@ ControlGetTextExtentEx_LB(Ctrl, Index?, MaxExtent := 0, &OutCharacterFit?, &OutE
  * description for {@link ControlGetTextExtentEx} for further details.
  * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
  */
-CtrlTextExtentExPoint_Link(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
+ControlGetTextExtentEx_Link(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     ; Remove the html anchor tags
     Text := RegExReplace(Ctrl.Text, '<a\s*(?:href|id)=".+?">(.+?)</a>', '$1')
     return __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(Text), StrLen(Text), &MaxExtent, &OutCharacterFit, &OutExtentPoints)

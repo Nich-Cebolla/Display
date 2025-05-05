@@ -8,7 +8,6 @@
 /*
 
 This document seeks to accomplish these tasks:
-- Provide an overview of what is available within this library.
 - Notify you of changes to built-in classes and methods that this library might invoke.
 - Guide you through choosing what options your project will use and how to enable them, and
 disable others your project does not need.
@@ -25,7 +24,7 @@ as I release updates.
 ; Adjust the top #include statements to point to the "Display" directories.
 ; By "top #include statements", I mean the ones at the top of each block
 ; e.g. "#include DefaultConfig.ahk" should be changed to "..\..\path\to\Display\config\DefaultConfig.ahk"
-; or "#include ..\lib" should be changed to "#include ..\..\path\to\Display\lib"
+; and "#include ..\lib" should be changed to "#include ..\..\path\to\Display\lib"
 ; You can use absolute paths if necessary / more appropriate for your project
 
 ; Step 3: Selecting source files
@@ -33,7 +32,9 @@ as I release updates.
 ; When finished, try running this file and see if you get any unset variable warnings
 ; then adjust as needed.
 
-; Note that the definition files are #included where needed, so you don't need to worry about those.
+; Note that the definition files and struct files are #included where needed, so you don't need to worry about those.
+; You can still #include a struct file or definition file if your project will use one outside of the context
+; of this library, so I included those but all commented out to make this easy.
 
 #include DefaultConfig.ahk
 
@@ -41,7 +42,7 @@ as I release updates.
 #include ComboBox.ahk
 #include Dpi.ahk
 #include Gui.ahk
-#include Lib.ahk
+; #include Lib.ahk not currently in use
 #include Text.ahk
 #include SetThreadDpiAwareness__Call.ahk
 
@@ -51,20 +52,36 @@ as I release updates.
 #include dScrollbar.ahk
 #include dWin.ahk
 #include dLv.ahk
+#include DpiChangeHelpers.ahk
 
-#include ..\struct
-#include IntegerArray.ahk
-#include LOGFONT.ahk
-#include Point.ahk
-#include Rect.ahk
-#include RectBase.ahk
-#include SIZE.ahk
-#include WINDOWINFO.ahk
+; #include ..\definitions
+; #include Define-ComboBox.ahk
+; #include Define-Dpi.ahk
+; #include Define-Font.ahk
+; #include Define-Scrollbar.ahk
+; #include Define-Windows.ahk
+
+; #include ..\struct
+; #include IntegerArray.ahk
+; #include LOGFONT.ahk
+; #include Point.ahk
+; #include Rect.ahk
+; #include RectBase.ahk
+; #include SIZE.ahk
+; #include WINDOWINFO.ahk
 
 ; Step 3: Selecting options
 ; Delete the /* below and work your way through the various options
-; These pertain to `dGui` and functions that are related to WM_DPICHANGED, the other
-; parts of this library don't have configuration options.
+
+/**
+ * @property {Boolean} dMon.UseOrderedMonitors - When true, the monitors are ordered by their
+ * coordinates. See the parameter hint above {@link dMon.GetOrder} for more information.
+ */
+if IsSet(dMon) {
+   dMon.UseOrderedMonitors := false
+}
+
+; The remaining options pertain to `dGui` and functions that are related to WM_DPICHANGED
 
 /**
  * @var {Integer} DPI_AWARENESS_CONTEXT_DEFAULT - The default DPI awareness context used by
@@ -77,157 +94,214 @@ DPI_AWARENESS_CONTEXT_DEFAULT := DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
  */
 MDT_DEFAULT := MDT_EFFECTIVE_DPI
 
-/**
- * @property {Boolean} dMon.UseOrderedMonitors - When true, the monitors are ordered by their
- * coordinates. See the parameter hint above `dMon.GetOrder` for more information.
- */
-if IsSet(dMon) {
-   dMon.UseOrderedMonitors := false
-}
-
 
 /**
- * @class
- * @description - The configuration object for the `Display` library, containing
+ * @classdesc - The configuration object for the `Display` library, containing
  * configuration items for `dGui` and functions which handle `WM_DPICHANGED` messages.
  * Properties marked "**Required**" must use the default value to use the built-in WM_DPICHANGED
  * handlers.
  */
 class DisplayConfig {
 
-    /**
-     * @property {Boolean|Array} DisplayConfig.ExcludeNewControlSetFont - **Required** Default = false <br>
-     * Controls which `Gui.Control` types have the `SetFont` method overridden. If false,
-     * all control types have their `SetFont` method overridden. If an array, all control
-     * types except those listed will have their `SetFont` method overridden. If true, no
-     * control types have their `SetFont` method overridden.
-     */
-    static ExcludeNewControlSetFont := false
+   ; This information pertains to both gui and control `SetFont` methods. The new `SetFont` methods
+   ; scale font size according to dpi, handle some extra tasks required for the built-in dpi change
+   ; handler to work correctly, and also allow you to define multiple font families in a single
+   ; SetFont call as a comma-separated list of font family names (see https://www.autohotkey.com/docs/v2/lib/Gui.htm
+   ; for information about using multiple font family names).
+   ; The function definitions are located in lib\Gui.ahk.
+   /**
+    * @property {Boolean|Array} DisplayConfig.OverrideControlSetFont - **Required**
+    * Default = true
+    * If true, `Gui.Control.Prototype.SetFont` is overridden with `ControlSetFont`.
+    */
+   static OverrideControlSetFont := true
 
-    /**
-     * @property {Boolean} DisplayConfig.NewGuiSetFont - **Required** Default = true <br>
-     * Controls whether `Gui.Prototype.SetFont` is overridden. The new SetFont method is
-     * `GUI_SETFONT`, located in lib\Gui.ahk. The new method scales font size according
-     * to dpi, handles some extra tasks required for WM_DPICHANGED to work correctly, and also
-     * allows you to define multiple font families in a single SetFont call as a comma-separated
-     * list of font family names (see {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm} for
-     * information about using multiple font family names).
-     */
-    static NewGuiSetFont := true
+   /**
+    * @property {Boolean} DisplayConfig.OverrideGuiSetFont - **Required**
+    * Default = true
+    * If true, `Gui.Prototype.SetFont` is overridden with `GuiSetFont`.
+    */
+   static OverrideGuiSetFont := true
 
-    /**
-     * @property {Boolean} DisplayConfig.NewGuiCall - **Required** Default = true <br>
-     * Controls whether `Gui.Call` is overridden. The new Call method is `GUI_CALL`, located in
-     * lib\Gui.ahk. The new method handles the initialization of several additional properties
-     * required for this library's built-in WM_DPICHANGED handler. It also allows an `ExtendedParams`
-     * parameter as an optional parameter. `ExtendedParams` can be an object with zero or more
-     * of { MarginX, MarginY, BackColor, MenuBar, Name, OptFont, FontFamily }.
-     */
-    static NewGuiCall := true
+   /**
+    * @property {Boolean} DisplayConfig.OverrideGuiAdd - **Required**
+    * Default = true
+    * If true, `Gui.Prototype.Add` is overridden with `GuiAdd`. The new method has these changes:
+    * - Initializes `CtrlObj.DpiChangeHelper` with a `ControlDpiChangeHelper` object, necessary
+    * for some functionality related to the built-in WM_DPICHANGED handler.
+    * - Increments `GuiObj.Count++`.
+    *
+    * This also overrides the `Gui.Prototype.Add<Type>` methods.
+    *
+    * The original `Gui.Prototype.Add` method is still available from `dGui.GuiAdd`, just pass the
+    * gui object as the first parameter.
+    */
+   static OverrideGuiAdd := true
 
-    /**
-     * @property {Boolean} DisplayConfig.NewGuiAdd - **Required** Default = true <br>
-     * Controls whether `Gui.Prototype.Add` is overridden. The new method is `GUI_ADD`, located
-     * in lib\Gui.ahk. The new method handles the in
-     */
-    static NewGuiAdd := true
+   /**
+    * @property {Boolean|Array} DisplayConfig.ControlIncludeByDefault -
+    * When true, all controls are processed by the built-in dpi change handler by default.
+    *
+    * You can also set it to an array of control types as strings to specify a subset of control
+    * types which will be processed by the built-in dpi change handler by default.
+    *
+    * You can also set it to `false` to exclude all controls from being processed by the built-in
+    * dpi change handler by default.
+    *
+    * This feature is implemented by creating a `Gui.Control.Prototype.DpiExclude` property.
+    *
+    * When an array of type strings, the library sets `Gui.Control.Prototype.DpiExclude := true`
+    * and then for each type in the array sets `Gui.<Ctrl Type>.Prototype.DpiExclude := false`.
+    *
+    * In both cases, you can change the value of the property at any any time to toggle the behavior.
+    * @example
+    *  ; To exclude ListView controls from being processed by the built-in dpi change handler.
+    *  Gui.ListView.Prototype.DpiExclude := true
+    *  ; To exclude all controls from being processed by default.
+    *  Gui.Control.Prototype.DpiExclude := true
+    *  ; To later include all controls from being processed by default (except ListView controls, per
+    *  ; the above setting).
+    *  Gui.Control.Prototype.DpiExclude := false
+    * @
+    * You can also set this on an individual control.
+    * @example
+    *  G := Gui('-DPIScale +Resize')
+    *  MainEdit := G.Add('Edit', 'w800 r50 vmain')
+    *  MainEdit.DpiExclude := true
+    * @
+    */
+   static ControlIncludeByDefault := true
 
-    /**
-     * @property {Boolean|Array} DisplayConfig.ExcludeNewGuiAddType - When false, all control types
-     * have their associated `Gui.Prototype.Add<Type>` method overridden (to call the new
-     * `Gui.Prototype.Add` method). When an array, all control types except those listed will
-     * have the `Gui.Prototype.Add<Type>` method overridden. When true, no control types
-     * have their associated `Gui.Prototype.Add<Type>` method overridden.
-     */
-    static ExcludeNewGuiAddType := false
+   /**
+    * @property {Map|Boolean} DisplayConfig.GetTextExtent  - When `true`, the library adds a
+    * method `GetTextExtent` to Gui controls. The method measures the control's text in pixels,
+    * returning a `SIZE` object.
+    * The function definitions are in lib\ControlTextExtent.ahk.
+    * The following control types are affected by `DisplayConfig.ControlGetTextExtent`:
+    * Button, CheckBox, DateTime, Edit, GroupBox, Hotkey, Link, ComboBox, DDL, ListBox, Tab, Tab2,
+    * Tab3, ListView, Radio, StatusBar, Text, TreeView
+    */
+   static GetTextExtent := true
 
-    /**
-     * @property {Boolean|Array} DisplayConfig.DpiExcludeControls - When false, all controls
-     * are processed by the dpi change handler. Else, an array of control types to exclude from
-     * processing. This is implemented by creating a `Gui.<Ctrl Type>.Prototype.DpiExclude` property for
-     * the control type. You can change the value of the property at any any time for any control
-     * prototype to toggle the behavior.
-     * @example
-     *  ; I want to custom handle dpi scaling for ListView controls, so I do not want the built-in
-     *  ; handler to process them.
-     *  DisplayConfig.DpiExcludeControls := ['ListView']
-     *  ; or
-     *  Gui.ListView.Prototype.DpiExclude := true
-     * @
-     * You can also set this on an individual control.
-     * @example
-     *  G := Gui('-DPIScale +Resize')
-     *  MainEdit := G.Add('Edit', 'w800 r50 vmain')
-     *  MainEdit.DpiExclude := true
-     * @
-     */
-    static DpiExcludeControls := false
+   /**
+    * @property {Map|Boolean} DisplayConfig.GetTextExtentEx  - When `true`, the library adds a
+    * method `GetTextExtentEx` to Gui controls. See the function definition for details about
+    * the function. The function definitions are in lib\ControlTextExtent.ahk.
+    * The following control types are affected by `DisplayConfig.ControlGetTextExtentEx`:
+    * Button, CheckBox, DateTime, Edit, GroupBox, Hotkey, Link, ComboBox, DDL, ListBox, Tab, Tab2,
+    * Tab3, ListView, Radio, StatusBar, Text, TreeView
+    */
+   static GetTextExtentEx := true
 
-    /**
-     * @property {Boolean} DisplayConfig.DefaultExcludeGui - When true, the property
-     * `Gui.Prototype.DpiExclude` is set to true, causing all `GUI_HANDLEDPICHANGE` function calls
-     * to return immediately. Gui windows must be opted-in by setting the property to false on
-     * that Gui instance. When false, the built-in DPI change handler is activated for all Gui
-     * windows without any additional code from you. Use this option if you would prefer to
-     * selectively enable DPI handling at an individual window level.
-     * @example
-     *  G := Gui('-DPIScale +Resize')
-     *  G.DpiExclude := false
-     * @
-     */
-    static DefaultExcludeGui := false
+   /**
+    * @property {Boolean} DisplayConfig.HandleDpiChanged - **Required**
+    * Default = true
+    * When `true`, the library adds a method `Gui.Control.Prototype.HandleDpiChanged`. The function
+    * definition is `ControlResizeByDpiRatio` in lib\Gui.ahk.
+    */
+   static HandleDpiChanged := true
 
-    /**
-     * @property {Map|Boolean} DisplayConfig.ControlGetTextExtent  - If true, the library adds a
-     * method `GetTextExtent` to Gui controls. The method measures the control's text in pixels.
-     * The function objects are in lib\ControlTextExtent.ahk.
-     */
-    static ControlGetTextExtent := true
+   /**
+    * @property {Array|Boolean} DisplayConfig.ResizeByText - Regarding the built-in dpi change
+    * handler, `DisplayConfig.ResizeByText` specifies which control types are resized using the
+    * function `ControlResizeByText`. For controls not included in this list, they will be
+    * resized using `ControlResizeByDpiRatio`. To set all controls to be resized using
+    * `ControlResizeByDpiRatio`, set this to `false`.
+    *
+    * Using this option requires that `DisplayConfig.GetTextExtent == true` and
+    * `DisplayConfig.ControlHandleDpiChanged == true`.
+    *
+    * The way resizing by text works is similar to resizing by the dpi ratio. Typically when we
+    * resize controls in response to a dpi change, we refactor the size as a ratio of the system
+    * dpi to the current dpi, then apply the new dpi as a ratio of new dpi to system dpi. One
+    * challenge with this approach is that font size does not scale the same way physical size
+    * scales, and so the ratio of non-text-area to text-area for a control will change.
+    *
+    * When resizing by text area, instead of using the dpi ratio, the built-in dpi change handler
+    * measures the font's current size, then scales the font according to the dpi change, then
+    * measures the font again, and that ratio is used to scale the area of the control. This
+    * preserves the ratio of non-text-area to text-area within any given control, but then carries
+    * the consequence of causing an inconsistent ratio of control-area to gui-window-area. Which
+    * approach is better than the other depends on the needs of the application and how much work
+    * one is willing to put into dealing with these eventualities. Generally I would recommend
+    * trying out both and seeing which one better fits the layout.
+    *
+    * The following control types are currently incompatible with `ControlResizeByText` due to
+    * requiring special handling: ActiveX, Custom, ListBox, ListView, MonthCal, Pic, Progress,
+    * Slider, TreeView, UpDown.
+    */
+   static ResizeByText := ['Button', 'Edit', 'Link', 'StatusBar', 'Text']
 
-    /**
-     * @property {Array|Boolean} DisplayConfig.ResizeByText - Controls which control types are resized
-     * using the function `GUI_CONTROL_RESIZE_BY_TEXT`. For controls not included in this list,
-     * they will be resized using `dGui.ControlDpiChangeHelper.Prototype.Adjust`. To set all controls
-     * to be resized using `dGui.ControlDpiChangeHelper.Prototype.Adjust`, set this to `false`.
-     */
-    static ResizeByText := ['Button', 'CheckBox', 'ComboBox', 'DDl', 'Edit', 'GroupBox', 'Radio'
-                          , 'StatusBar', 'Tab', 'Text']
+   /**
+    * @property {Object} DisplayConfig.ControlOffset - Needs more work, not currently in use.
+    */
+  ;  static ControlOffset := {
+  ;      ActiveX:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Button:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , CheckBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , ComboBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Control:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Custom:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , DateTime:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , DDL:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Edit:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , GroupBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Hotkey:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Link:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , List:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , ListBox:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , ListView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , MonthCal:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Pic:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Progress:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Radio:       { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Slider:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , StatusBar:   { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Tab:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Tab2:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Tab3:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , Text:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , TreeView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;    , UpDown:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+  ;  }
 
-    /**
-     * @property {Boolean} DisplayConfig.GuiToggle - When true, the method `Toggle` is added to
-     * `Gui.Prototype`. The function object is `GUI_TOGGLE` locatated in lib\Gui.ahk.
-     */
-    static GuiToggle := true
+   /**
+    * @property {Boolean} DisplayConfig.GuiToggle - When true, the method `Toggle` is added to
+    * `Gui.Prototype`. The function is `GuiToggle` locatated in lib\Gui.ahk.
+    */
+   static GuiToggle := true
 
-    /**
-     * @property {Boolean} DisplayConfig.GuiCallWith_S - When true, the method `__Call` is added to
-     * `Gui.Prototype`. The function object is `SetThreadDpiAwareness__Call` located in
-     * lib\SetThreadDpiAwareness__Call.ahk. It enables the usage of the "_S" suffix when
-     * calling gui object methods, e.g. `GuiObj.Move_S`. When called with "_S",
-     * `DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT, 'ptr')`
-     * is called before calling the intended method.
-     */
-    static GuiCallWith_S := true
 
-    /**
-     * @property {Boolean} DisplayConfig.ContrlCallWith_S - When true, the method `__Call` is added
-     * to `Gui.Control.Prototype`. This is the same as the above, but for controls.
-     */
-    static ControlCallWith_S := true
+  ; For the "CallWith_S" options, the function used is `SetThreadDpiAwareness__Call` located in
+  ; lib\SetThreadDpiAwareness__Call.ahk. It enables the usage of the "_S" suffix when calling gui
+  ; or control methods, e.g. `GuiObj.Move_S`. When called with "_S", the function first sets the
+  ; dpi awareness context to DPI_AWARENESS_CONTEXT_DEFAULT, then calls the intended method. For
+  ; an explanation of why this is beneficial, see https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm#Workarounds
+   /**
+    * @property {Boolean} DisplayConfig.GuiCallWith_S - When true, the method `__Call` is added to
+    * `Gui.Prototype`.
+    */
+   static GuiCallWith_S := true
 
-    /**
-     * @property {Boolean} DisplayConfig.GuiDpiGetter - When true, the dynamic property `Dpi`
-     * is added to `Gui.Prototype`. The property will return the value returned by `GetDpiForWindow`
-     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
-     */
-    static GuiDpiGetter := true
+   /**
+    * @property {Boolean} DisplayConfig.ControlCallWith_S - When true, the method `__Call` is added
+    * to `Gui.Control.Prototype`.
+    */
+   static ControlCallWith_S := true
 
-    /**
-     * @property {Boolean} DisplayConfig.ControlDpiGetter - When true, the dynamic property `Dpi`
-     * is added to `Gui.Control.Prototype`. The property will return the value returned by `GetDpiForWindow`
-     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
-     */
-    static ControlDpiGetter := true
+   /**
+    * @property {Boolean} DisplayConfig.GuiDpi - When true, the dynamic property `Dpi`
+    * is added to `Gui.Prototype`. The property will return the value returned by `GetDpiForWindow`
+    * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
+    */
+   static GuiDpi := true
+
+   /**
+    * @property {Boolean} DisplayConfig.ControlDpi - When true, the dynamic property `Dpi`
+    * is added to `Gui.Control.Prototype`. The property will return the value returned by `GetDpiForWindow`
+    * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
+    */
+   static ControlDpi := true
 
 }
 
@@ -238,11 +312,11 @@ if IsSet(dGui) {
 
 
 /*
+This is a list of built-in control types
 ActiveX
 Button
 CheckBox
 ComboBox
-Control
 Custom
 DateTime
 DDL
@@ -250,7 +324,6 @@ Edit
 GroupBox
 Hotkey
 Link
-List
 ListBox
 ListView
 MonthCal

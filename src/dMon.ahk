@@ -1,4 +1,16 @@
 ﻿
+; Dependencies
+#include ..\definitions
+#include Define-Dpi.ahk
+
+#include ..\struct
+#include RectBase.ahk
+#include RECT.ahk
+#include POINT.ahk
+
+#include ..\lib
+#include SetThreadDpiAwareness__Call.ahk
+
 
 /**
  * @class
@@ -161,18 +173,23 @@ class dMon extends RectBase {
      * @class
      * @description - Returns the DPI of the monitor using various input types.
      */
-    class Dpi extends DisplayBase {
-        static Call(Hmon, DpiType := MDT_DEFAULT ?? 0) {
+    class Dpi {
+        static __New() {
+            if this.Prototype.__Class == 'dMon.Dpi' {
+                this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+            }
+        }
+        static Call(Hmon, DpiType := MDT_DEFAULT) {
             if !DllCall('Shcore\GetDpiForMonitor', 'ptr', Hmon, 'UInt', DpiType, 'UInt*', &DpiX := 0, 'UInt*', &DpiY := 0, 'UInt') {
                 return DpiX
             }
         }
-        static Pos(Left, Top, Right, Bottom, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromPos(Left, Top, Right, Bottom), DpiType)
-        static Rect(RectObj, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromRect(RectObj), DpiType)
-        static Dimensions(X, Y, W, H, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromDimensions(X, Y, W, H), DpiType)
-        static Mouse(DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromMouse(), DpiType)
-        static Point(X, Y, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromPoint(X, Y), DpiType)
-        static Win(Hwnd, DpiType := MDT_DEFAULT ?? 0) => dMon.Dpi(dMon.FromWin(Hwnd), DpiType)
+        static Pos(Left, Top, Right, Bottom, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromPos(Left, Top, Right, Bottom), DpiType)
+        static Rect(RectObj, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromRect(RectObj), DpiType)
+        static Dimensions(X, Y, W, H, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromDimensions(X, Y, W, H), DpiType)
+        static Mouse(DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromMouse(), DpiType)
+        static Point(X, Y, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromPoint(X, Y), DpiType)
+        static Win(Hwnd, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromWin(Hwnd), DpiType)
     }
     ;@endregion
 
@@ -314,7 +331,7 @@ class dMon extends RectBase {
         Split := StrSplit(Name, '_')
         if this.HasMethod(Split[1]) {
             if InStr(Split[2], 'S') {
-                Result := DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT ?? -4, 'ptr')
+                Result := DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT, 'ptr')
             }
             if InStr(Split[2], 'U') {
                 if Params.Length {
