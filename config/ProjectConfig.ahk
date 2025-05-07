@@ -41,17 +41,17 @@ as I release updates.
 #include ..\lib
 #include ComboBox.ahk
 #include Dpi.ahk
-; #include Lib.ahk not currently in use
 #include Text.ahk
 #include SetThreadDpiAwareness__Call.ahk
+; #include Lib.ahk not currently in use
 
 #include ..\src
 #include dMon.ahk
 #include dGui.ahk
-; #include dScrollbar.ahk ; not working
 #include dWin.ahk
 #include dLv.ahk
-#include DpiChangeHelpers.ahk
+#include DpiChangedHelpers.ahk
+; #include dScrollbar.ahk not working
 
 ; #include ..\definitions
 ; #include Define-ComboBox.ahk
@@ -102,40 +102,30 @@ MDT_DEFAULT := MDT_EFFECTIVE_DPI
  */
 class DisplayConfig {
 
-    ; This information pertains to both gui and control `SetFont` methods. The new `SetFont` methods
-    ; scale font size according to dpi, handle some extra tasks required for the built-in dpi change
-    ; handler to work correctly, and also allow you to define multiple font families in a single
-    ; SetFont call as a comma-separated list of font family names (see https://www.autohotkey.com/docs/v2/lib/Gui.htm
-    ; for information about using multiple font family names).
-    ; The function definitions are located in lib\Gui.ahk.
     /**
-     * @property {Boolean|Array} DisplayConfig.OverrideControlSetFont - **Required**
+     * @property {Boolean} DisplayConfig.GuiCount - **Required**
      * Default = true
-     * If true, `Gui.Control.Prototype.SetFont` is overridden with `ControlSetFont`.
+     * When `true`, the library adds the property `GuiObj.Count`, which is incremented each time
+     * a control is added with `dGui.Add`
      */
-    static OverrideControlSetFont := true
+    static GuiCount := true
 
     /**
-     * @property {Boolean} DisplayConfig.OverrideGuiSetFont - **Required**
+     * @property {Boolean} DisplayConfig.GuiDpiExclude - **Required**
      * Default = true
-     * If true, `Gui.Prototype.SetFont` is overridden with `GuiSetFont`.
+     * When `true`, the library adds the property `Gui.Prototype.DpiExclude := 0`. To exclude any
+     * individual window from being altered by the built-in dpi change handler, set the window's
+     * `DpiExclude` property to a nonzero value.
      */
-    static OverrideGuiSetFont := true
+    static GuiDpiExclude := true
 
     /**
-     * @property {Boolean} DisplayConfig.OverrideGuiAdd - **Required**
+     * @property {Boolean} DisplayConfig.HandleDpiChanged - **Required**
      * Default = true
-     * If true, `Gui.Prototype.Add` is overridden with `GuiAdd`. The new method has these changes:
-     * - Initializes `CtrlObj.DpiChangeHelper` with a `ControlDpiChangeHelper` object, necessary
-     * for some functionality related to the built-in WM_DPICHANGED handler.
-     * - Increments `GuiObj.Count++`.
-     *
-     * This also overrides the `Gui.Prototype.Add<Type>` methods.
-     *
-     * The original `Gui.Prototype.Add` method is still available from `dGui.GuiAdd`, just pass the
-     * gui object as the first parameter.
+     * When `true`, the library adds a method `Gui.Control.Prototype.HandleDpiChanged`. The function
+     * definition is `ControlResizeByDpiRatio` in lib\Gui.ahk.
      */
-    static OverrideGuiAdd := true
+    static HandleDpiChanged := true
 
     /**
      * @property {Boolean|Array} DisplayConfig.ControlIncludeByDefault -
@@ -197,31 +187,6 @@ class DisplayConfig {
     static GetTextExtentEx := true
 
     /**
-     * @property {Boolean} DisplayConfig.GuiCount - **Required**
-     * Default = true
-     * When `true`, the library adds the property `GuiObj.Count`, which is incremented each time
-     * a control is added.
-     */
-    static GuiCount := true
-
-    /**
-     * @property {Boolean} DisplayConfig.GuiDpiExclude - **Required**
-     * Default = true
-     * When `true`, the library adds the property `Gui.Prototype.DpiExclude := 0`. To exclude any
-     * individual window from being altered by the built-in dpi change handler, set the window's
-     * `DpiExclude` property to a nonzero value.
-     */
-    static GuiDpiExclude := true
-
-    /**
-     * @property {Boolean} DisplayConfig.HandleDpiChanged - **Required**
-     * Default = true
-     * When `true`, the library adds a method `Gui.Control.Prototype.HandleDpiChanged`. The function
-     * definition is `ControlResizeByDpiRatio` in lib\Gui.ahk.
-     */
-    static HandleDpiChanged := true
-
-    /**
      * @property {Array|Boolean} DisplayConfig.ResizeByText -
      * Default = ['Button', 'Edit', 'Link', 'StatusBar', 'Text']
      *
@@ -230,8 +195,7 @@ class DisplayConfig {
      * list, they will be resized using `ControlResizeByDpiRatio`. To set all controls to be resized
      * using `ControlResizeByDpiRatio`, set this to `false`.
      *
-     * Using this option requires that `DisplayConfig.GetTextExtent == true` and
-     * `DisplayConfig.ControlHandleDpiChanged == true`.
+     * Using this option requires that `DisplayConfig.GetTextExtent == true`.
      *
      * The way resizing by text works is similar to resizing by the dpi ratio. Typically when we
      * resize controls in response to a dpi change, we refactor the size as a ratio of the system
@@ -255,52 +219,19 @@ class DisplayConfig {
     static ResizeByText := ['Button', 'Edit', 'Link', 'StatusBar', 'Text']
 
     /**
-     * @property {Object} DisplayConfig.ControlOffset - Needs more work, not currently in use.
-     */
-    ; static ControlOffset := {
-    ;      ActiveX:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Button:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , CheckBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , ComboBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Control:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Custom:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , DateTime:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , DDL:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Edit:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , GroupBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Hotkey:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Link:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , List:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , ListBox:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , ListView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , MonthCal:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Pic:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Progress:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Radio:       { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Slider:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , StatusBar:   { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Tab:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Tab2:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Tab3:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , Text:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , TreeView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;    , UpDown:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-    ;  }
-
-    /**
      * @property {Boolean} DisplayConfig.GuiToggle -
      * Default = true
-     * When true, the method `Toggle` is added to `Gui.Prototype`. The function is `GuiToggle`
+     * When true, the library adds a method `Gui.Prototype.Toggle`. The function is `GuiToggle`
      * located in lib\Gui.ahk.
      */
     static GuiToggle := true
-
 
     ; For the "CallWith_S" options, the function used is `SetThreadDpiAwareness__Call` located in
     ; lib\SetThreadDpiAwareness__Call.ahk. It enables the usage of the "_S" suffix when calling gui
     ; or control methods, e.g. `GuiObj.Move_S`. When called with "_S", the function first sets the
     ; dpi awareness context to DPI_AWARENESS_CONTEXT_DEFAULT, then calls the intended method. For
-    ; an explanation of why this is beneficial, see https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm#Workarounds
+    ; an explanation of when one might use this, see
+    ; https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm#Workarounds
     /**
      * @property {Boolean} DisplayConfig.GuiCallWith_S - When true, the method `__Call` is added to
      * `Gui.Prototype`.
@@ -362,4 +293,41 @@ Tab3
 Text
 TreeView
 UpDown
+
+
+
+/**
+ * @property {Object} DisplayConfig.ControlOffset - Needs more work, not currently in use.
+ */
+; static ControlOffset := {
+;      ActiveX:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Button:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , CheckBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , ComboBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Control:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Custom:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , DateTime:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , DDL:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Edit:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , GroupBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Hotkey:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Link:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , List:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , ListBox:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , ListView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , MonthCal:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Pic:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Progress:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Radio:       { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Slider:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , StatusBar:   { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Tab:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Tab2:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Tab3:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , Text:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , TreeView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;    , UpDown:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
+;  }
+
+
 */

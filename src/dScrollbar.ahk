@@ -74,10 +74,10 @@ class dScrollbar {
 
     static SetScrollInfo(GuiObj, MinMax, NewWidth, NewHeight) {
         ; Get the dimensions for a line of text.
-        if !(hDC := DllCall('GetDC', 'Ptr', GuiObj.PageSizeDataCtrl.Hwnd, 'Ptr')) {
+        if !(hdc := DllCall('GetDC', 'Ptr', GuiObj.PageSizeDataCtrl.Hwnd, 'Ptr')) {
             throw OSError()
         }
-        sz := GetTextExtentPoint32(hDC, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        sz := GetTextExtentPoint32(hdc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         GuiObj.UpdateText('text extent point. horz: ' TextW '    vert: ' TextH, A_ThisFunc, A_LineNumber, A_LineFile)
 
         ; Get the bounding rect for all controls in the window.

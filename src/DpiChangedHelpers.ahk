@@ -2,26 +2,32 @@
 ; Dependencies
 #include ..\struct
 #include LOGFONT.ahk
+#include ..\lib\ControlTextExtent.ahk
+#include ..\..\AutoHotkey-LibV2\ItemScroller.ahk
+#include <stringify>
+
+#singleinstance force
 
 /**
  * @class
  * @description - An instance of this class is added to `Gui.Control` objects on property
- * `DpiChangeHelper`. This implements some necessary logic for correctly scaling and responding
+ * `DpiChangedHelper`. This implements some necessary logic for correctly scaling and responding
  * to `WM_DPICHANGED`.
  */
-class ControlDpiChangeHelper {
+class ControlDpiChangedHelper {
     /**
-     * @description - This method is used to create a new instance of the `ControlDpiChangeHelper`
+     * @description - This method is used to create a new instance of the `ControlDpiChangedHelper`
      * class. This method is called by the `Gui.Control` constructor.
      * @param {Gui.Control} Ctrl - The control object to attach this helper to.
-     * @returns {dGui.ControlDpiChangeHelper} - The new instance of the `ControlDpiChangeHelper`.
+     * @returns {dGui.ControlDpiChangedHelper} - The new instance of the `ControlDpiChangedHelper`.
      */
     __New(Ctrl) {
         lf := LOGFONT(Ctrl.hWnd)
         lf()
         this.FontSize := lf.FontSize
-        this.Rounded := { X: 0, Y: 0, W: 0, H: 0, F: 0 }
-        Ctrl.DefineProp('DpiChangeHelper', { Value: this })
+        this.Dpi := lf.Dpi
+        this.Rounded := { X: 0, Y: 0, W: 0, H: 0 }
+        Ctrl.DefineProp('DpiChangedHelper', { Value: this })
     }
 
     /**
@@ -81,9 +87,6 @@ class ControlDpiChangeHelper {
      * - Adjusts the size and position values according to the ratio of the a controls' new
      * text extent to its original text extent.
      * - Caches rounding to prevent control drifting.
-     * - Applies the `Offset` values to the width and height, if the `Offset` has been defined
-     * for the control / control type. The `Offset` can help fine-tune the size of a control
-     * when direct scaling causes the control to be too large or too small.
      * <br>
      * @param {Float} WidthRatio - The ratio of: NewTextExtent / OriginalTextExtent.
      * @param {Float} HeightRatio - The ratio of: NewTextExtent / OriginalTextExtent.
@@ -119,20 +122,81 @@ class ControlDpiChangeHelper {
 
 /**
  * @classdesc - An instance of this class is added to `Gui` objects on property
- * `DpiChangeHelper`. This implements some necessary logic for correctly scaling and responding
+ * `DpiChangedHelper`. This implements some necessary logic for correctly scaling and responding
  * to `WM_DPICHANGED`.
  */
-class GuiDpiChangeHelper {
+class GuiDpiHelper {
     /**
-     * @description - This method is used to create a new instance of the `GuiDpiChangeHelper`
+     * @description - This method is used to create a new instance of the `GuiDpiHelper`
      * class. This method is called by the `Gui` constructor.
      * @param {Gui} GuiObj - The Gui object to attach this helper to.
-     * @returns {dGui.GuiDpiChangeHelper} - The new instance of the `GuiDpiChangeHelper`.
+     * @returns {dGui.GuiDpiChangedHelper} - The new instance of the `GuiDpiChangedHelper`.
      */
     __New(GuiObj) {
-        this.FontSize := 6
-        this.Dpi := DllCall('GetDpiForWindow', 'ptr', GuiObj.hWnd, 'int')
-        this.Rounded := { F: 0 }
-        GuiObj.DefineProp('DpiChangeHelper', { Value: this })
+        this.Dpi := GuiObj.Dpi
+        this.FontHeight := -11
     }
+
+    DpiScaleSize(Dpi) {
+        this.Dpi := Dpi
+        return this.AdjustedFontSize
+    }
+
+    SetFontSize(FontSize) {
+        this.FontSize := FontSize
+        return this.AdjustedFontSize
+    }
+
+    FontSize[digits := 0] => Round(this.FontHeight * -72 / this.Dpi, digits)
+    AdjustedSize[digits := 0] => Round(this.FontHeight * -72 / A_ScreenDpi, digits)
+}
+
+DllCall('SetThreadDpiAwarenessContext', 'ptr', -3, 'ptr')
+g := Gui('-DPIScale +Resize')
+g.setfont('s11')
+DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
+t := g.Add('Text', , 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+lf := LOGFONT(t.hWnd)
+g.defineProp('dpi', { get: (self) => DllCall('GetDpiForWindow', 'ptr', self.hWnd, 'int') })
+h := guidpihelper(g)
+sz := ControlGetTextExtent(t)
+
+g.add('text', 'section vtxtdpi', 'dpi')
+g.add('edit', 'ys w100 veditdpi', g.dpi)
+g.add('button', 'ys vbtnset', 'set').onevent('click', set)
+g.add('text', 'section xs vtxtheight', 'height')
+g.add('edit', 'ys w100 veditheight', lf.height)
+g.add('text', 'section xs vtxtsize', 'size')
+g.add('edit', 'ys w100 veditsize', lf.fontsize)
+g.add('text', 'section xs vtxtextent', 'text w: ' sz.Width '; h: ' sz.Height)
+
+stats := [ { dpi: g.dpi, height: lf.height, size: lf.fontsize, textW: sz.Width, textH: sz.Height } ]
+g.add('edit', 'ys w150 h200 vstats', stringify(stats[1]))
+g['stats'].getpos(, &y, , &h)
+
+g.scroller := ItemScroller(g, { Array: stats, Callback: handlescroll, startx: 10, starty: y + h + g.marginy })
+g.show()
+
+
+set(*) {
+    global
+    DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
+    item := stats[-1]
+    lf.height := Round(lf.height * item.dpi / g.dpi, 0)
+    t.setfont('s' lf.fontsize)
+    t.setfont('s15')
+    g['editdpi'].text := g.dpi
+    lf.get()
+    g['editheight'].text := lf.height
+    g['editsize'].text := lf.fontsize
+    sz := ControlGetTextExtent(t)
+    g['txtextent'].text := 'text w: ' sz.Width '; h: ' sz.Height
+    stats.Push({ dpi: g.dpi, height: lf.height, size: lf.fontsize, textW: sz.Width, textH: sz.Height })
+    g['stats'].text := stringify(stats[-1]) '`r`n`r`n' g['stats'].text
+
+}
+
+handlescroll(index, scroller, *) {
+    global
+    g['stats'].text := stringify(scroller[index])
 }

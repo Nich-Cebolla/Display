@@ -1,17 +1,5 @@
 ﻿
 class Point extends Buffer {
-    __New(X?, Y?) {
-        this.Size := 8
-        if IsSet(X) {
-            NumPut('Int', X, this, 0)
-        }
-        if IsSet(Y) {
-            NumPut('Int', Y, this, 0)
-        }
-    }
-    X => NumGet(this, 'int')
-    Y => NumGet(this, 4, 'int')
-    Value => (this.X & 0xFFFFFFFF) | (this.Y << 32)
 
     static ScreenToClient(X, Y) {
         Pt := Point(X, Y)
@@ -32,6 +20,26 @@ class Point extends Buffer {
 
     static SetCaretPos(X, Y) {
         return DllCall('SetCaretPos', 'int', X, 'int', Y, 'int')
+    }
+
+    __New(X?, Y?) {
+        this.Size := 8
+        if IsSet(X) {
+            this.X := X
+        }
+        if IsSet(Y) {
+            this.Y := Y
+        }
+    }
+
+    Value => (this.X & 0xFFFFFFFF) | (this.Y << 32)
+    X {
+        Get => NumGet(this, 'int')
+        Set => NumPut('int', Value, this, 0)
+    }
+    Y {
+        Get => NumGet(this, 4, 'int')
+        Set => NumPut('int', Value, this, 4)
     }
 
     /**
@@ -58,4 +66,52 @@ class Point extends Buffer {
     ToScreen(Hwnd) {
         return DllCall("ClientToScreen", "ptr", Hwnd, "ptr", this, 'int')
     }
+}
+
+
+class LogicalPoint extends Point {
+    __New(X, Y, Dpi) {
+        this.Size := 8
+        this.X := X
+        this.Y := Y
+        this.Dpi := Dpi
+    }
+    ToPhysical(unit) {
+        switch unit, 0 {
+            case 'mm':
+                return PhysicalPoint(this.X / this.dpi * 25.4, this.Y / this.dpi * 25.4, this.Dpi)
+            case 'cm':
+                return PhysicalPoint(this.X / this.dpi * 2.54, this.Y / this.dpi * 2.54, this.Dpi)
+            case 'in':
+                return PhysicalPoint(this.X / this.dpi, this.Y / this.dpi, this.Dpi)
+            default:
+                throw Error('Invalid unit.', -1, unit)
+        }
+    }
+    IsLogical => true
+    IsPhysical => false
+}
+
+class PhysicalPoint extends Point {
+    __New(X, Y, Dpi) {
+        this.Size := 8
+        this.X := X * dpi
+        this.Y := Y * dpi
+        this.Dpi := Dpi
+        this.IsLogical := false
+    }
+    ToLogical(unit) {
+        switch unit, 0 {
+            case 'mm':
+                return LogPoint(this.X * dpi / 25.4, this.Y * dpi / 25.4, this.Dpi)
+            case 'cm':
+                return LogPoint(this.X * dpi / 2.54, this.Y * dpi / 2.54, this.Dpi)
+            case 'in':
+                return LogPoint(this.X * dpi, this.Y * dpi, this.Dpi)
+            default:
+                throw Error('Invalid unit.', -1, unit)
+        }
+    }
+    IsLogical => false
+    IsPhysical => true
 }

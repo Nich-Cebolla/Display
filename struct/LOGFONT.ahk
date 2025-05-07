@@ -1,41 +1,120 @@
 ﻿
 /**
- * @class
- * @description - A wrapper around the LOGFONT structure.
+ * @classdesc - A wrapper around the LOGFONT structure.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/dimm/ns-dimm-logfontw}
  */
 class LOGFONT extends Buffer {
     /**
-     * @description - Creates a new `LOGFONT` object. This object is a reusable buffer object
+     * @class - Creates a new `LOGFONT` object. This object is a reusable buffer object
      * that is used to get or set font details for a control (or other window).
      * @example
      * G := Gui('+Resize -DPIScale')
      * Txt := G.Add('Text', , 'Some text')
      * G.Show()
-     * Font := LOGFONT(Txt.hWnd)
-     * Font()
+     * lf := LOGFONT()
+     * Font(Txt.hWnd)
      * MsgBox(Font.FaceName) ; Ms Shell Dlg
      * MsgBox(Font.FontSize) ; 11.25
      * Txt.SetFont('s15', 'Roboto')
-     * Font()
+     * Font(Txt.hWnd)
      * MsgBox(Font.FaceName) ; Roboto
      * MsgBox(Font.FontSize) ; 15.00
-     * @param {Integer} hWnd - The handle of Gui control or window to get the font from. I have
-     * not tested this with non-AHK windows.
-     * @param {String} [Encoding='UTF-16'] - The encoding to use for the font name from the buffer.
+     * @
      * @return {LOGFONT} - A new `LOGFONT` object.
      */
-    __New(hWnd, Encoding := 'UTF-16') {
+    __New(hWnd?) {
         this.Size := 92
-        this.hWnd := hWnd
-        this.Encoding := Encoding
-        this.Handle := ''
+        this.__FontNames := []
+        if IsSet(hWnd) {
+            this.Initialize(hWnd)
+        }
     }
 
     /**
-     * @description - Gets / updates the structure with the control's current font information.
+     * @description - Attempts to set a window's font object using this object's values.
      */
-    Call(*) {
+    Apply(Redraw := true) {
+        this.FindFont()
+        if !(hFontOld := SendMessage(0x0031,,, this.hWnd)) {
+            throw Error('Failed to get hFont.', -1)
+        }
+        ; This checks if the `hFontOld` is a handle to an object that was created by this class.
+        ; We don't want to delete any objects that we didn't create. We also want to make sure we
+        ; do delete objects that we did create and that are no longer needed.
+        Flag := this.Handle = hFontOld
+        SendMessage(0x30, this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr'), Redraw, this.hWnd)  ; 0x30 = WM_SETFONT
+        if Flag {
+            DllCall('DeleteObject', 'ptr', hFontOld, 'int')
+        }
+    }
+
+    Clone(lf?) {
+        if !IsSet(lf) {
+            lf := %this.__Class%()
+        }
+        lf.Height := this.Height
+        lf.Width := this.Width
+        lf.Escapement := this.Escapement
+        lf.Orientation := this.Orientation
+        lf.Weight := this.Weight
+        lf.Italic := this.Italic
+        lf.Underline := this.Underline
+        lf.StrikeOut := this.StrikeOut
+        lf.CharSet := this.CharSet
+        lf.OutPrecision := this.OutPrecision
+        lf.ClipPrecision := this.ClipPrecision
+        lf.Quality := this.Quality
+        lf.Pitch := this.Pitch
+        lf.Family := this.Family
+        lf.FaceName := this.FaceName
+        return lf
+    }
+
+    DisposeFont() {
+        if this.Handle {
+            DllCall('DeleteObject', 'ptr', this.Handle)
+            this.Handle := 0
+        }
+    }
+
+    DpiScaleSize() {
+        this.FontSize := this.LastFontSize
+        this.Set()
+    }
+
+    FindFont() {
+        hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
+        names := this.__FontNames
+        loop names.Length {
+            name := names[A_Index]
+            if StrLen(name) > 31 {
+                throw Error('Font name too long.', -1, name)
+            }
+            StrPut(name, this.ptr + 28, StrLen(name) + 1, this.Encoding)
+            found := false
+            cb := CallbackCreate(_EnumFontFamilies, 'F')
+            DllCall('EnumFontFamiliesEx', 'ptr', hdc, 'ptr', this, 'ptr', cb, 'ptr', 0, 'uint', 0, 'int')
+            CallbackFree(cb)
+            if found {
+                break
+            }
+        }
+        if !found {
+            loop 32 {
+                NumPut('char', 0, this.ptr + 28, A_Index - 1)
+            }
+        }
+
+        _EnumFontFamilies(lpelfe, lpntme, FontType, lParam) {
+            found := true
+            return 0
+        }
+    }
+
+    /**
+     * @description - Gets / updates the structure with the window's current font details.
+     */
+    Get() {
         if !WinExist(this.hWnd) {
             throw TargetError('Window not found.', -1, this.hWnd)
         }
@@ -47,25 +126,23 @@ class LOGFONT extends Buffer {
         }
     }
 
-    /**
-     * @description - Call `LOGFONT.Prototype.Set` after updating the structure with the desired
-     * changes.
-     */
-    Set(Redraw := true) {
-        if !(hFontOld := SendMessage(0x0031,,, this.hWnd)) {
-            throw Error('Failed to get hFont.', -1)
-        }
-        Flag := this.Handle = hFontOld
-        SendMessage(0x30, this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr'), Redraw, this.hWnd)  ; 0x30 = WM_SETFONT
-        if Flag {
-            DllCall('DeleteObject', 'ptr', hFontOld)
-        }
+    Initialize(hWnd) {
+        this.hWnd := hWnd
+        this.Handle := ''
+        this.Get()
+        this.LastFontSize := this.FontSize
+        this.LastDpi := this.Dpi
+        this.__FontNames.Push(this.FaceName)
     }
 
-    DisposeFont() {
-        if this.Handle {
-            DllCall('DeleteObject', 'ptr', this.Handle)
-            this.Handle := 0
+    Set(Name, Value, Apply := false) {
+        if HasProp(this, Name) {
+            this.%Name% := Value
+        } else {
+            throw Error('Property not found.', -1, Name)
+        }
+        if Apply {
+            this.Apply()
         }
     }
 
@@ -109,8 +186,7 @@ class LOGFONT extends Buffer {
         Set => NumPut('int', Value, this, 16)
     }
     /**
-     * @property {Boolean} LOGFONT.Mask - The mask that specifies which members of the structure are
-     * valid.
+     * @property {Boolean} LOGFONT.Italic - The italic flag.
      */
     Italic {
         Get => NumGet(this, 20, 'uchar')
@@ -159,13 +235,6 @@ class LOGFONT extends Buffer {
         Set => NumPut('uchar', Value, this, 26)
     }
     /**
-     * @property {Integer} LOGFONT.Family - The font group to which the font belongs.
-     */
-    Family {
-        Get => NumGet(this, 27, 'uchar') & 0xF0
-        Set => NumPut('uchar', (this.Family & 0x0F) | (Value & 0xF0), this, 27)
-    }
-    /**
      * @property {Integer} LOGFONT.Pitch - The pitch of the font.
      */
     Pitch {
@@ -173,25 +242,34 @@ class LOGFONT extends Buffer {
         Set => NumPut('uchar', (this.Pitch & 0xF0) | (Value & 0x0F), this, 27)
     }
     /**
+     * @property {Integer} LOGFONT.Family - The font group to which the font belongs.
+     */
+    Family {
+        Get => NumGet(this, 27, 'uchar') & 0xF0
+        Set => NumPut('uchar', (this.Family & 0x0F) | (Value & 0xF0), this, 27)
+    }
+    /**
      * @property {String} LOGFONT.FaceName - The name of the font.
      */
     FaceName {
-        Get => StrGet(this.ptr + 28, 32, this.Encoding)
-        Set => StrPut(Value, this.ptr + 28, 32, this.Encoding)
+        Get => StrGet(this.ptr + 28, , this.Encoding)
+        Set => HasMethod(Value, '__Enum') ? this.__FontNames.Push(Value*) : this.__FontNames.Push(Value)
     }
     /**
      * @property {Integer} LOGFONT.FontSize - The size of the font in points.
      */
-    FontSize {
-        Get => Round(this.Height * -72 / this.Dpi, 2)
-        Set => this.Height := Round(Value * this.Dpi / -72, 0)
+    FontSize[digits := 0] {
+        Get => Round(this.Height * -72 / this.Dpi, digits)
+        Set => this.Height := Round(Value * this.Dpi / -72, digits)
     }
     /**
      * @property {Integer} LOGFONT.Dpi - The DPI of the window to which `hWnd` is the handle.
      */
     Dpi => DllCall('User32\GetDpiForWindow', 'Ptr', this.hWnd, 'UInt')
-    /**
-     * @property {Gui.Control} LOGFONT.Ctrl - The control object associated with the hWnd.
-     */
-    Ctrl => GuiCtrlFromHwnd(this.hWnd)
+
+    static __New() {
+        if this.Prototype.__Class == 'LOGFONT' {
+            this.Prototype.DefineProp('Encoding', { Value: 'UTF-16' })
+        }
+    }
 }

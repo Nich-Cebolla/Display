@@ -21,21 +21,21 @@ if !MyStr {
 
 MaxWidth := 80
 ; Get device context right before its needed
-hDC := DllCall('GetDC', 'ptr', Txt.hWnd, 'ptr')
-if !hDC {
+hdc := DllCall('GetDC', 'ptr', Txt.hWnd, 'ptr')
+if !hdc {
     if HandleError(A_ThisFunc, A_LineFile, A_LineNumber) {
        Exit()
     }
     return
 }
-if !(sz := GetTextExtentExPoint(MyStr, hDC, MaxWidth, &fit, &extentPoints)) {
+if !(sz := GetTextExtentExPoint(MyStr, hdc, MaxWidth, &fit, &extentPoints)) {
     if HandleError(A_ThisFunc, A_LineFile, A_LineNumber) {
         Exit()
     }
     return
 }
 ; Release device context immediately when its no longer needed
-if !DllCall('ReleaseDC', 'Ptr', Txt.hWnd, 'Ptr', hDC, 'int') {
+if !DllCall('ReleaseDC', 'Ptr', Txt.hWnd, 'Ptr', hdc, 'int') {
     err := OSError()
     ; handle error
 }

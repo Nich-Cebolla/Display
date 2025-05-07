@@ -1,8 +1,11 @@
 ﻿
 ; Dependencies:
-#include ..\src\dDefaultOptions.ahk
-#include ..\struct\SIZE.ahk
-#include ..\struct\IntegerArray.ahk
+#include ..\src
+#include dDefaultOptions.ahk
+#include SelectFontIntoDc.ahk
+#include ..\struct
+#include SIZE.ahk
+#include IntegerArray.ahk
 
 dDefaultOptions.DefineProp('WrapText', { Value: {
     AdjustObject: false
@@ -24,29 +27,12 @@ dDefaultOptions.DefineProp('WrapText', { Value: {
     For further explanation, see String Encoding."
     {@link https://www.autohotkey.com/docs/v2/Concepts.htm#string-encoding}
 
-    The functions all require a device context handle. You can get an `hDC` from a control, gui,
-    or non-AHK windows.
+    The functions all require a device context handle. Use the `SelectFontIntoDc` function to get
+    an object that handles the boilerplate code.
    @example
-    if hDC := DllCall('GetDC', 'Ptr', hWnd, 'Ptr') {
-        ; do something
-    } else {
-        err := OSError()
-        ; handle error
-    }
-   @
-
-    You can use the same handle multiple times as needed if you're certain nothing else will be
-    needing to use the device context while your function is executing (e.g. a Gui window's
-    appearence won't need updated). When you call `GetDC`, the device context is locked until you
-    release it. Specifically, this is what Microsoft wrote about the function:
-    "Note that the handle to the DC can only be used by a single thread at any one time."
-    Your code should release it as soon as it completes its last action that requires the handle.
-
-   @example
-    if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'Int') {
-        err := OSError()
-        ; handle error
-    }
+    context := SelectFontIntoDc(hWnd)
+    sz := GetTextExtentPoint32(context.hdc, 'Hello, world!')
+    context() ; release the device context
    @
 
    If you need help understanding how to handle OS errors, read the section "OSError" here:
@@ -64,14 +50,14 @@ dDefaultOptions.DefineProp('WrapText', { Value: {
  * @description - Gets the dimensions of a string within a window's device context. Carriage return
  * and line feed characters are ignored, the returned height is always that of a one-line string.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
- * @param {Integer} hDC - A handle to the device context you want used to measure the string.
+ * @param {Integer} hdc - A handle to the device context you want used to measure the string.
  * @param {String} Str - The string to measure.
  * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
-GetTextExtentPoint32(hDC, Str) {
+GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
     if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-        , 'Ptr', hDC
+        , 'Ptr', hdc
         , 'Ptr', StrPtr(Str)
         , 'Int', StrLen(Str)
         , 'Ptr', sz := SIZE()
@@ -88,7 +74,7 @@ GetTextExtentPoint32(hDC, Str) {
  * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
  * width, of the items.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
- * @param {Integer} hDC - A handle to the device context to use when measuring the string.
+ * @param {Integer} hdc - A handle to the device context to use when measuring the string.
  * @param {String[]} Arr - An array of strings. The array may not have unset indices.
  * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
  * array.
@@ -97,7 +83,7 @@ GetTextExtentPoint32(hDC, Str) {
  * objects, and the strings are replaced with the objects. If false, a new array is created.
  * @returns {SIZE[]} - An array of `SIZE` objects, each with properties { Width, Height }.
  */
-GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
+GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     if ReplaceItems {
         Result := Arr
     } else {
@@ -107,7 +93,7 @@ GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     OutWidth := OutHeight := 0
     for Str in Arr {
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', hdc
             , 'Ptr', StrPtr(Str)
             , 'Int', StrLen(Str)
             , 'Ptr', sz := SIZE()
@@ -130,7 +116,7 @@ GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointa}
  * An example function call is available in file {@link examples\example_Text_GetTextExtentExPoint.ahk}
  * @param {String} Str - The string to measure.
- * @param {Integer} hDC - The handle to the device context to use when measuring the string.
+ * @param {Integer} hdc - The handle to the device context to use when measuring the string.
  * @param {Integer} [MaxExtent=0] - The maximum width of the string. When nonzero,
  * `OutCharacterFit` is set to the number of characters that fit within the `MaxExtent` pixels
  * in the context of the control, and `OutExtentPoints` will only contain extent points up to
@@ -150,10 +136,10 @@ GetMultiExtentPoints(hDC, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * information.
  * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
  */
-GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
+GetTextExtentExPoint(Str, hdc, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if MaxExtent {
         if DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC
+            , 'ptr', hdc
             , 'ptr', StrPtr(Str)                                    ; String to measure
             , 'int', StrLen(Str)                                    ; String length in WORDs
             , 'int', MaxExtent                                      ; Maximum width
@@ -169,7 +155,7 @@ GetTextExtentExPoint(Str, hDC, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
         }
     } else {
         if DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC
+            , 'ptr', hdc
             , 'ptr', StrPtr(Str)                                    ; String to measure
             , 'int', StrLen(Str)                                    ; String length in WORDs
             , 'int', 0
@@ -340,8 +326,8 @@ class InsertHyphenationPoints {
  * @example
  *  Ctrl := (G := Gui()).AddText()
  *  Ctrl.Text := 'She sang supercalifradulisticexpialidocious then went on her merry way.'
- *  hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd, 'Ptr')
- *  sz := GetTextExtentPoint32(hDC, 'She sang supercalifradulisticexpialidoc')
+ *  hdc := DllCall('GetDC', 'Ptr', Ctrl.hWnd, 'Ptr')
+ *  sz := GetTextExtentPoint32(hdc, 'She sang supercalifradulisticexpialidoc')
  *  LineCount := WrapText(Ctrl, &Str, { MaxExtent: sz.Width, AdjustObject: true })
  *  Split := StrSplit(Ctrl.Text, '`r`n')
  *  MsgBox(Split[1]) ; She sang
@@ -385,11 +371,8 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
             } else {
                 Text := RegExReplace(Context.Text, '\R+', ' ')
             }
-            if !(hDC := DllCall('GetDC', 'Ptr', Context.hWnd)) {
-                throw OSError()
-            }
-            ; Set error handler to release dc before throwing the error
-            OnError(_ReleaseDC, -1)
+            font_context := SelectFontIntoDc(Context.hWnd)
+            hdc := font_context.hdc
         } else {
             _Throw(1, A_LineNumber, A_ThisFunc)
         }
@@ -398,7 +381,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
             _Throw(2, A_LineNumber, A_ThisFunc)
         }
         MaxExtent := Options.MaxExtent
-        hDC := Context
+        hdc := Context
         Text := RegExReplace(Str, '\R+', ' ')
     } else {
         _Throw(1, A_LineNumber, A_ThisFunc)
@@ -423,7 +406,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     ; Measure the width of a hyphen
     hyphen := '-'
     if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-        , hDC, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', sz, 'Int') {
+        , hdc, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', sz, 'Int') {
         throw OSError()
     }
     hyphen := sz.Width
@@ -432,7 +415,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     ; `MaxExtent` must at least be large enough such that the loops can iterate once or twice
     ; before reaching the beginning of the substring.
     if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-        , hDC, 'Ptr', Wptr, 'Int', 1, 'Ptr', sz, 'Int') {
+        , hdc, 'Ptr', Wptr, 'Int', 1, 'Ptr', sz, 'Int') {
         throw OSError()
     }
     if MaxExtent < sz.Width * 3 {
@@ -527,7 +510,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         Len := StrLen(Text)
         ptr := StrPtr(Text)
         if !DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC                ; Device context
+            , 'ptr', hdc                ; Device context
             , 'ptr', ptr                ; String to measure
             , 'int', Len                ; String length in WORDs
             , 'int', MaxExtent          ; Maximum width
@@ -564,10 +547,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
                 Context.Move(, , MaxExtent, sz.Height * LineCount)
             }
         }
-        if !DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hDC, 'Int') {
-            throw OSError()
-        }
-        OnError(_ReleaseDC, 0)
+        font_context()
     }
 
     return LineCount
@@ -695,7 +675,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
         }
     }
     _ReleaseDC(Thrown, *) {
-        DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hDC, 'Int')
+        DllCall('ReleaseDC', 'Ptr', Context.hWnd, 'Ptr', hdc, 'Int')
         OnError(_ReleaseDC, 0)
         throw Thrown
     }
@@ -703,7 +683,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     _Set_1(SetPos, AddHyphen := '') {
         Part := SubStr(Text, 1, SetPos) AddHyphen
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', hdc
             , 'Ptr', StrPtr(Part)
             , 'Int', StrLen(Part)
             , 'Ptr', measure_sz := SIZE()
@@ -724,7 +704,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
     _Set_2(SetPos, AddHyphen := '') {
         Part := SubStr(Text, 1, SetPos) AddHyphen
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', hdc
             , 'Ptr', StrPtr(Part)
             , 'Int', StrLen(Part)
             , 'Ptr', sz
@@ -793,9 +773,9 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
 }
 
 ; CalcTextRect(Str, hWnd, WidthLimit?) {
-;     hDC := DllCall('GetDC', 'ptr', hWnd, 'ptr')
+;     hdc := DllCall('GetDC', 'ptr', hWnd, 'ptr')
 ;     hFont := SendMessage(0x31, , , hWnd)  ; WM_GETFONT
-;     oldFont := DllCall('SelectObject', 'ptr', hDC, 'ptr', hFont, 'ptr')
+;     oldFont := DllCall('SelectObject', 'ptr', hdc, 'ptr', hFont, 'ptr')
 
 ;     rc := Buffer(16, 0)  ; RECT = 4x INT (left, top, right, bottom)
 
@@ -810,7 +790,7 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
 ;     flags := DT_CALCRECT | DT_WORDBREAK | DT_LEFT | DT_TOP
 
 ;     DllCall('DrawTextW'
-;         , 'ptr', hDC
+;         , 'ptr', hdc
 ;         , 'wstr', Str
 ;         , 'int', -1
 ;         , 'ptr', rc
@@ -820,8 +800,8 @@ WrapText(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
 ;     width  := NumGet(rc, 8, 'int') - NumGet(rc, 0, 'int')
 ;     height := NumGet(rc, 12, 'int') - NumGet(rc, 4, 'int')
 
-;     DllCall('SelectObject', 'ptr', hDC, 'ptr', oldFont)
-;     DllCall('ReleaseDC', 'ptr', hWnd, 'ptr', hDC)
+;     DllCall('SelectObject', 'ptr', hdc, 'ptr', oldFont)
+;     DllCall('ReleaseDC', 'ptr', hWnd, 'ptr', hdc)
 
 ;     return { w: width, h: height }
 ; }

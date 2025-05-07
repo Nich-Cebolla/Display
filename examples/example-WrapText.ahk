@@ -35,10 +35,11 @@ try {
     ; To correctly size the gui, we need to know the size of the non-client area of the gui.
     ; These next three lines aren't specific to `WrapText`, but just dealing with the non-client
     ; area of a Gui window in general.
-    G.GetPos(, , , &g_h)
-    G.GetClientPos(, , , &g_h2)
-    diff := g_h - g_h2
-    G.Move(, , Width + G.MarginX * 2, Height + diff) ; add on the height of the string + the non-client area
+    G.GetPos(, , &g_w, &g_h)
+    G.GetClientPos(, , &g_w2, &g_h2)
+    diffy := g_h - g_h2
+    diffw := g_w - g_w2
+    G.Move(, , Width + G.MarginX * 2 + diffw, Height + diffy) ; add on the height of the string + the non-client area
 } catch OSError {
     ; handle
 } catch ValueError {
@@ -55,4 +56,4 @@ G.AddText('x10 y' (Height + G.MarginY * 2) ' w300', (
     '`r`n' Format('x2: {}; y2: {}; w2: {}; h2: {}', x2, y2, w2, h2)
     '`r`nWidth: ' width '`r`nHeight: ' height '`r`nLine count: ' LineCount
 )).GetPos(, &y3, , &h3)
-G.Move(, , , y3 + h3 + diff)
+G.Move(, , , y3 + h3 + diffy)

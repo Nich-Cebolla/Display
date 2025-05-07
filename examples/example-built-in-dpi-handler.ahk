@@ -14,7 +14,6 @@ class Example {
         DllCall('SetThreadDpiAwarenessContext', 'ptr', -3, 'ptr')
         G := this.G := dGui(, , , { OptFont: 's11 q5', FontFamily: 'Aptos' })
         DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
-        ; text from https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm
         InsertHyphenationPoints(&(Str := this.GetText1()))
         Txt1 := G.Add('Text', 'w300')
         WrapText(Txt1, &Str, { AdjustObject: true, MeasureLines: true }, &Width, &Height)
@@ -29,6 +28,7 @@ class Example {
     }
 
     static GetText1() {
+        ; text from https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm
         return (
             'On Windows 8.1 and later, secondary screens can have different DPI settings,'
             ' and "per-monitor DPI-aware" applications are expected to scale their windows'

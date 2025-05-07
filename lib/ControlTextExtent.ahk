@@ -1,6 +1,11 @@
 ﻿
 ; Dependencies:
-#include ..\src\dDefaultOptions.ahk
+#include ..\definitions
+#include Define-Font.ahk
+#include Define-Winuser.ahk
+#include ..\src
+#include dDefaultOptions.ahk
+#include SelectFontIntoDc.ahk
 #include ..\struct\SIZE.ahk
 #include ..\struct\IntegerArray.ahk
 
@@ -33,29 +38,20 @@
  * @returns {Object} - An object with properties { Height, Width }.
  */
 ControlGetTextExtent(Ctrl) {
-    if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(Ctrl.hWnd)
     W := H := 0
     sz := SIZE()
     for line in StrSplit(Ctrl.Text, '`n', '`r') {
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
+            , 'Ptr', context.hdc, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
         ) {
             H += sz.Height
             W := Max(W, sz.Width)
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-        throw OSError()
-    }
+    context()
     return { Height: H, Width: W }
 }
 
@@ -73,10 +69,7 @@ ControlGetTextExtent(Ctrl) {
  */
 ControlGetTextExtent_LB(Ctrl, Index?) {
     Result := []
-    ; Get device context
-    if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(Ctrl.hWnd)
     if Ctrl.Text is Array {
         if IsSet(Index) {
             _Proc()
@@ -90,7 +83,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
     } else {
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.Text)
             , 'Int', StrLen(Ctrl.Text)
             , 'Ptr', sz := SIZE()
@@ -99,23 +92,17 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             sz.Index := Index
             Result.Push(sz)
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-        throw OSError()
-    }
+    context()
+
     return Result
 
     _Proc() {
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.Text[Index])
             , 'Int', StrLen(Ctrl.Text[Index])
             , 'Ptr', sz := SIZE()
@@ -124,12 +111,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             sz.Index := Index
             Result.Push(sz)
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
 }
@@ -143,31 +125,21 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
  * @returns {SIZE} - A `SIZE` object with properties { Height, Width }.
  */
 ControlGetTextExtent_Link(Ctrl) {
-    ; Get device context
-    if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(Ctrl.hWnd)
     ; Remove the html anchor tags
     Text := RegExReplace(Ctrl.Text, '<.+?"[ \t]*>(.+?)</a>', '$1')
     ; Measure the text
     if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-        , 'Ptr', hDC
+        , 'Ptr', context.hdc
         , 'Ptr', StrPtr(Text)
         , 'Int', StrLen(Text)
         , 'Ptr', sz := SIZE()
         , 'Int'
     ) {
-        if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-            throw OSError()
-        }
+        context()
         return sz
     } else {
-        err := OSError()
-        if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-            err2 := OSError()
-            err.Message .= '; Also: ' err2.Message
-        }
-        throw err
+        throw OSError()
     }
 }
 
@@ -184,10 +156,7 @@ ControlGetTextExtent_Link(Ctrl) {
  * @returns {Array} - An array of objects with properties { Column, Height, Row, Width }.
  */
 ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
-    ; Get device context
-    if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(Ctrl.hWnd)
     if !IsSet(RowNumber) {
         RowNumber := []
         loop RowNumber.Capacity := Ctrl.GetCount() {
@@ -228,16 +197,14 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
             _Proc()
         }
     }
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-        throw OSError()
-    }
+    context()
 
     return Result
 
     _Proc() {
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.GetText(r, c))
             , 'Int', StrLen(Ctrl.GetText(r, c))
             , 'Ptr', sz := SIZE()
@@ -246,12 +213,7 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
             sz.Column := c
             Result.Push(sz)
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
 }
@@ -270,10 +232,7 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
  * @returns {Array} - An array of objects with properties { Id, Width, Height }.
  */
 ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
-    ; Get device context
-    if !(hDC := DllCall('GetDC', 'Ptr', Ctrl.hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(Ctrl.hWnd)
     Result := []
     if Id is Array {
         loop Result.Capacity := Id.Length {
@@ -293,16 +252,14 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
             }
         }
     }
-    if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-        throw OSError()
-    }
+    context()
 
     return Result
 
     _Proc() {
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hDC
+            , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.GetText(_id))
             , 'Int', StrLen(Ctrl.GetText(_id))
             , 'Ptr', sz := SIZE()
@@ -311,12 +268,7 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
             sz.Id := _id
             Result.Push(sz)
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', Ctrl.hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
 }
@@ -433,13 +385,10 @@ ControlGetTextExtentEx_TV(Ctrl, Id := 0, MaxExtent := 0, &OutCharacterFit?, &Out
 }
 
 __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacterFit, &OutExtentPoints) {
-    ; Get device context
-    if !(hDC := DllCall('GetDC', 'Ptr', hWnd)) {
-        throw OSError()
-    }
+    context := SelectFontIntoDc(hWnd)
     if MaxExtent {
         if DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC
+            , 'ptr', context.hdc
             , 'ptr', Ptr                                            ; String to measure
             , 'int', cchString                                      ; String length in WORDs
             , 'int', MaxExtent                                      ; Maximum width
@@ -449,21 +398,14 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             , 'ptr'
         ) {
             OutCharacterFit := NumGet(lpnFit, 0, 'int')
-            if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'int') {
-                throw OSError()
-            }
+            context()
             return sz
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     } else {
         if DllCall('Gdi32.dll\GetTextExtentExPoint'
-            , 'ptr', hDC
+            , 'ptr', context.hdc
             , 'ptr', Ptr                                            ; String to measure
             , 'int', cchString                                      ; String length in WORDs
             , 'int', 0
@@ -473,17 +415,10 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             , 'ptr'
         ) {
             OutCharacterFit := 0
-            if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'int') {
-                throw OSError()
-            }
+            context()
             return sz
         } else {
-            err := OSError()
-            if !DllCall('ReleaseDC', 'Ptr', hWnd, 'Ptr', hDC, 'int') {
-                err2 := OSError()
-                err.Message .= '; Also: ' err2.Message
-            }
-            throw err
+            throw OSError()
         }
     }
 }
