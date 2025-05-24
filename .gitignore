@@ -1,3 +1,4 @@
 .vscode
 .gitattributes
 test/temp-output.txt
+.archive

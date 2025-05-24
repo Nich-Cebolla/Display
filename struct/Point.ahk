@@ -1,25 +1,47 @@
 ﻿
 class Point extends Buffer {
 
-    static ScreenToClient(X, Y) {
-        Pt := Point(X, Y)
-        Pt.ToClient()
+    /**
+     * @description - Use this to convert screen coordinates to client coordinates.
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-screentoclient}
+     * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
+     * @param {Integer} X - The X coordinate.
+     * @param {Integer} Y - The Y coordinate.
+     * @returns {Point}
+     */
+    static ScreenToClient(hWnd, X, Y) {
+        if !DllCall('ScreenToClient', 'ptr', Hwnd, 'ptr', Pt := Point(X, Y), 'int') {
+            throw OSError()
+        }
         return Pt
     }
 
-    static ClientToScreen(X, Y) {
-        Pt := Point(X, Y)
-        Pt.ToScreen()
+    /**
+     * @description - Use this to convert client coordinates to screen coordinates.
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen}
+     * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
+     * @param {Integer} X - The X coordinate.
+     * @param {Integer} Y - The Y coordinate.
+     * @returns {Point}
+     */
+    static ClientToScreen(hWnd, X, Y) {
+        if !DllCall('ClientToScreen', 'ptr', Hwnd, 'ptr', Pt := Point(X, Y), 'int') {
+            throw OSError()
+        }
         return Pt
     }
 
     static GetCaretPos() {
-        DllCall('GetCaretPos', 'ptr', pt := Point(), 'int')
-        return pt
+        if !DllCall('GetCaretPos', 'ptr', Pt := Point(), 'int') {
+            throw OSError()
+        }
+        return Pt
     }
 
     static SetCaretPos(X, Y) {
-        return DllCall('SetCaretPos', 'int', X, 'int', Y, 'int')
+        if !DllCall('SetCaretPos', 'int', X, 'int', Y, 'int') {
+            throw OSError()
+        }
     }
 
     __New(X?, Y?) {
@@ -44,27 +66,27 @@ class Point extends Buffer {
 
     /**
      * @description - Use this to convert screen coordinates (which should already be contained by
-     * this Point), to client coordinates. This converts the points in-place; it does not return
-     * a new object.
+     * this `Point` object), to client coordinates. This converts the point in-place; it does not
+     * return a new object.
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-screentoclient}
      * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
      * @returns {Boolean} - If succesful, 1. If unsuccessful, 0.
      */
     ToClient(Hwnd) {
-        return DllCall("ScreenToClient", "ptr", Hwnd, "ptr", this, 'int')
+        return DllCall('ScreenToClient', 'ptr', Hwnd, 'ptr', this, 'int')
     }
 
 
     /**
      * @description - Use this to convert client coordinates (which should already be contained by
-     * this Point), to screen coordinates. This converts the points in-place; it does not return
-     * a new object.
+     * this `Point` object), to screen coordinates. This converts the point in-place; it does not
+     * return a new object.
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen}
      * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
      * @returns {Boolean} - If succesful, 1. If unsuccessful, 0.
      */
     ToScreen(Hwnd) {
-        return DllCall("ClientToScreen", "ptr", Hwnd, "ptr", this, 'int')
+        return DllCall('ClientToScreen', 'ptr', Hwnd, 'ptr', this, 'int')
     }
 }
 
@@ -98,16 +120,15 @@ class PhysicalPoint extends Point {
         this.X := X * dpi
         this.Y := Y * dpi
         this.Dpi := Dpi
-        this.IsLogical := false
     }
     ToLogical(unit) {
         switch unit, 0 {
             case 'mm':
-                return LogPoint(this.X * dpi / 25.4, this.Y * dpi / 25.4, this.Dpi)
+                return LogicalPoint(this.X * this.dpi / 25.4, this.Y * this.dpi / 25.4, this.Dpi)
             case 'cm':
-                return LogPoint(this.X * dpi / 2.54, this.Y * dpi / 2.54, this.Dpi)
+                return LogicalPoint(this.X * this.dpi / 2.54, this.Y * this.dpi / 2.54, this.Dpi)
             case 'in':
-                return LogPoint(this.X * dpi, this.Y * dpi, this.Dpi)
+                return LogicalPoint(this.X * this.dpi, this.Y * this.dpi, this.Dpi)
             default:
                 throw Error('Invalid unit.', -1, unit)
         }

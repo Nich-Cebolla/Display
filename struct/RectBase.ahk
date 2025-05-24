@@ -1,14 +1,11 @@
-﻿
+﻿#include Point.ahk
+#include RECT.ahk
 
 class RectBase extends Buffer {
     static __New() {
-        if this.Prototype.__Class == 'RectBase' {
-            this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-            this.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        }
-    }
-    static __Call(Name, Params) {
-        ; Overriden
+        this.DeleteProp('__New')
+        this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+        this.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
     }
 
     GetPos(&X?, &Y?, &W?, &H?) {
@@ -38,16 +35,16 @@ class RectBase extends Buffer {
      * to client coordinates using the input Hwnd. The original object's values stay the same.
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-screentoclient}
      * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
-     * @param {VarRef} [OutTlPoint] - A variable that will receive the `Point` object for the top-left
+     * @param {VarRef} [OutTopLeft] - A variable that will receive the `Point` object for the top-left
      * corner of the new `Rect`.
-     * @param {VarRef} [OutBrPoint] - A variable that will receive the `Point` object for the
+     * @param {VarRef} [OutBottomRight] - A variable that will receive the `Point` object for the
      * bottom-right corner of the new `Rect`.
      * @returns {Rect} - The new object.
      */
-    ToClient(Hwnd, &OutTlPoint?, &OutBrPoint?) {
-        OutTlPoint := this.TL.ToClient(Hwnd)
-        OutBrPoint := this.BR.ToClient(Hwnd)
-        return Rect(OutTlPoint.X, OutTlPoint.Y, OutBrPoint.X, OutBrPoint.Y)
+    ToClient(Hwnd, &OutTopLeft?, &OutBottomRight?) {
+        OutTopLeft := this.TL.ToClient(Hwnd)
+        OutBottomRight := this.BR.ToClient(Hwnd)
+        return Rect(OutTopLeft.X, OutTopLeft.Y, OutBottomRight.X, OutBottomRight.Y)
     }
 
     /**
@@ -55,24 +52,15 @@ class RectBase extends Buffer {
      * to screen coordinates using the input Hwnd. The original object's values stay the same.
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen}
      * @param {Integer} Hwnd - The handle to the window whose client area will be used for the conversion.
-     * @param {VarRef} [OutTlPoint] - A variable that will receive the `Point` object for the top-left
+     * @param {VarRef} [OutTopLeft] - A variable that will receive the `Point` object for the top-left
      * corner of the new `Rect`.
-     * @param {VarRef} [OutBrPoint] - A variable that will receive the `Point` object for the
+     * @param {VarRef} [OutBottomRight] - A variable that will receive the `Point` object for the
      * bottom-right corner of the new `Rect`.
      * @returns {Rect} - The new object.
      */
-    ToScreen(Hwnd, &OutTlPoint?, &OutBrPoint?) {
-        OutTlPoint := this.TL.ToScreen(Hwnd)
-        OutBrPoint := this.BR.ToScreen(Hwnd)
-        return Rect(OutTlPoint.X, OutTlPoint.Y, OutBrPoint.X, OutBrPoint.Y)
-    }
-}
-
-class DisplayBase {
-    static __New() {
-        if this.Prototype.__Class == 'DisplayBase' {
-            this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-            this.Prototype.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        }
+    ToScreen(Hwnd, &OutTopLeft?, &OutBottomRight?) {
+        OutTopLeft := this.TL.ToScreen(Hwnd)
+        OutBottomRight := this.BR.ToScreen(Hwnd)
+        return Rect(OutTopLeft.X, OutTopLeft.Y, OutBottomRight.X, OutBottomRight.Y)
     }
 }

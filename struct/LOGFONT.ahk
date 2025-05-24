@@ -24,6 +24,7 @@ class LOGFONT extends Buffer {
      */
     __New(hWnd?) {
         this.Size := 92
+        this.Handle := ''
         this.__FontNames := []
         if IsSet(hWnd) {
             this.Initialize(hWnd)
@@ -77,33 +78,33 @@ class LOGFONT extends Buffer {
         }
     }
 
-    DpiScaleSize() {
-        this.FontSize := this.LastFontSize
-        this.Set()
-    }
-
-    FindFont() {
+    FindFont(Apply := true) {
         hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
         names := this.__FontNames
+        cb := CallbackCreate(_EnumFontFamilies, 'F')
+        found := false
         loop names.Length {
             name := names[A_Index]
             if StrLen(name) > 31 {
                 throw Error('Font name too long.', -1, name)
             }
-            StrPut(name, this.ptr + 28, StrLen(name) + 1, this.Encoding)
-            found := false
-            cb := CallbackCreate(_EnumFontFamilies, 'F')
+            StrPut(name, this.ptr + 28, 32, this.Encoding)
             DllCall('EnumFontFamiliesEx', 'ptr', hdc, 'ptr', this, 'ptr', cb, 'ptr', 0, 'uint', 0, 'int')
-            CallbackFree(cb)
             if found {
                 break
             }
         }
+        CallbackFree(cb)
         if !found {
             loop 32 {
                 NumPut('char', 0, this.ptr + 28, A_Index - 1)
             }
         }
+        if Apply {
+            this.Apply()
+        }
+
+        return
 
         _EnumFontFamilies(lpelfe, lpntme, FontType, lParam) {
             found := true
@@ -128,11 +129,14 @@ class LOGFONT extends Buffer {
 
     Initialize(hWnd) {
         this.hWnd := hWnd
-        this.Handle := ''
         this.Get()
-        this.LastFontSize := this.FontSize
-        this.LastDpi := this.Dpi
+        this.BaseFontSize := this.FontSize
         this.__FontNames.Push(this.FaceName)
+    }
+
+    OnDpiChanged(newDpi) {
+        this.Height := Round(this.BaseFontSize * newDpi / -72)
+        this.Apply()
     }
 
     Set(Name, Value, Apply := false) {
@@ -144,6 +148,12 @@ class LOGFONT extends Buffer {
         if Apply {
             this.Apply()
         }
+    }
+
+    SetFontSize(newSize) {
+        this.BaseFontSize := newSize
+        this.Height := Round(newSize * this.Dpi / -72)
+        this.Apply()
     }
 
     __Delete() {
@@ -268,8 +278,7 @@ class LOGFONT extends Buffer {
     Dpi => DllCall('User32\GetDpiForWindow', 'Ptr', this.hWnd, 'UInt')
 
     static __New() {
-        if this.Prototype.__Class == 'LOGFONT' {
-            this.Prototype.DefineProp('Encoding', { Value: 'UTF-16' })
-        }
+        this.DeleteProp('__New')
+        this.Prototype.DefineProp('Encoding', { Value: 'UTF-16' })
     }
 }

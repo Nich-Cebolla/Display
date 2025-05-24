@@ -19,7 +19,7 @@ class Example {
         WrapText(Txt1, &Str, { AdjustObject: true, MeasureLines: true }, &Width, &Height)
         G.Show()
         dGui.GuiFitCtrl(Txt1, &_w, &_h)
-        dGui.SetDpiChangeHandler()
+        dGui.SetDpiChangedHandler()
         Txt1.GetPos(&cx, &cy, &cw, &ch)
         G.GetClientPos(&gx, &gy, &gw, &gh)
         g.add('button', 'x' (cx+cw) ' y10', 'button')

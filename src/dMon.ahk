@@ -13,20 +13,16 @@
 
 
 /**
- * @class
- * @description - The `Mon` instance object provides an interface for making use of the `Hmon` values.
- * The main consideration for this object is with respect to the `dMon.SetOrder` function. AutoHotkey
- * does not have built-in usage for `Hmon` values, and so making use of `SetOrder` can be a but
- * cumbersome if one needs to retrieve a new buffer object each time. Using a `Mon` instance simplifies
- * the process, creating a disposable object that can be used and let to expire when the calling
- * function returns.
+ * @classdesc - `dMon` contains several functions for getting a monitor's handle. The `dMon`
+ * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfo"
+ * and that expose methods and properties that simplify usage of that information.
  */
 class dMon extends RectBase {
 
     /**
      * @description
      * @param {Integer} Hmon - The monitor handle.
-     * @returns {Mon} - The Mon instance object.
+     * @returns {dMon} - The dMon instance object.
      */
     __New(Hmon) {
         this.Size := 40
@@ -36,29 +32,6 @@ class dMon extends RectBase {
             throw Error('``GetMonitorInfo`` failed.', -1)
         }
     }
-
-    static __Item[N := 1] {
-        Get => this(this.FromIndex(N))
-    }
-
-
-    static __UseOrderedMonitors := false
-    static UseOrderedMonitors {
-        Get => this.__UseOrderedMonitors
-        Set {
-            this.__UseOrderedMonitors := Value
-            if Value {
-                if IsObject(Value) {
-                    this.DefineProp('__Item', { Get: this.__Item_Get_Ordered_Params })
-                } else {
-                    this.DefineProp('__Item', { Get: this.__Item_Get_Ordered_Default })
-                }
-            } else {
-                this.DefineProp('__Item', { Get: this.__Item_Get_NotOrdered })
-            }
-        }
-    }
-
 
     ;@region FromDim
     /**
@@ -78,11 +51,11 @@ class dMon extends RectBase {
     ;@region FromIndex
     /**
      * Gets the monitor handle using an index value.
-     * @param {Integer} N - This index of the monitor as defined by the system settings.
+     * @param {Integer} Index - This index of the monitor as defined by the system.
      * @returns {Integer} - The Hmon of the monitor.
      */
-    static FromIndex(N) {
-        MonitorGet(N, &L, &T)
+    static FromIndex(Index) {
+        MonitorGet(Index, &L, &T)
         return this.FromPoint(L, T)
     }
     ;@endregion
@@ -144,7 +117,7 @@ class dMon extends RectBase {
      * @param {Integer} T - The Top edge of the rectangle.
      * @param {Integer} R - The Right edge of the rectangle.
      * @param {Integer} B - The Bottom edge of the rectangle.
-     * @returns {Integer} - The Hmon of the monitor that contains the rectangle.
+     * @returns {Integer} - The handle of the monitor that contains the rectangle.
      * @see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromRect}
      */
     static FromPos(L, T, R, B) {
@@ -156,10 +129,10 @@ class dMon extends RectBase {
 
     ;@region FromWin
     /**
-     * @description - Gets the monitor handle using a windows `Hwnd`.
-     * @param {Integer} Hwnd - A window's `Hwnd`.
-     * @returns {Integer} - The Hmon of the monitor that contains the window.
-     * @see  {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromwindow}
+     * @description - Gets the monitor handle using a window handle.
+     * @param {Integer} Hwnd - The window handle.
+     * @returns {Integer} - The monitor handle.
+     * @see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromwindow}
      */
     static FromWin(Hwnd) {
         return DllCall('User32.dll\MonitorFromWindow', 'ptr', Hwnd, 'UInt', 0x00000000, 'Uptr')
@@ -209,7 +182,7 @@ class dMon extends RectBase {
      * `MonitorGet`, irrespective of the monitors' position relative to other monitors. With one set
      * of settings, monitor 2 may be at coordinate (-1000, -1200), and later if the user changes
      * the settings, monitor 2 may be at coordinate (1980, -750).
-     * - Using `UseOrderedMonitors` and `Mon[Index]` - `GetOrder` constructs an array of Hmon values,
+     * - Using `UseOrderedMonitors` and `dMon[Index]` - `GetOrder` constructs an array of Hmon values,
      * ordering them according to the input parameters. Monitors are ordered as a function of their
      * position relative to one another. Example:
      *   - If the user has a three-monitor setup, where one monitor is physically to the left and
@@ -237,8 +210,8 @@ class dMon extends RectBase {
      *   MoveWindowToRightHalf(MonitorIndex, Hwnd) {
      *       ; Get a new list every function call in case the user plugs in / removes a monitor.
      *       List := dMon.GetOrder()
-     *       ; Get the `Mon` instance.
-     *       MonUnit := Mon(List[MonitorIndex])
+     *       ; Get the `dMon` instance.
+     *       MonUnit := dMon(List[MonitorIndex])
      *       ; Move, fitting the window in the right-half of the monitor's work area.
      *       WinMove(MonUnit.MidXW, MonUnit.TW, MonUnit.WW / 2, MonUnit.HW, Hwnd)
      *   }
@@ -264,24 +237,24 @@ class dMon extends RectBase {
      *   List := dMon.GetOrder(, , , OriginIs1 := false)
      * @
      * If your script is going to be frequently referring to a monitor using the ordered Hmon index,
-     * you can set `dMon.UseOrderedMonitors` to true and get a new `Mon` instance using item notation
+     * you can set `dMon.UseOrderedMonitors` to true and get a new `dMon` instance using item notation
      * and the index. This uses the default values.
      * @example
      *   dMon.UseOrderedMonitors := true
-     *   MonUnit := Mon[1] ; The primary monitor
-     *   MonUnit := Mon[2] ; The top-left monitor
+     *   MonUnit := dMon[1] ; The primary monitor
+     *   MonUnit := dMon[2] ; The top-left monitor
      * @
      * To use item notation with a different ordering schema, set `UseOrderedMonitors` to
      * an object with one or more properties that have the same name as the parameters you want
      * passed to `GetOrder`.
      * @example
      *   dMon.UseOrderedMonitors := { OriginIs1: false }
-     *   MonUnit := Mon[1] ; The top-left monitor
+     *   MonUnit := dMon[1] ; The top-left monitor
      * @
-     * @param {String} [Precedent='X'] - Determines which axis is primarily considered when ordering
-     * the monitors. When comparing two monitors, if their positions along the precedent axis are
+     * @param {String} [Primary='X'] - Determines which axis is primarily considered when ordering
+     * the monitors. When comparing two monitors, if their positions along the Primary axis are
      * equal, then the alternate axis is compared and used to break the tie. Otherwise, only the
-     * precedent axis is used for comparison.
+     * Primary axis is used for comparison.
      * - X: Check horizontal first.
      * - Y: Check vertical first.
      * @param {Boolean} [LeftToRight=true] - If true, the monitors are ordered in ascending order
@@ -289,7 +262,7 @@ class dMon extends RectBase {
      * @param {Boolean} [TopToBottom=true] - If true, the monitors are ordered in ascending order
      * along the Y axis when the dimension along the Y axis is compared.
      */
-    static GetOrder(Precedent := 'X', LeftToRight := true, TopToBottom := true, OriginIs1 := true) {
+    static GetOrder(Primary := 'X', LeftToRight := true, TopToBottom := true, OriginIs1 := true) {
         List := []
         Result := []
         loop Result.Capacity := List.Capacity := MonitorGetCount() {
@@ -301,7 +274,7 @@ class dMon extends RectBase {
                 List.Push(Unit)
             }
         }
-        Rect.Order(List, Precedent, LeftToRight, TopToBottom)
+        Rect.Order(List, Primary, LeftToRight, TopToBottom)
         if IsSet(Temp) {
             Result.Push(dMon.FromPoint(Temp.L, Temp.T))
         }
@@ -319,7 +292,7 @@ class dMon extends RectBase {
      * S - Calls `SetThreadDpiAwarenessContext` with the default value prior to the method call.
      * The value used is `DPI_AWARENESS_CONTEXT_DEFAULT`, a global variable. You can change it at
      * any time.
-     * U - Returns a `Mon` instance using the return value from the method call, instead of returning
+     * U - Returns a `dMon` instance using the return value from the method call, instead of returning
      * the `Hmon` value.
      * @example
      *  MonUnit := dMon.FromWin_SU(WinGetId('A'))
@@ -348,6 +321,31 @@ class dMon extends RectBase {
             }
         } else {
             throw PropertyError('Property not found.', -1, Name)
+        }
+    }
+
+    static __New() {
+        this.DeleteProp('__New')
+        this.UseOrderedMonitors := true
+    }
+
+    static __Item[N := 1] {
+        Get => this(this.FromIndex(N))
+    }
+
+    static UseOrderedMonitors {
+        Get => this.__UseOrderedMonitors
+        Set {
+            this.__UseOrderedMonitors := Value
+            if Value {
+                if IsObject(Value) {
+                    this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_Ordered_Params') })
+                } else {
+                    this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_Ordered_Default') })
+                }
+            } else {
+                this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_NotOrdered') })
+            }
         }
     }
 
@@ -408,10 +406,14 @@ class dMon extends RectBase {
         return this(this.GetOrder()[N])
     }
 
-    static __GetOrderDefaultParams := { Precedent: 'X', LeftToRight: true, TopToBottom: true, OriginIs1: true}
     static __Item_Get_Ordered_Params(N) {
-        ObjSetBase(Params := this.__UseOrderedMonitors, this.__GetOrderDefaultParams)
-        return this(this.GetOrder(Params.Precedent, Params.LeftToRight, Params.TopToBottom, Params.OriginIs1)[N])
+        Params := this.__UseOrderedMonitors
+        return this(this.GetOrder(
+            HasProp(Params, 'Primary') ? Params.Primary : unset
+          , HasProp(Params, 'LeftToRight') ? Params.LeftToRight : unset
+          , HasProp(Params, 'TopToBottom') ? Params.TopToBottom : unset
+          , HasProp(Params, 'OriginIs1') ? Params.OriginIs1 : unset
+        )[N])
     }
 }
 

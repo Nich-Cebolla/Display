@@ -5,8 +5,7 @@ class dLv {
 
     /**
      * @description - Searches a listview column for a matching string.
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {String} Text - The text to search for.
      * @param {Number} [Col=1] - The column to search in. If omitted, the search will be performed
      * on all columns.
@@ -34,8 +33,7 @@ class dLv {
 
     /**
      * @description - Returns an array of checked rows.
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {Boolean} [Uncheck=true] - If true, rows are unchecked during the process.
      * @param {Function} [Callback=(LV, Row, Result) => Result.Push({ Row: Row, Text: LV.GetText(Row, 1) })] -
      * If provided, the callback is called for each checked row. The callback will receive three parameters:
@@ -101,8 +99,7 @@ class dLv {
      * @description - Adds an object or an array of objects to the ListView control. The column names
      * are used a map keys / object properties to access values to add to the ListView row. For property
      * names, if there are illegal characters in the column name, they are removed.
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {Object|Array} Obj - The object or array of objects to add to the ListView. The objects
      * should have keys / properties corresponding to the column names. The objects do not need to have
      * every value; absent keys and properties will default to an empty string.
@@ -139,8 +136,7 @@ class dLv {
      * @description - Updates an object or an array of objects within the ListView control. The column
      * names are used a map keys / object properties to access values to add to the ListView row. For
      * property names, if there are illegal characters in the column name, they are removed.
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {Object|Array} Obj - The object or array of objects to update in the ListView. The objects
      * should have keys / properties corresponding to the column names. The objects do not need to have
      * every value; absent keys and properties will default to an empty string.
@@ -259,8 +255,7 @@ class dLv {
      *  for ColName, RowText in ListView.Cols(2)
      *      MsgBox(RowText) ; Albert Einstein, Relative, Kurisu Makise
      * @
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {Number} [Row=1] - If using the enumerator in its two-parameter mode, you can specify
      * a row from which to obtain the text which gets passed to the second parameter.
      * @param {Number} [VarCount=1] - Specify if you are calling the enumerator in its 1-parameter mode
@@ -346,8 +341,7 @@ class dLv {
      * - The text content of the property / item on the object that corresponds to the column name of
      * `MatchCol`.
      * The function should return a nonzero value if the object is associated with that row.
-     * @param {Gui.ListView} Self - The ListView control object. If calling this from an instance,
-     * exclude this parameter.
+     * @param {Gui.ListView} Self - The ListView control object.
      * @param {Object|Array} Obj - The object or array of objects to update in the ListView. The objects
      * should have keys / properties corresponding to the column names. The objects do not need to have
      * every value; absent keys and properties will default to an empty string.

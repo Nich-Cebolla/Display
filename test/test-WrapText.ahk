@@ -1,7 +1,7 @@
 ﻿
 #SingleInstance force
 #include test-Base.ahk
-#include ..\lib\Text.ahk
+#include ..\src\WrapText.ahk
 
 /**
     This is a non-visual test using a random string.

@@ -305,70 +305,40 @@ class dWin extends RectBase {
      * some control over the new position relative to the mouse pointer or the edge of the monitor.
      * Use this when moving something on-screen next to the mouse pointer.
      * @param {Integer} hWnd - The handle to the window.
-     * @param {Boolean} [UseWorkArea=true] - Whether to use the work area or the display area.
-     * @param {Boolean} [MoveImmediately=true] - Whether to move the window immediately. If false,
-     * the function will only return the new position.
-     * @param {Object} [OffsetMouse={x:5,y:5}] - The offset from the mouse's current position.
-     * @param {Object} [OffsetEdgeOfMonitor={x:50,y:50}] - The offset from the monitor's edge.
-     * @param {integer} [DPI_AWARENESS_CONTEXT=-4] - The Dpi_CONTEXT_AWARENESS value to toggle before the
-     * position calculation. The value is set to the original after calculation is complete.
-     * @param {string} [MouseCoordMode='Screen'] - The `CoordMode('Mouse')` value to toggle before
-     * the position calculation. The value is set to the original after calculation is complete.
-     * @returns {Object} - An object with properties `X` and `Y` representing the new position of the
-     * window.
+     * @param {Integer} [PaddingX=5] - Any number of pixels to pad between the mouse cursor's position
+     * and the window along the X axis.
+     * @param {Integer} [PaddingY=5] - Any number of pixels to pad between the mouse cursor's position
+     * and the window along the Y axis.
+     * @param {VarRef} [OutX] - A variable that will receive the new X coordinate.
+     * @param {VarRef} [OutY] - A variable that will receive the new Y coordinate.
      */
-    static MoveByMouse(hWnd, &OutX?, &OutY?, Params?) {
-        Params := this.Defaults(Params??{}, A_ThisFunc)
-        oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
-        MouseGetPos(&OutX, &OutY)
-        WinGetPos(, , &wW, &wH, Number(hWnd))
-        Params.OffsetPoint := Params.OffsetMouse
-        dWin.GetPosByPoint(&OutX, &OutY, wW, wH, dMon.FromMouse_U(), Params)
-        Params.DeleteProp('OffsetMouse')
-        if Params.MoveImmediately {
-            WinMove(OutX, OutY, , , Number(hWnd))
+    static MoveByMouse(hWnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?) {
+        Mon := dMon(dMon.FromMouse(&X, &Y))
+        WinGetPos(&wx, &wy, &ww, &wh, hWnd)
+        WinMove(OutX := _GetX(), OutY := _GetY(), , hWnd)
+
+        return
+
+        _GetX() {
+            if X + ww + PaddingX <= Mon.RW {
+                return X + PaddingX
+            } else if X - ww - PaddingX >= Mon.LW {
+                return X - ww - PaddingX
+            } else {
+                return 100
+            }
         }
-        CoordMode('Mouse', oCoordMode)
+        _GetY() {
+            if Y + wh + PaddingY <= Mon.BW {
+                return Y + PaddingY
+            } else if Y - wh - PaddingY >= Mon.TW {
+                return Y - wh - PaddingY
+            } else {
+                return 100
+            }
+        }
     }
     ;@endregion
-
-
-
-
-    ;@region ScaleMoveByMouse
-    /** ### Description - Monitor.WinMoveByMouse()
-     * {@see Monitor.dWin.MoveByMouse}
-     * This method will scale the window if it moves to a monitor with a different Dpi.
-     * @param {Integer} hWnd - the handle of the window
-     * @param {Boolean} [UseWorkArea=true] - whether to use the work area or the display area
-     * @param {Boolean} [MoveImmediately=true] - whether to move the window immediately
-     * @param {Object} [OffsetMouse={x:5,y:5}] - the offset from the mouse's current position
-     * @param {Object} [OffsetEdgeOfMonitor={x:50,y:50}] - the offset from the monitor's edge
-     * @param {integer} [DPI_AWARENESS_CONTEXT=-4] - the Dpi_CONTEXT_AWARENESS value to toggle before the
-     * position calculation. The value is set to the original after calculation is complete.
-     * @param {string} [MouseCoordMode='Screen'] - the `CoordMode('Mouse')` value to toggle before
-     * the position calculation. The value is set to the original after calculation is complete.
-     * @returns {Map} - a map object with the new x and y coordinates as `Map('x', <new x>, 'y',
-     * <new y>)`
-     */
-    static ScaleMoveByMouse(hWnd, &OutX?, &OutY?, Params?) {
-        Params := this.Defaults(Params??{}, A_ThisFunc)
-        oCoordMode := CoordMode('Mouse', Params.MouseCoordMode)
-        WinGetPos(, , &wW, &wH, Number(hWnd))
-        DpiRatio := dMon.Dpi.Win(hWnd) / dMon.Dpi.Mouse()
-        MouseGetPos(&OutX, &OutY)
-        Params.OffsetPoint := Params.OffsetMouse
-        dWin.GetPosByPoint(&OutX, &OutY, wW / DpiRatio, wH / DpiRatio, dMon.FromMouse_U(), Params)
-        Params.DeleteProp('OffsetMouse')
-        if Params.MoveImmediately {
-            WinMove(OutX, OutY, , , Number(hWnd))
-        }
-        CoordMode('Mouse', oCoordMode)
-    }
-    ;@endregion
-
-
-
 
     ;@region ScalePreserveAspectRatio
     /** ### Description - Monitor.dWin.ScalePreserveAspectRatio()
@@ -400,13 +370,11 @@ class dWin extends RectBase {
     }
     ;@endregion
 
-
-
-
     ;@region Snap
     static Snap(hWnd, Hmon, style, position) {
         position.DefineProp('__Get', {Call:((*)=>'')})
-        unitCurrent := dMon.FromWin(hWnd), unitTarget := dMon.Get(Hmon)
+        unitCurrent := dMon.FromWin(hWnd)
+        unitTarget := dMon.Get(Hmon)
         DpiRatio := unitCurrent['Dpi']['x'] / unitTarget['Dpi']['x']
         WinGetPos(&wX, &wY, &wW, &wH, hWnd)
 
@@ -451,132 +419,9 @@ class dWin extends RectBase {
     }
     ;@endregion
 
-
     static IsVisible(hWnd) {
         return DllCall('IsWindowVisible', 'Ptr', hWnd, 'int')
     }
-
-
-
-    ;@region GetToggleVis
-    /** ### Description - Monitor.dWin.ToggleVis
-     * This function returns a function object that toggles the visibility of a window.
-     * returns a function object that toggles the visibility of a window. Intended to be used
-     * with a hotkey or control. Activating the function displays the window if hidden, and
-     * hides if visible. It optionally moves the window, accounting for Dpi scaling.
-     * @param {Integer|Object} hWnd_or_gui - the handle of the window or a GUI object
-     * @param {String} [flags=''] - a string of flags to control the behavior of the function.
-     * Currently there are two flags: `-Move` and `-Resize`. Use `-Move` to exclude moving the
-     * window when toggling visibility. Use `-Resize` to exclude resizing the window when
-     * toggling visibility (in situation when the Dpi changes).
-     * @param {String} [methodName='Call'] - the name of the method to call when the window is
-     * toggled. The method should be a function that accepts the `toggle` object as a parameter.
-     * @param {Object} [MoveByMouseDefault] - an object with default values for the
-     * `Monitor.dWin.MoveByMouse` functions. The toggle function allows you to pass individual
-     * parameters when called, which are prioritized. If you do not pass one or more of the
-     * parameters, the function then tries to retrieve one from one of these default values,
-     * and if not set, it will use the built-in defaults.
-     * @param {Function} [Callback] - a function that is called after the window is toggled.
-     * The function should accept the `toggle` object as a parameter.
-     * @returns {object} - if a GUI is passed to hWnd_or_gui, the parent object is the GUI object.
-     * Specifically, the GUI object gains a property `toggle` which is a container for this
-     * functions properties. If an `hWnd` is passed, an object is created and returned. The object
-     * itself also is given the property `toggle`. `toggle` has these properties:
-     *  - @property {func} autohide - the autohide function that can be used to set an autohide
-     * timer for the window.
-     *  - @property {func} Callback - if a Callback is assigned to this property, it will be
-     * called every time the function is called and the window is currently hidden. The Callback
-     * is not called if the window is currently shown and is being hidden. The Callback occurs
-     * after the window is moved, but before it has been revealed. This can be modified by
-     * simply moving its place in the script. Find it in the `Monitor.dWin.GetToggleVis` method.
-     *  - @property {string} cls - the class of the window.
-     *  - @property {object} default - the object passed to MoveByMouseDefault.
-     *  - @property {boolean} flag_ExcludeMove - whether the `-Move` flag was passed.
-     *  - @property {boolean} flag_ExcludeResize - whether the `-Resize` flag was passed.
-     *  - @property {integer} hWnd - the handle of the window.
-     *  - @property {string} methodName - the name of the method used to call the function.
-     *  - @property {string} title - the title of the window.
-     */
-    static GetToggleVis(hWnd_or_gui, flags:='', methodName := 'Call', MoveByMouseDefault?, Callback?) {
-
-        if IsObject(hWnd_or_gui)
-            hWnd := hWnd_or_gui.hWnd, obj := hWnd_or_gui
-        else
-            hWnd := hWnd_or_gui, obj := {}
-        obj.DefineProp('toggle', {Value:{
-            default:MoveByMouseDefault??'', cls:WinGetClass(hWnd), hWnd:hWnd
-        , title:WinGetTitle(hWnd), methodName:methodName, Callback:Callback??''
-        , flag_ExcludeMove:InStr(flags,'-Move'), flag_ExcludeResize:InStr(flags,'-Resize')
-        , autohide:_AutoHide_
-        }})
-        toggle := obj.toggle
-        if IsObject(toggle.default)
-            toggle.default.DefineProp('__Get', {Call:((*)=>'')})
-        if toggle.flag_ExcludeMove
-            toggle.DefineProp(methodName, {Call:_ToggleVis_})
-        else
-            toggle.DefineProp(methodName, {Call:_ToggleVisAndMove_})
-        return obj
-
-        _ToggleVis_(toggle, autohide:=0) {
-            original := DetectHiddenWindows(0)
-            isHidden := !WinExist(toggle.title ' ahk_class ' toggle.cls)
-            DetectHiddenWindows(original)
-            if isHidden {
-                if toggle.Callback
-                    toggle.Callback(toggle)
-                WinRestore(toggle.hWnd), WinActivate(toggle.hWnd)
-                if autohide
-                    toggle.autohide(autohide)
-            } else
-                WinHide(toggle.hWnd)
-        }
-        _ToggleVisAndMove_(toggle, coords?, MoveByMouseParams?, autohide:=0, Callback?) {
-            original := DetectHiddenWindows(0)
-            isHidden := !WinExist(toggle.title ' ahk_class ' toggle.cls)
-            DetectHiddenWindows(original)
-            if isHidden {
-                if IsSet(MoveByMouseParams) {
-                    if toggle.flag_ExcludeResize {
-                        dMon.dWin.MoveByMouse(toggle.hWnd, _ResolveInput_('UseWorkArea') || Unset
-                        , _ResolveInput_('MoveImmediately') || Unset, _ResolveInput_('OffsetMouse') || Unset
-                        , _ResolveInput_('OffsetEdgeOfMonitor') || Unset
-                        )
-                    } else {
-                        dMon.dWin.ScaleMoveByMouse(toggle.hWnd, _ResolveInput_('UseWorkArea') || Unset
-                        , _ResolveInput_('MoveImmediately') || Unset, _ResolveInput_('OffsetMouse') || Unset
-                        , _ResolveInput_('OffsetEdgeOfMonitor') || Unset
-                        )
-                    }
-                } else if IsSet(coords) {
-                    if toggle.flag_ExcludeResize {
-                        WinMove(coords.x, coords.y
-                        , (coords.HasOwnProp('w') ? coords.w : Unset)
-                        , (coords.HasOwnProp('h') ? coords.h : Unset)
-                        )
-                    } else {
-                        newSize := dMon.dWin.GetScaledLength(dMon.FromWin(toggle.hWnd), dMon.FromPt(coords.x,coords.y), toggle.hWnd)
-                        WinMove(coords.x, coords.y, newSize.Width, newSize.Height, toggle.hWnd)
-                    }
-                }
-                if toggle.Callback
-                    toggle.Callback(toggle)
-                if IsSet(Callback)
-                    Callback(toggle)
-                WinRestore(toggle.hWnd), WinActivate(toggle.hWnd)
-                if autohide
-                    toggle.autohide(autohide)
-            } else
-                WinHide(toggle.hWnd)
-
-        _ResolveInput_(key) => ((IsObject(MoveByMouseParams) && MoveByMouseParams.HasOwnProp(key)) ? MoveByMouseParams.%key%
-            : (IsObject(toggle.default) && toggle.default.HasOwnProp(key)) ? toggle.default.%key% : '')
-        }
-
-        _AutoHide_(toggle, period, *) => SetTimer(WinHide.Bind(toggle.hWnd), Abs(period) * -1)
-    }
-    ;@endregion
-
 
     /**
      * @description - Gets the bounding rectangle of all child windows of a given window.
@@ -598,47 +443,9 @@ class dWin extends RectBase {
         }
     }
 
-
-    ;@region GetPosByPoint
-    /**
-     * @description - A utility function for getting a new position nearby a point. The returned
-     * point is guaranteed to keep the rect completely on a single monitor, and allows two offsets
-     * to be used to control the position relative to the point and relative to the edge of the
-     * monitor.
-     */
-    static GetPosByPoint(&X, &Y, Width, Height, Unit, Params?) {
-        Params := this.Defaults(Params??{}, A_ThisFunc)
-        OffsetPoint := Params.OffsetPoint
-        OffsetEdgeOfMonitor := Params.OffsetEdgeOfMonitor
-        if Params.UseWorkArea {
-            _Process(Unit.LW, Unit.TW, Unit.RW, Unit.BW)
-        } else {
-            _Process(Unit.L, Unit.T, Unit.R, Unit.B)
-        }
-
-        _Process(UnitL, UnitT, UnitR, UnitB) {
-            if (X + OffsetPoint.X + Width > UnitR - OffsetEdgeOfMonitor.X)
-                OutX := UnitR - Width - OffsetEdgeOfMonitor.X
-            else if (X + OffsetPoint.X < UnitL + OffsetEdgeOfMonitor.X)
-                OutX := UnitL + OffsetEdgeOfMonitor.X
-            else
-                OutX := X + OffsetPoint.X
-            if (Y + OffsetPoint.Y + Height > UnitB - OffsetEdgeOfMonitor.Y)
-                OutY := UnitB - Height - OffsetEdgeOfMonitor.Y
-            else if (Y + OffsetPoint.Y < UnitT + OffsetEdgeOfMonitor.Y)
-                OutY := UnitT + OffsetEdgeOfMonitor.Y
-            else
-                OutY := Y + OffsetPoint.Y
-        }
-    }
-    ;@endregion
-
-
     ;@region PathFromTitle
     /**
-     * @description - Uses RegEx to extract the path from a Window's title. Generally this is
-     * intended to be used to get AHK script paths, but it will work with any window that has a
-     * path in the title.
+     * @description - Uses RegEx to extract the path from a Window's title.
      * @param {String} hWnd - The handle to the window.
      * @returns {RegExMatchInfo} - If found, returns the `RegExMatchInfo` object obtained from
      * the match. The object has the subcapture groups available:
@@ -646,6 +453,7 @@ class dWin extends RectBase {
      * - dir: The directory path starting from the drive letter.
      * - name: The file name.
      * - ext: The file extension.
+     * If not found, returns an empty string.
      * @example
      *  G := Gui(, 'C:\Users\YourName\Documents\AutoHotkey\lib\Win.ahk')
      *  TitleMatch := dWin.PathFromTitle(G.hWnd)
@@ -658,8 +466,8 @@ class dWin extends RectBase {
     static PathFromTitle(hWnd) {
         if RegExMatch(WinGetTitle(hWnd)
         , '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
-        , &MatchPath) {
-            return MatchPath
+        , &Match) {
+            return Match
         }
     }
     ;@endregion
@@ -705,12 +513,13 @@ class dWin extends RectBase {
     }
 
     /**
+     * @param {Integer} hWnd - The handle to the window that will be modified.
+     * @param {Integer} hWndNewParent - The handle to the window that will be set as the parent.
      * @returns {Integer} - The handle to the previous parent window.
      */
     static SetParent(hWnd, hWndNewParent) {
         return DllCall('SetParent', 'ptr', hWnd, 'ptr', hWndNewParent, 'ptr')
     }
-
 
     static LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
         AspectRatio := W1 / H1
@@ -722,50 +531,6 @@ class dWin extends RectBase {
         } else {
             W2 := WidthFromHeight
             H2 := H2
-        }
-    }
-
-
-
-    /**
-     * @class
-     * @description - Handles the input options.
-     */
-    class Defaults {
-        class Null {
-            static __New() {
-                ObjSetBase(this, this())
-            }
-        }
-
-        /**
-         * @description - Sets the base object.
-         * @param {Object} Options - The input object.
-         * @param {String} Name - The function name.
-         * @return {Object} - The same input object.
-         */
-        static Call(Options, Name) {
-            ObjSetBase(Options, this.%SubStr(Name, InStr(Name, '.', , , -1) + 1)%)
-            return Options
-        }
-        static MoveByMouse := {
-            UseWorkArea: true
-          , MoveImmediately: true
-          , OffsetMouse: { x: 5, y: 5 }
-          , OffsetEdgeOfMonitor: { x: 50, y: 50 }
-          , MouseCoordMode: 'Screen'
-        }
-        static GetPosByPoint := {
-            UseWorkArea: true
-          , OffsetPoint: { x: 5, y: 5 }
-          , OffsetEdgeOfMonitor: { x: 50, y: 50 }
-        }
-        static ScaleMoveByMouse := {
-            UseWorkArea: true
-          , MoveImmediately: true
-          , OffsetMouse: { x:5, y:5 }
-          , OffsetEdgeOfMonitor: { x:50, y:50 }
-          , MouseCoordMode: 'Screen'
         }
     }
 }

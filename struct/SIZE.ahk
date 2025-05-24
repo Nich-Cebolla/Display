@@ -9,7 +9,7 @@ class SIZE extends Buffer {
      * @description - The `SIZE` constructor.
      * @param [Width] - The width value.
      * @param [Height] - The height value.
-     * @returns {SIZE} - The `SIZE` object.
+     * @returns {SIZE}
      */
     __New(Width?, Height?) {
         this.Size := 8

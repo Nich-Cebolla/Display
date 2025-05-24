@@ -1,7 +1,9 @@
-﻿
+﻿#include RECT.ahk
 /**
  * @class
  * @description - Creates a reusable buffer object that, when called, retrieves the window information.
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowinfo}.
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-windowinfo}
  */
 class WINDOWINFO extends Buffer {
     /**
@@ -9,7 +11,7 @@ class WINDOWINFO extends Buffer {
      * @param {Integer} hWnd - The handle to the window whose information will be retrieved.
      * @returns {WINDOWINFO} - The instance of the `WINDOWINFO` class.
      */
-    __New(hWnd) {a
+    __New(hWnd) {
         this.hWnd := hWnd
         ; DWORD - 4 bytes x 4, RECT - 16 bytes x 2, UINT - 4 bytes x 2, ATOM - 2 bytes, WORD - 2 bytes
         this.Size := 60
@@ -26,8 +28,8 @@ class WINDOWINFO extends Buffer {
     }
 
     Size => NumGet(this, 0, 'uint')
-    Window => Rect.FromBuffer(this, 4)
-    Client => Rect.FromBuffer(this, 20)
+    Window => Rect.FromPtr(this.Ptr + 4)
+    Client => Rect.FromPtr(this.Ptr + 20)
     WindowStyle => NumGet(this, 36, 'uint')
     WindowStyleEx => NumGet(this, 40, 'uint')
     WindowStatus => NumGet(this, 44, 'uint')
