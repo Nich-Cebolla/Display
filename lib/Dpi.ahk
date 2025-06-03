@@ -186,4 +186,3 @@ SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT := DPI_AWARENESS_CONTEXT_DEFA
         return DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'ptr')
     }
 }
-

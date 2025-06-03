@@ -4,7 +4,6 @@
 #include Define-Font.ahk
 #include Define-Winuser.ahk
 #include ..\src
-#include dDefaultOptions.ahk
 #include SelectFontIntoDc.ahk
 #include ..\struct\SIZE.ahk
 #include ..\struct\IntegerArray.ahk

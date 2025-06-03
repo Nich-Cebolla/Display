@@ -29,7 +29,7 @@ class dMon extends RectBase {
         this.Hmon := Hmon
         NumPut('Uint', 40, this)
         if !DllCall('user32\GetMonitorInfo', 'ptr', Hmon, 'ptr', this) {
-            throw Error('``GetMonitorInfo`` failed.', -1)
+            throw OSError()
         }
     }
 
@@ -73,8 +73,10 @@ class dMon extends RectBase {
      * @returns {Integer} - The Hmon of the monitor that contains the mouse pointer.
      */
     static FromMouse(&OutX?, &OutY?) {
-        if Result := DllCall('User32.dll\GetCursorPos', 'ptr', PT := Point(), 'int') {
-            return DllCall('User32\MonitorFromPoint', 'ptr', PT.Value, 'uint', 0 , 'ptr')
+        if Result := DllCall('User32.dll\GetCursorPos', 'ptr', Pt := Point(), 'int') {
+            OutX := Pt.X
+            OutY := Pt.Y
+            return DllCall('User32\MonitorFromPoint', 'ptr', Pt.Value, 'uint', 0 , 'ptr')
         }
     }
     ;@endregion
@@ -165,6 +167,15 @@ class dMon extends RectBase {
         static Win(Hwnd, DpiType := MDT_DEFAULT) => dMon.Dpi(dMon.FromWin(Hwnd), DpiType)
     }
     ;@endregion
+
+
+    static GetNonvisiblePosition(Width) {
+        right := 0
+        for mon in dMon {
+            right := Max(right, mon.Right)
+        }
+        return right + Width + 1
+    }
 
 
 
@@ -324,6 +335,19 @@ class dMon extends RectBase {
         }
     }
 
+    static __Enum(*) {
+        i := 0
+        return _Enum
+
+        _Enum(&Mon) {
+            if ++i > MonitorGetCount() {
+                return 0
+            }
+            Mon := dMon[i]
+            return 1
+        }
+    }
+
     static __New() {
         this.DeleteProp('__New')
         this.UseOrderedMonitors := true
@@ -339,12 +363,12 @@ class dMon extends RectBase {
             this.__UseOrderedMonitors := Value
             if Value {
                 if IsObject(Value) {
-                    this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_Ordered_Params') })
+                    this.DefineProp('__Item', { Get: this.__Item_Get_Ordered_Params })
                 } else {
-                    this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_Ordered_Default') })
+                    this.DefineProp('__Item', { Get: this.__Item_Get_Ordered_Default })
                 }
             } else {
-                this.DefineProp('__Item', { Get: this.GetOwnPropDesc('__Item_Get_NotOrdered') })
+                this.DefineProp('__Item', { Get: this.__Item_Get_NotOrdered })
             }
         }
     }
@@ -369,28 +393,44 @@ class dMon extends RectBase {
     SplitHW(Divisor) => Rect.Split(this.TW, this.HW, Divisor)
 
     TL => Point(this.L, this.T)
+    Topleft => Point(this.L, this.T)
     BR => Point(this.R, this.B)
+    BottomRight => Point(this.R, this.B)
     L => NumGet(this, 4, 'Int')
+    Left => NumGet(this, 4, 'Int')
     X => NumGet(this, 4, 'Int')
     T => NumGet(this, 8, 'Int')
+    Top => NumGet(this, 8, 'Int')
     Y => NumGet(this, 8, 'Int')
     R => NumGet(this, 12, 'Int')
+    Right => NumGet(this, 12, 'Int')
     B => NumGet(this, 16, 'Int')
+    Bottom => NumGet(this, 16, 'Int')
     W => this.R - this.L
+    Width => this.R - this.L
     H => this.B - this.T
+    Height => this.B - this.T
     MidX => (this.R - this.L) / 2
     MidY => (this.B - this.T) / 2
     Primary => NumGet(this, 36, 'Uint')
     TLW => Point(this.LW, this.TW)
+    TopLeftW => Point(this.LW, this.TW)
     BRW => Point(this.RW, this.BW)
+    BottomRightW => Point(this.RW, this.BW)
     LW => NumGet(this, 20, 'int')
+    LeftW => NumGet(this, 20, 'int')
     XW => NumGet(this, 20, 'Int')
     TW => NumGet(this, 24, 'int')
+    TopW => NumGet(this, 24, 'int')
     YW => NumGet(this, 24, 'Int')
     RW => NumGet(this, 28, 'int')
+    RightW => NumGet(this, 28, 'int')
     BW => NumGet(this, 32, 'int')
+    BottomW => NumGet(this, 32, 'int')
     WW => this.RW - this.LW
+    WidthW => this.RW - this.LW
     HW => this.BW - this.TW
+    HeightW => this.BW - this.TW
     MidXW => (this.RW - this.LW) / 2
     MidYW => (this.BW - this.TW) / 2
     Dpi => dMon.Dpi(this.Hmon)
@@ -398,15 +438,15 @@ class dMon extends RectBase {
     Dpi_Angular => dMon.Dpi(this.Hmon, MDT_ANGULAR_DPI)
 
 
-    static __Item_Get_NotOrdered(N) {
+    static __Item_Get_NotOrdered(N, params*) {
         return this(this.FromIndex(N))
     }
 
-    static __Item_Get_Ordered_Default(N) {
+    static __Item_Get_Ordered_Default(N, params*) {
         return this(this.GetOrder()[N])
     }
 
-    static __Item_Get_Ordered_Params(N) {
+    static __Item_Get_Ordered_Params(N, params*) {
         Params := this.__UseOrderedMonitors
         return this(this.GetOrder(
             HasProp(Params, 'Primary') ? Params.Primary : unset

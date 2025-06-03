@@ -30,13 +30,16 @@
 #include Dpi.ahk
 #include SetThreadDpiAwareness__Call.ahk
 #include Text.ahk
+#include Tab.ahk
 
 #include ..\src
 #include dGui.ahk
 #include dLv.ahk
 #include dMon.ahk
+#include dTab.ahk
 #include dWin.ahk
 #include SelectFontIntoDc.ahk
+#include WrapText.ahk
 ; #include dScrollbar.ahk not working
 
 ; Step 4:

@@ -311,11 +311,15 @@ class dWin extends RectBase {
      * and the window along the Y axis.
      * @param {VarRef} [OutX] - A variable that will receive the new X coordinate.
      * @param {VarRef} [OutY] - A variable that will receive the new Y coordinate.
+     * @param {Boolean} [CalculateOnly = false] - If true, the window will not be moved.
      */
-    static MoveByMouse(hWnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?) {
+    static MoveByMouse(hWnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?, CalculateOnly := false) {
         Mon := dMon(dMon.FromMouse(&X, &Y))
         WinGetPos(&wx, &wy, &ww, &wh, hWnd)
-        WinMove(OutX := _GetX(), OutY := _GetY(), , hWnd)
+        if !DllCall('MoveWindow', 'ptr', hWnd, 'int', OutX := _GetX(), 'int', OutY := _GetY(), 'int', ww, 'int', wh, 'int') {
+            throw OSError()
+        }
+        ; WinMove(OutX := _GetX(), OutY := _GetY(), , hWnd)
 
         return
 
@@ -510,6 +514,21 @@ class dWin extends RectBase {
 
     static ChildWindowFromPointEx(hWnd, X, Y, flags := 0) {
         return DllCall('ChildWindowFromPointEx', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
+    }
+
+    /**
+     * @description - Retrieves the dimensions of the bounding rectangle of the specified window.
+     * The dimensions are given in screen coordinates that are relative to the upper-left corner of
+     * the screen.
+     * @param {Integer} hWnd - The window handle.
+     * @returns {Rect}
+     */
+    static GetWindowRect(hWnd) {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rc, 'int') {
+            throw OSError()
+        }
+        return rc
     }
 
     /**

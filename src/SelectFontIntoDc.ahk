@@ -55,6 +55,8 @@ class SelectFontIntoDc {
         return err ?? ''
     }
 
+    __Delete() => this()
+
     static __New() {
         if this.Prototype.__Class == 'SelectFontIntoDc' {
             Proto := this.Prototype

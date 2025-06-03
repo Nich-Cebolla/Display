@@ -1,4 +1,5 @@
 #include RectBase.ahk
+#include ..\lib\SetThreadDpiAwareness__Call.ahk
 
 class Rect extends RectBase {
     __New(L?, T?, R?, B?) {
