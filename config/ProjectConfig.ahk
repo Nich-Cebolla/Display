@@ -17,14 +17,13 @@
 ; Copy this document to your project directory then open the copy and work on that one.
 
 ; Step 2:
-; Adjust the top #include statements to point to the "Display" directories.
-; "#include ..\lib" should be changed to "#include path\to\Display\lib"
-; "#include ..\src" should be changed to "#include path\to\Display\src"
-
+; Adjust the top #include statement to point to the "Display" directory.
 ; Step 3:
 ; Comment out any files which your project is not going to use.
 
-#include ..\lib
+#include ..
+
+#include lib
 #include ComboBox.ahk
 #include ControlTextExtent.ahk
 #include Dpi.ahk
@@ -43,19 +42,21 @@
 ; #include dScrollbar.ahk not working
 
 ; Step 4:
-; Adjust global variables
+; Adjust global variables.
 ; These are some global variables that are intended to be adjusted according to project needs.
 
 /**
  * @var {Integer} MDT_DEFAULT - The default DPI type used by various functions. This is used by
- * "dMon.ahk".
+ * "dMon.ahk". To learn how it affects the functions which use it, refer to this page:
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/ne-shellscalingapi-monitor_dpi_type}.
  */
 ; MDT_DEFAULT := MDT_EFFECTIVE_DPI
 
 /**
  * @var {Integer} DPI_AWARENESS_CONTEXT_DEFAULT - The default DPI awareness context used by
  * various functions. This is used by "Dpi.ahk", "SetThreadDpiAwareness__Call.ahk", "dMon.ahk",
- * and "dWin.ahk".
+ * and "dWin.ahk". To learn how it affects the functions which use it, refer to this page:
+ * {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/dpi-awareness-context}.
  */
 ; DPI_AWARENESS_CONTEXT_DEFAULT := DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 
@@ -67,7 +68,7 @@
 
 
 ; Step 5:
-; Selecting "dMon.ahk" options
+; Select "dMon.ahk" options.
 ; If you are not using "dMon.ahk", skip this step.
 
 /**
@@ -81,7 +82,7 @@
 ; dMon.UseOrderedMonitors := true
 
 ; Step 6:
-; Selecting "dGui.ahk" options
+; Select "dGui.ahk" options.
 ; If you are not using "dGui.ahk", skip steps 6 and 7.
 
  /**
@@ -157,7 +158,7 @@
 ; dGui.InitialFontSize := 10
 
 ; Step 7:
-; Call dGui.Initialize()
+; Call dGui.Initialize().
 ; If you are not using "dGui.ahk', skip this step. Call here or anywhere else in your code. If calling
 ; `dGui.Initialize()` in your external code, ensure it is somewhere after the `#include ProjectConfig.ahk`
 ; statement. You can call `dGui.Initialize()` again at any time to adjust any options on-the-fly.

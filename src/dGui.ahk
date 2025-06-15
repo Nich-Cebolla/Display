@@ -248,6 +248,7 @@ class dGui extends Gui {
         Ctrl.DefineProp('__BaseFontSize', { Value: Ctrl.Gui.__BaseFontSize })
         Ctrl.DefineProp('__Rounding', { Value: { X: 0, Y: 0, W: 0, H: 0 } })
         this.Count++
+        return Ctrl
     }
 
     AddActiveX(Options?, Text?) => this.Add('ActiveX', Options ?? unset, Text ?? unset)

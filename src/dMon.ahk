@@ -202,8 +202,9 @@ class dMon extends RectBase {
      * always refer to the main, top-left, or top-right monitor even if the user changes the system
      * settings (as long as monitors' relative positions do not change). This type of behavior
      * may be preferable for some; for others, the native behavior may be preferable.
-     * <br><br>
-     * Here are some examples to clarify what this function does: <br>
+     *
+     * Here are some examples to clarify what this function does:
+     *
      * Say a user has three monitors, the primary monitor is the laptop display at the bottom, and
      * two external monitors adjacent to one another and above the laptop. When calling window
      * functions that move a window to a position relative to a monitor's boundaries, the function
