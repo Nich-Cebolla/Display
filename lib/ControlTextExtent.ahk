@@ -5,8 +5,10 @@
 #include Define-Winuser.ahk
 #include ..\src
 #include SelectFontIntoDc.ahk
-#include ..\struct\SIZE.ahk
-#include ..\struct\IntegerArray.ahk
+#include ..\struct
+#include SIZE.ahk
+#include IntegerArray.ahk
+#include LOGFONT.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -37,10 +39,10 @@
  * @returns {Object} - An object with properties { Height, Width }.
  */
 ControlGetTextExtent(Ctrl) {
-    context := SelectFontIntoDc(Ctrl.hWnd)
     W := H := 0
     sz := SIZE()
-    for line in StrSplit(Ctrl.Text, '`n', '`r') {
+    context := SelectFontIntoDc(Ctrl.hWnd)
+    for line in StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text)) {
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', context.hdc, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
         ) {
@@ -420,4 +422,35 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             throw OSError()
         }
     }
+}
+
+ControlFitText(Ctrl, PaddingX := 0, PaddingY := 0, &CachedPadding?, &OutExtentPoints?, &OutWidth?, &OutHeight?) {
+    OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
+    context := SelectFontIntoDc(Ctrl.hWnd)
+    GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, &OutHeight, true)
+    context()
+    if !IsSet(CachedPadding) {
+        CachedPadding := GetControlTextExtentPadding(Ctrl)
+    }
+    Ctrl.Move(, , OutWidth + PaddingX + CachedPadding.Width, OutHeight + PaddingY + CachedPadding.Height + CachedPadding.LinePadding * OutExtentPoints.Length)
+}
+
+GetControlTextExtentPadding(Ctrl, Opt := '', GetTextExtentParams?) {
+    lf := LOGFONT(Ctrl.Hwnd)
+    G := dGui()
+    G.SetFont('s' lf.FontSize, lf.FaceName)
+    lf.DisposeFont()
+    c := G.Add(Ctrl.Type, Opt, 'line')
+    c.GetPos(, , , &h)
+    c2 := G.Add(Ctrl.Type, Opt, 'line`r`nline')
+    c2.GetPos(, , &w2, &h2)
+    if IsSet(GetTextExtentParams) {
+        sz := c.GetTextExtent(GetTextExtentParams*)
+        sz2 := c2.GetTextExtent(GetTextExtentParams*)
+    } else {
+        sz := c.GetTextExtent()
+        sz2 := c2.GetTextExtent()
+    }
+    G.Destroy()
+    return { Width: w2 - sz2.Width, Height: h - sz.Height, LinePadding: h2 - sz2.Height - h + sz.Height }
 }

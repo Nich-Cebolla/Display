@@ -159,6 +159,24 @@ GetTextExtentExPoint(Str, hdc, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
     }
 }
 
+GetLineEnding(Str) {
+    StrReplace(Str, '`r', , , &CountCr)
+    StrReplace(Str, '`n', , , &CountLf)
+    if CountCr == CountLf {
+        if InStr(Str, '`r`n') {
+            return '`r`n'
+        } else {
+            return '`n`r'
+        }
+    } else if CountCr > CountLf {
+        return '`r'
+    } else if CountLf {
+        return '`n'
+    } else {
+        return ''
+    }
+}
+
 ; CalcTextRect(Str, hWnd, WidthLimit?) {
 ;     hdc := DllCall('GetDC', 'ptr', hWnd, 'ptr')
 ;     hFont := SendMessage(0x31, , , hWnd)  ; WM_GETFONT

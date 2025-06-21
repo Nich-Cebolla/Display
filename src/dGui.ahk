@@ -15,6 +15,7 @@
 #include ..\lib
 #include SetThreadDpiAwareness__Call.ahk
 #include ControlTextExtent.ahk
+#include Text.ahk
 
 class dGui extends Gui {
 
@@ -248,6 +249,15 @@ class dGui extends Gui {
         Ctrl.DefineProp('__BaseFontSize', { Value: Ctrl.Gui.__BaseFontSize })
         Ctrl.DefineProp('__Rounding', { Value: { X: 0, Y: 0, W: 0, H: 0 } })
         this.Count++
+        if !Options || !InStr(Options, '-vscroll') {
+            switch Ctrl.Type, 0 {
+                case 'Text', 'Edit', 'Link':
+                    if InStr(Ctrl.Text, '`r`n') {
+                        Ctrl.GetPos(, , &w)
+                        Ctrl.Move(, , w + dGui.ScrollbarPadding)
+                    }
+            }
+        }
         return Ctrl
     }
 
@@ -319,6 +329,14 @@ class dGui extends Gui {
             Name := Ctrl.Name
             return 1
         }
+    }
+
+    FitControl(Ctrl, PaddingX := 0, PaddingY := 0) {
+        if Ctrl is String {
+            Ctrl := this[Ctrl]
+        }
+        Ctrl.GetPos(&x, &y, &w, &h)
+        this.Show(Format('w{} h{}', x + w + this.MarginX + PaddingX, y + h + this.MarginY + PaddingY))
     }
 
     /**

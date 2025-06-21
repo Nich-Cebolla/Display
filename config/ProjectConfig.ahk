@@ -85,6 +85,17 @@
 ; Select "dGui.ahk" options.
 ; If you are not using "dGui.ahk", skip steps 6 and 7.
 
+/**
+ * @property {Integer} dGui.ScrollbarPadding -
+ * Default = 1
+ * An amount of padding to add to the width of newly created `dGui.Edit`, `dGui.Link`, and `dGui.Text`
+ * controls. The padding is also used by `GetControlTextExtentPadding`. The padding is only added
+ * when both of the following are true:
+ * - The "-VScroll" option was not used.
+ * - The text content contains one or more "`r`n".
+ */
+; dGui.ScrollbarPadding := 1
+
  /**
   * @property {Boolean|Array} dGui.ControlIncludeByDefault -
   * Default = true

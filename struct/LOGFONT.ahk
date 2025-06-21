@@ -157,7 +157,10 @@ class LOGFONT extends Buffer {
     }
 
     __Delete() {
-        this.DisposeFont()
+        if this.Handle {
+            DllCall('DeleteObject', 'ptr', this.Handle)
+            this.Handle := 0
+        }
     }
 
     /**
