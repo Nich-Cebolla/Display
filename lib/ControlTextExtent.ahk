@@ -5,6 +5,7 @@
 #include Define-Winuser.ahk
 #include ..\src
 #include SelectFontIntoDc.ahk
+#include dGui.ahk
 #include ..\struct
 #include SIZE.ahk
 #include IntegerArray.ahk
@@ -20,9 +21,6 @@
 
    If you need help understanding how to handle OS errors, read the section "OSError" here:
    {@link https://www.autohotkey.com/docs/v2/lib/Error.htm}
-   I started writing up a helper before realizing AHK already handles it, but if you
-   feel like more clarification would be helpful:
-   {@link https://gist.github.com/Nich-Cebolla/c8eea56ac8ab27767e31629a0a9b0b2f/}
 */
 
 ; -------------------------
@@ -432,7 +430,26 @@ ControlFitText(Ctrl, PaddingX := 0, PaddingY := 0, &CachedPadding?, &OutExtentPo
     if !IsSet(CachedPadding) {
         CachedPadding := GetControlTextExtentPadding(Ctrl)
     }
-    Ctrl.Move(, , OutWidth + PaddingX + CachedPadding.Width, OutHeight + PaddingY + CachedPadding.Height + CachedPadding.LinePadding * OutExtentPoints.Length)
+    OutWidth += PaddingX + CachedPadding.Width
+    OutHeight += PaddingY + CachedPadding.Height + CachedPadding.LinePadding * OutExtentPoints.Length
+    Ctrl.Move(, , OutWidth, OutHeight)
+}
+
+ControlFitTextEx(Ctrl, MaxWidth, PaddingX := 0, PaddingY := 0, &CachedPadding?, &OutExtentPoints?, &OutHeight?) {
+    OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
+    context := SelectFontIntoDc(Ctrl.hWnd)
+    GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, , true)
+    context()
+    if !IsSet(CachedPadding) {
+        CachedPadding := GetControlTextExtentPadding(Ctrl)
+    }
+    MaxWidth -= CachedPadding.Width + PaddingX
+    OutHeight := PaddingY + CachedPadding.Height
+    for sz in OutExtentPoints {
+        lines := Ceil(sz.Width / MaxWidth)
+        OutHeight += sz.Height * lines + CachedPadding.LinePadding * lines
+    }
+    Ctrl.Move(, , , OutHeight)
 }
 
 GetControlTextExtentPadding(Ctrl, Opt := '', GetTextExtentParams?) {
