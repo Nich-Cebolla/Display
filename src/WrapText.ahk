@@ -118,10 +118,6 @@ class WrapText {
      *  MsgBox(Split[3]) ; went on her merry way.
      * @
      * @param {String} [Options.Newline='`r`n'] - The newline character(s) to use.
-     * @param {VarRef} [OutWidth] - A variable that will receive the width of the line with the greatest
-     * width in the result string.
-     * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of each line.
-     * This only receives a value if `Options.MeasureLines` is nonzero.
      * @param {Boolean} [Options.ZeroWidthSpace=true] - When true, if the input text contains Zero Width
      * Space characters (code point U+200B), they will be treated as soft hyphens and will be used as
      * a break character. When a line breaks at a Zero Width Space character, a visible hyphen is placed
@@ -131,6 +127,10 @@ class WrapText {
      * may be hyphenated at any position in the word. Generally this should be left true; if no U+200B
      * characters are present in the input string, `WrapText` adjusts its process to avoid using resources
      * searching for them.
+     * @param {VarRef} [OutWidth] - A variable that will receive the width of the line with the greatest
+     * width in the result string.
+     * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of each line.
+     * This only receives a value if `Options.MeasureLines` is nonzero.
      * @returns {Integer} - The number of lines the text was split into.
      */
     static Call(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
