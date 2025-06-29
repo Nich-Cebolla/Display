@@ -251,7 +251,7 @@ class dGui extends Gui {
         this.Count++
         if !Options || !InStr(Options, '-vscroll') {
             switch Ctrl.Type, 0 {
-                case 'Text', 'Edit', 'Link':
+                case 'Edit':
                     if InStr(Ctrl.Text, '`r`n') {
                         Ctrl.GetPos(, , &w)
                         Ctrl.Move(, , w + dGui.ScrollbarPadding)
