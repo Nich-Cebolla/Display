@@ -13,8 +13,9 @@
 #include dMon.ahk
 
 #include ..\lib
-#include SetThreadDpiAwareness__Call.ahk
 #include ControlTextExtent.ahk
+#include Dpi.ahk
+#include SetThreadDpiAwareness__Call.ahk
 #include Text.ahk
 
 class dGui extends Gui {
