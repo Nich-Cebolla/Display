@@ -59,6 +59,8 @@ GetTextExtentPoint32(hdc, Str) {
 /**
  * @description - Iterates an array of strings. For each string, a SIZE object is added to an array.
  * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
+ * width, of the items. For any string values that are empty strings, the associated value added to
+ * the output array is also an empty string.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {Integer} hdc - A handle to the device context to use when measuring the string.
  * @param {String[]} Arr - An array of strings. The array may not have unset indices.
