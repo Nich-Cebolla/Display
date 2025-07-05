@@ -79,18 +79,22 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     }
     OutWidth := OutHeight := 0
     for Str in Arr {
-        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hdc
-            , 'Ptr', StrPtr(Str)
-            , 'Int', StrLen(Str)
-            , 'Ptr', sz := SIZE()
-            , 'Int'
-        ) {
-            Result[A_Index] := sz
-            OutWidth := Max(OutWidth, sz.Width)
-            OutHeight += sz.Height
+        if Str {
+            if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+                , 'Ptr', hdc
+                , 'Ptr', StrPtr(Str)
+                , 'Int', StrLen(Str)
+                , 'Ptr', sz := SIZE()
+                , 'Int'
+            ) {
+                Result[A_Index] := sz
+                OutWidth := Max(OutWidth, sz.Width)
+                OutHeight += sz.Height
+            } else {
+                throw OSError()
+            }
         } else {
-            throw OSError()
+            Result[A_Index] := ''
         }
     }
     return Result
