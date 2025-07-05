@@ -1,15 +1,13 @@
 ﻿
 ; Dependencies:
+#include Text.ahk
 #include ..\definitions
 #include Define-Font.ahk
-#include Define-Winuser.ahk
 #include ..\src
 #include SelectFontIntoDc.ahk
-#include dGui.ahk
 #include ..\struct
 #include SIZE.ahk
 #include IntegerArray.ahk
-#include LOGFONT.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -30,8 +28,9 @@
  * contents of a Gui control. If the `Ctrl.Text` property contains multiple lines of text, the
  * lines are split at each newline character and each line is measured individually. The value
  * returned by this function will be an object where the height represents the sum of the height
- * of each line, and the width is the greatest width of each line. This function assumes that new
- * lines are either '`r`n' or '`n'.
+ * of each line, and the width is the greatest width of each line. The height value will not be an
+ * accurate representation of the height occupied by the text within a control's display text because
+ * padding is added to each line.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {String} Ctrl - The `Gui.Control` object.
  * @returns {Object} - An object with properties { Height, Width }.
@@ -420,54 +419,4 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             throw OSError()
         }
     }
-}
-
-ControlFitText(Ctrl, PaddingX := 0, PaddingY := 0, &CachedPadding?, &OutExtentPoints?, &OutWidth?, &OutHeight?) {
-    OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
-    context := SelectFontIntoDc(Ctrl.hWnd)
-    GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, &OutHeight, true)
-    context()
-    if !IsSet(CachedPadding) {
-        CachedPadding := GetControlTextExtentPadding(Ctrl)
-    }
-    OutWidth += PaddingX + CachedPadding.Width
-    OutHeight += PaddingY + CachedPadding.Height + CachedPadding.LinePadding * OutExtentPoints.Length
-    Ctrl.Move(, , OutWidth, OutHeight)
-}
-
-ControlFitTextEx(Ctrl, MaxWidth, PaddingX := 0, PaddingY := 0, &CachedPadding?, &OutExtentPoints?, &OutHeight?) {
-    OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
-    context := SelectFontIntoDc(Ctrl.hWnd)
-    GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, , true)
-    context()
-    if !IsSet(CachedPadding) {
-        CachedPadding := GetControlTextExtentPadding(Ctrl)
-    }
-    MaxWidth -= CachedPadding.Width + PaddingX
-    OutHeight := PaddingY + CachedPadding.Height
-    for sz in OutExtentPoints {
-        lines := Ceil(sz.Width / MaxWidth)
-        OutHeight += sz.Height * lines + CachedPadding.LinePadding * lines
-    }
-    Ctrl.Move(, , , OutHeight)
-}
-
-GetControlTextExtentPadding(Ctrl, Opt := '', GetTextExtentParams?) {
-    lf := LOGFONT(Ctrl.Hwnd)
-    G := dGui()
-    G.SetFont('s' lf.FontSize, lf.FaceName)
-    lf.DisposeFont()
-    c := G.Add(Ctrl.Type, Opt, 'line')
-    c.GetPos(, , , &h)
-    c2 := G.Add(Ctrl.Type, Opt, 'line`r`nline')
-    c2.GetPos(, , &w2, &h2)
-    if IsSet(GetTextExtentParams) {
-        sz := c.GetTextExtent(GetTextExtentParams*)
-        sz2 := c2.GetTextExtent(GetTextExtentParams*)
-    } else {
-        sz := c.GetTextExtent()
-        sz2 := c2.GetTextExtent()
-    }
-    G.Destroy()
-    return { Width: w2 - sz2.Width, Height: h - sz.Height, LinePadding: h2 - sz2.Height - h + sz.Height }
 }
