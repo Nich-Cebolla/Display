@@ -59,14 +59,13 @@ GetTextExtentPoint32(hdc, Str) {
 /**
  * @description - Iterates an array of strings. For each string, a SIZE object is added to an array.
  * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
- * width, of the items.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {Integer} hdc - A handle to the device context to use when measuring the string.
  * @param {String[]} Arr - An array of strings. The array may not have unset indices.
  * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
  * array.
  * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of the lines.
- * @param {Boolean} [ReplaceItems=false] - If true, the original array is used to store the `SIZE`
+ * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the `SIZE`
  * objects, and the strings are replaced with the objects. If false, a new array is created.
  * @returns {SIZE[]} - An array of `SIZE` objects, each with properties { Width, Height }.
  */
