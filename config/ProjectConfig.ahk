@@ -11,6 +11,7 @@
    as I release updates.
 */
 
+; *************************************************************************************************
 ; There are 7 steps in this document.
 
 ; Step 1:
@@ -18,8 +19,10 @@
 
 ; Step 2:
 ; Adjust the top #include statement to point to the "Display" directory.
+
 ; Step 3:
 ; Comment out any files which your project is not going to use.
+; --------------------
 
 #include ..
 
@@ -32,6 +35,7 @@
 #include Tab.ahk
 
 #include ..\src
+#include ControlFitText.ahk
 #include dGui.ahk
 #include dLv.ahk
 #include dMon.ahk
@@ -41,9 +45,11 @@
 #include WrapText.ahk
 ; #include dScrollbar.ahk not working
 
+; --------------------
 ; Step 4:
 ; Adjust global variables.
 ; These are some global variables that are intended to be adjusted according to project needs.
+; --------------------
 
 /**
  * @var {Integer} MDT_DEFAULT - The default DPI type used by various functions. This is used by
@@ -66,10 +72,11 @@
  */
 ; DPI_CHANGED_DPI_AWARENESS_CONTEXT := DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 
-
+; --------------------
 ; Step 5:
 ; Select "dMon.ahk" options.
 ; If you are not using "dMon.ahk", skip this step.
+; --------------------
 
 /**
  * @property {Boolean} dMon.UseOrderedMonitors - When true, the monitors are ordered by their
@@ -81,9 +88,11 @@
  */
 ; dMon.UseOrderedMonitors := true
 
+; --------------------
 ; Step 6:
 ; Select "dGui.ahk" options.
 ; If you are not using "dGui.ahk", skip steps 6 and 7.
+; --------------------
 
 /**
  * @property {Integer} dGui.ScrollbarPadding -
@@ -168,12 +177,17 @@
   */
 ; dGui.InitialFontSize := 10
 
+; --------------------
 ; Step 7:
 ; Call dGui.Initialize().
 ; If you are not using "dGui.ahk', skip this step. Call here or anywhere else in your code. If calling
 ; `dGui.Initialize()` in your external code, ensure it is somewhere after the `#include ProjectConfig.ahk`
 ; statement. You can call `dGui.Initialize()` again at any time to adjust any options on-the-fly.
+; --------------------
+
 ; dGui.Initialize()
+
+; *************************************************************************************************
 
 
 
