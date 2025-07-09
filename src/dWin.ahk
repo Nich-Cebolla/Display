@@ -7,6 +7,7 @@
 #include Rect.ahk
 #include RectBase.ahk
 #include POINT.ahk
+#include WINDOWINFO.ahk
 
 #include ..\src\dMon.ahk
 

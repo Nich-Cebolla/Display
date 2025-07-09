@@ -5,6 +5,11 @@
 #include Rect.ahk
 
 
+/**
+ * The display area is the area within which the tab's controls are visible.
+ *
+ * The window area is the window's entire area, including tabs and margins.
+ */
 class dTab extends Gui.Tab {
 
 

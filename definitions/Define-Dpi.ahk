@@ -9,12 +9,18 @@ PROCESS_PER_MONITOR_DPI_AWARE := 2
 
 /** {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged} */
 WM_DPICHANGED := 0x02E0
+
 /** {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent} */
 WM_DPICHANGED_BEFOREPARENT := 0x02E2
+
 /** {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent} */
 WM_DPICHANGED_AFTERPARENT := 0x02E3
+
 /** {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize} */
 WM_GETDPISCALEDSIZE := 0x02E4
+
+/** {@link https://learn.microsoft.com/en-us/windows/win32/gdi/wm-setredraw} */
+WM_SETREDRAW := 0x000B
 
 DPI_AWARENESS_CONTEXT_UNAWARE := -1
 DPI_AWARENESS_CONTEXT_SYSTEM_AWARE := -2
@@ -28,3 +34,5 @@ MDT_EFFECTIVE_DPI := 0
 MDT_ANGULAR_DPI := 1
 MDT_RAW_DPI := 2
 MDT_DEFAULT := MDT_EFFECTIVE_DPI
+
+BASE_DPI := 96

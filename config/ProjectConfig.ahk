@@ -30,9 +30,9 @@
 #include ComboBox.ahk
 #include ControlTextExtent.ahk
 #include Dpi.ahk
-#include SetThreadDpiAwareness__Call.ahk
-#include Text.ahk
+#include FilterWords.ahk
 #include Tab.ahk
+#include Text.ahk
 
 #include ..\src
 #include ControlFitText.ahk
@@ -145,7 +145,30 @@
   * Default = ['Button', 'Edit', 'Link', 'StatusBar', 'Text']
   *
   * Regarding the built-in dpi change handler, `DisplayConfig.ResizeByText` specifies which control
-  * types are resized using the function `ControlResizeByText`. For controls not included in this
+  * types are resized using the change in font size. This is the logic:
+  * 1. Measure the control's text content before scaling the font size.
+  * 2. Scale the font size.
+  * 3. Measure the control's text content again.
+  * 4. Adjust the control's height by multiplying its current height by the ratio
+  * `NewTextHeight / OldTextHeight`.
+  * 5. Adjust the control's width by multiplying its current width by the ratio
+  * `NewTextWidth / OldTextWidth`.
+  *
+  * Resizing controls with the above logic preserves the relative position of the control's text
+  * content to the control's borders, maintaining a more consistent appearance when the moving
+  * the window into a different dpi context.
+  *
+  * There are some considerations to keep in mind:
+  * - If the control's text content is empty, then the process would evaluate no change in text
+  * size because the size is 0x0. The built-in handler will default back to scaling the control
+  * by dpi ratio, but this carries the risk of presenting an inconistent experience for the user.
+  * - If the controls around the control are being resized by dpi ratio, then the relative positions
+  * shared by the controls might change, causing an inconsistent display.
+  *
+  * The best approach to handling dpi changes is to write a handler function specific to the indidual
+  * ui. The built-in handler is not an ideal solution
+  *
+  * the function `ControlResizeByText`. For controls not included in this
   * list, they will be resized using `ControlResizeByDpiRatio`. To set all controls to be resized
   * using `ControlResizeByDpiRatio`, set this to `false`.
   *

@@ -208,7 +208,22 @@ class FilterWords {
             this.CbAdd.Call(this.List.Length)
         }
     }
-    Delete(Index) {
+    Delete(Index?, Str?) {
+        if !IsSet(Index) {
+            if IsSet(Str) {
+                for s in this.List {
+                    if s = Str {
+                        Index := A_Index
+                        break
+                    }
+                }
+                if !IsSet(Index) {
+                    throw Error('String not found.', -1, Str)
+                }
+            } else {
+                throw Error('No parameters were defined.', -1)
+            }
+        }
         if (text := this.CbGetText.Call()) {
             if this.CbFilter.Call(this.List[Index], text) {
                 _LoopItems()
@@ -237,6 +252,7 @@ class FilterWords {
                 if Index = i {
                     this.Indices.RemoveAt(A_Index)
                     this.CbDelete.Call(Index, A_Index)
+                    this.List.RemoveAt(Index)
                     return
                 }
             }

@@ -2,35 +2,112 @@
 
 class dLv {
 
+    /**
+     * @description - Adds an object or an array of objects to the ListView control. The column names
+     * are used a map keys / object properties to access values to add to the ListView row. For property
+     * names, if there are illegal characters in the column name, they are removed.
+     * @param {Gui.ListView} Self - The ListView control object.
+     * @param {Object|Array} Obj - The object or array of objects to add to the ListView. The objects
+     * should have keys / properties corresponding to the column names. The objects do not need to have
+     * every value; absent keys and properties will default to an empty string.
+     * @param {String} [Opt] - A string containing options for the ListView. The options are the same
+     * as those used in the `Modify` method.
+     * @returns {Number} - The row number where the object was added.
+     */
+    static AddObj(Self, Obj, Opt?) {
+        local Row
+        if Obj is Array {
+            for O in Obj
+                _Process(O)
+        } else
+            _Process(Obj)
+        return Row
 
+        _Process(Obj) {
+            Row := Self.Add(Opt ?? unset)
+            if Obj is Map {
+                for Col in Self.Cols(, 1) {
+                    Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
+                    Self.Modify(Row, 'Col' A_Index, Obj.Has(Col) ? Obj.Get(Col) : '')
+                }
+            } else {
+                for Col in Self.Cols(, 1) {
+                    Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
+                    Self.Modify(Row, 'Col' A_Index, Obj.HasOwnProp(Col) ? Obj.%Col% : '')
+                }
+            }
+        }
+    }
+    /**
+     * @description - Enumerates the columns in the ListView control.
+     * @example
+     * ;   Name            |     Age     |   Favorite Anime Character
+     * ; --------------------------------------------------------
+     * ; Johnny Appleseed  |      27     |    Holo
+     * ; Albert Einstein   |   Relative  |    Kurisu Makise
+     * ; The Rock          |      53     |    Konata Izumi
+     *
+     *  for ColName in ListView.Cols()
+     *      MsgBox(ColName) ; Name, Age, Favorite Anime Character
+     *  for ColName, RowText in ListView.Cols(2)
+     *      MsgBox(RowText) ; Albert Einstein, Relative, Kurisu Makise
+     * @
+     * @param {Gui.ListView} Self - The ListView control object.
+     * @param {Number} [Row=1] - If using the enumerator in its two-parameter mode, you can specify
+     * a row from which to obtain the text which gets passed to the second parameter.
+     * @param {Number} [VarCount=1] - Specify if you are calling the enumerator in its 1-parameter mode
+     * ( `for ColName in LV.Cols(, 1)` ) or its 2-parameter mode ( `for ColName, RowText in LV.Cols(RowNum, 2)` ).
+     * @returns {Enumerator} - An enumerator function that can be used to iterate over the columns.
+     */
+    static Cols(Self, Row := 1, VarCount := 1) {
+        i := 0, MaxCol := Self.GetCount('Col')
+        if VarCount == 1 {
+            return Enum1
+        } else if VarCount == 2 {
+            return Enum2
+        }
+
+        Enum1(&ColName) {
+            if ++i > MaxCol
+                return 0
+            ColName := Self.GetText(0, i)
+        }
+
+        Enum2(&ColName, &RowText) {
+            if ++i > MaxCol
+                return 0
+            ColName := Self.GetText(0, i)
+            RowText := Self.GetText(Row, i)
+        }
+    }
     /**
      * @description - Searches a listview column for a matching string.
-     * @param {Gui.ListView} Self - The ListView control object.
+     * @param {dGui.ListView} Self - The ListView control object.
      * @param {String} Text - The text to search for.
-     * @param {Number} [Col=1] - The column to search in. If omitted, the search will be performed
+     * @param {Integer} [Col] - If set, the column to search in. If unset, the search will be performed
      * on all columns.
-     * @returns {Number|Object} - If Col is provided, the function returns the row number where the
-     * text was found. If Col is omitted, the function returns an object with two properties: Row and Col.
-     * Row is the row number where the text was found, and Col is the column number where the text was found.
+     * @returns {Integer|Object} - If `Col` is provided, the function returns the row number where the
+     * text was found. If `Col` is omitted, the function returns an object with properties { Col, Row }.
      */
-    static Find(Self, Text, Col := 1) {
-        if Col {
+    static Find(Self, Text, Col?) {
+        if IsSet(Col) {
             loop Self.GetCount() {
-                if Self.GetText(A_Index, Col) = Text
+                if Self.GetText(A_Index, Col) = Text {
                     return A_Index
+                }
             }
         } else {
             i := 0
             loop Self.GetCount('Col') {
                 i++
                 loop Self.GetCount() {
-                    if Self.GetText(A_Index, i) = Text
+                    if Self.GetText(A_Index, i) = Text {
                         return  { Row: A_Index, Col: i }
+                    }
                 }
             }
         }
     }
-
     /**
      * @description - Returns an array of checked rows.
      * @param {Gui.ListView} Self - The ListView control object.
@@ -94,44 +171,51 @@ class dLv {
             }
         }
     }
-
-    /**
-     * @description - Adds an object or an array of objects to the ListView control. The column names
-     * are used a map keys / object properties to access values to add to the ListView row. For property
-     * names, if there are illegal characters in the column name, they are removed.
-     * @param {Gui.ListView} Self - The ListView control object.
-     * @param {Object|Array} Obj - The object or array of objects to add to the ListView. The objects
-     * should have keys / properties corresponding to the column names. The objects do not need to have
-     * every value; absent keys and properties will default to an empty string.
-     * @param {String} [Opt] - A string containing options for the ListView. The options are the same
-     * as those used in the `Modify` method.
-     * @returns {Number} - The row number where the object was added.
-     */
-    static AddObj(Self, Obj, Opt?) {
-        local Row
-        if Obj is Array {
-            for O in Obj
-                _Process(O)
-        } else
-            _Process(Obj)
-        return Row
-
-        _Process(Obj) {
-            Row := Self.Add(Opt ?? unset)
-            if Obj is Map {
-                for Col in Self.Cols(, 1) {
-                    Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
-                    Self.Modify(Row, 'Col' A_Index, Obj.Has(Col) ? Obj.Get(Col) : '')
-                }
-            } else {
-                for Col in Self.Cols(, 1) {
-                    Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
-                    Self.Modify(Row, 'Col' A_Index, Obj.HasOwnProp(Col) ? Obj.%Col% : '')
-                }
+    static Rows(Self, Col := 1, RowType := 0, VarCount := 1) {
+        if SubStr(RowType, 1, 1) = 'C' ||  SubStr(RowType, 1, 1) = 'F' {
+            i :=0
+            if VarCount == 1 {
+                return EnumSpecial1
+            } else if VarCount == 2 {
+                return EnumSpecial2
             }
+        } else if !RowType {
+            MaxRow := Self.GetCount()
+            i := 0
+            if VarCount == 1 {
+                return EnumRow1
+            } else if VarCount == 2 {
+                return EnumRow2
+            }
+        } else
+            throw Error('Invalid row type: ' RowType, -1)
+
+        EnumRow1(&Text) {
+            if ++i > MaxRow
+                return 0
+            Text := Self.GetText(i, Col)
+        }
+
+        EnumRow2(&Row, &Text) {
+            if ++i > MaxRow
+                return 0
+            Row := i
+            Text := Self.GetText(i, Col)
+        }
+
+        EnumSpecial1(&Row) {
+            if !(i := (Self.GetNext(i, RowType)))
+                return 0
+            Row := i
+        }
+
+        EnumSpecial2(&Row, &Text) {
+            if !(i := (Self.GetNext(i, RowType)))
+                return 0
+            Row := i
+            Text := Self.GetText(i, Col)
         }
     }
-
     /**
      * @description - Updates an object or an array of objects within the ListView control. The column
      * names are used a map keys / object properties to access values to add to the ListView row. For
@@ -240,96 +324,6 @@ class dLv {
             }
         }
     }
-
-    /**
-     * @description - Enumerates the columns in the ListView control.
-     * @example
-     * ;   Name            |     Age     |   Favorite Anime Character
-     * ; --------------------------------------------------------
-     * ; Johnny Appleseed  |      27     |    Holo
-     * ; Albert Einstein   |   Relative  |    Kurisu Makise
-     * ; The Rock          |      53     |    Konata Izumi
-     *
-     *  for ColName in ListView.Cols()
-     *      MsgBox(ColName) ; Name, Age, Favorite Anime Character
-     *  for ColName, RowText in ListView.Cols(2)
-     *      MsgBox(RowText) ; Albert Einstein, Relative, Kurisu Makise
-     * @
-     * @param {Gui.ListView} Self - The ListView control object.
-     * @param {Number} [Row=1] - If using the enumerator in its two-parameter mode, you can specify
-     * a row from which to obtain the text which gets passed to the second parameter.
-     * @param {Number} [VarCount=1] - Specify if you are calling the enumerator in its 1-parameter mode
-     * ( `for ColName in LV.Cols(, 1)` ) or its 2-parameter mode ( `for ColName, RowText in LV.Cols(RowNum, 2)` ).
-     * @returns {Enumerator} - An enumerator function that can be used to iterate over the columns.
-     */
-    static Cols(Self, Row := 1, VarCount := 1) {
-        i := 0, MaxCol := Self.GetCount('Col')
-        if VarCount == 1 {
-            return Enum1
-        } else if VarCount == 2 {
-            return Enum2
-        }
-
-        Enum1(&ColName) {
-            if ++i > MaxCol
-                return 0
-            ColName := Self.GetText(0, i)
-        }
-
-        Enum2(&ColName, &RowText) {
-            if ++i > MaxCol
-                return 0
-            ColName := Self.GetText(0, i)
-            RowText := Self.GetText(Row, i)
-        }
-    }
-
-    static Rows(Self, Col := 1, RowType := 0, VarCount := 1) {
-        if SubStr(RowType, 1, 1) = 'C' ||  SubStr(RowType, 1, 1) = 'F' {
-            i :=0
-            if VarCount == 1 {
-                return EnumSpecial1
-            } else if VarCount == 2 {
-                return EnumSpecial2
-            }
-        } else if !RowType {
-            MaxRow := Self.GetCount()
-            i := 0
-            if VarCount == 1 {
-                return EnumRow1
-            } else if VarCount == 2 {
-                return EnumRow2
-            }
-        } else
-            throw Error('Invalid row type: ' RowType, -1)
-
-        EnumRow1(&Text) {
-            if ++i > MaxRow
-                return 0
-            Text := Self.GetText(i, Col)
-        }
-
-        EnumRow2(&Row, &Text) {
-            if ++i > MaxRow
-                return 0
-            Row := i
-            Text := Self.GetText(i, Col)
-        }
-
-        EnumSpecial1(&Row) {
-            if !(i := (Self.GetNext(i, RowType)))
-                return 0
-            Row := i
-        }
-
-        EnumSpecial2(&Row, &Text) {
-            if !(i := (Self.GetNext(i, RowType)))
-                return 0
-            Row := i
-            Text := Self.GetText(i, Col)
-        }
-    }
-
     /**
      * @description - Updates an object or an array of objects within the ListView control. The other
      * `UpdateObj` function connects an object to a row by comparing the text content of an object
@@ -420,5 +414,4 @@ class dLv {
                 'The unmatched object is:`r`n' Obj[i].Stringify(), -1)
         }
     }
-
 }

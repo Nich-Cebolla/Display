@@ -17,4 +17,3 @@ SetThreadDpiAwareness__Call(Obj, Name, Params) {
         throw PropertyError('Property not found.', -1, Name)
     }
 }
-

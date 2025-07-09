@@ -1,86 +1,76 @@
 ﻿
-#include ..\config\ProjectConfig.ahk
+#include ..\src\dGui.ahk
+#include ..\lib\dpi.ahk
+; I have not released TestInterface/ScriptParser yet. You cannot run this test.
+#include <TestInterfaceConfig>
+#include <ScriptParserConfig>
+#SingleInstance force
 
-DllCall('SetThreadDpiAwarenessContext', 'ptr', -3, 'ptr')
-g := Gui('-DPIScale +Resize')
-DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
-t := g.Add('Text', 'w400 r2', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-g.defineProp('dpi', { get: (self) => DllCall('GetDpiForWindow', 'ptr', self.hWnd, 'int') })
-lf := LOGFONT(t.hwnd)
-sz := ControlGetTextExtent(t)
+global tlb, tlink, tlv, ttv, tcb, tddl
 
-g.add('text', 'section vtxtdpi', 'dpi')
-g.add('edit', 'ys w100 veditdpi', g.dpi)
-g.add('button', 'ys vbtndpi', 'dpi').Onevent('click', setdpi)
-g.add('text', 'section xs vtxtheight', 'height')
-g.add('edit', 'ys w100 veditheight', lf.height)
-g.add('button', 'ys vbtnheight', 'height').Onevent('click', setheight)
-g.add('text', 'section xs vtxtsize', 'size')
-g.add('edit', 'ys w100 veditsize', lf.fontsize)
-g.add('button', 'ys vbtnsize', 'size').Onevent('click', setsize)
-g.add('button', 'ys vbtnsetsize2', 'set size').Onevent('click', setsize2)
-g.add('button', 'ys vbtnsetsize3', 'ctrl.setfont').Onevent('click', setsize3)
-g.add('text', 'section xs vtxtextent', 'text w: ' sz.Width '; h: ' sz.Height)
+test_dpi()
 
-stats := [_obj()]
-g.add('edit', 'xs w250 h300 vstats', stringify(stats[1]))
-g['stats'].getpos(, &cy, , &ch)
+class test_dpi {
+    static Call() {
+        global tlb, tlink, tlv, ttv, tcb, tddl
+        script := ScriptParser('..\lib\Dpi.ahk')
+        Subjects := TestInterface.SubjectCollection(false)
+        for fn in script.CollectionList[SPC_FUNCTION] {
+            Subjects.AddFunc(%fn%)
+        }
 
-g.scroller := ItemScroller(g, { Array: stats, Callback: handlescroll, startx: 10, starty: cy + ch + g.marginy })
-g.show()
+        G := this.G := dGui('+Resize')
+        items := ['Item1', 'Item2', 'Item3', 'Item4', 'Item5']
+        tlb := G.Add('ListBox', 'w200 r5 vLb', items)
+        tlink := G.Add('Link', , '<a href="https://www.autohotkey.com">Text</a>')
+        tlv := G.Add('ListView', 'w200 r6 vLv', ['Column1', 'Column2', 'Column3'])
+        i := 0
+        loop 5 {
+            ++i
+            items := []
+            loop 3 {
+                items.Push('Text-' i '_' A_Index)
+            }
+            tlv.Add(, items*)
+        }
+        loop 3 {
+            tlv.ModifyCol(A_Index, 'AutoHdr')
+        }
+        ttv := G.Add('TreeView', 'w200 r5 vTv')
+        id := ttv.Add('Text1', 0)
+        id := ttv.Add('Text1-1', id)
+        ttv.Add('Text1-1-1', id)
+        id := ttv.Add('Text2', 0)
+        ttv.Add('Text2-1', id)
+        tcb := G.Add('ComboBox', 'w200 r5', items)
+        tddl := G.Add('DDL', 'w200 r5', items)
+        objects := Map('ListBox', tlb, 'Link', tlink, 'ListView', tlv, 'TreeView', ttv, 'ComboBox', tcb, 'DDL', tddl)
+        for t in ['Button', 'CheckBox', 'Edit', 'GroupBox', 'Radio', 'StatusBar', 'Text'] {
+            objects.Set(t, G.Add(t, , 'Text'))
+        }
 
-setdpi(*) {
+        Subjects.Get('AreDpiAwarenessContextsEqual').InitialValues := ['']
+        Subjects.Get('GetAwarenessFromDpiAwarenessContext').InitialValues := ['']
+        Subjects.Get('GetDpiAwarenessContextForProcess').InitialValues := ['']
+        Subjects.Get('GetDpiForMonitor').InitialValues := ['']
+        Subjects.Get('GetDpiForSystem').InitialValues := ['']
+        Subjects.Get('GetDpiForWindow').InitialValues := ['']
+        Subjects.Get('GetDpiFromDpiAwarenessContext').InitialValues := ['']
+        Subjects.Get('GetProcessDpiAwareness').InitialValues := ['']
+        Subjects.Get('GetSystemDpiForProcess').InitialValues := ['']
+        Subjects.Get('GetThreadDpiAwarenessContext').InitialValues := ['']
+        Subjects.Get('GetWindowDpiAwarenessContext').InitialValues := ['']
+        Subjects.Get('IsValidDpiAwarenessContext').InitialValues := ['']
+        Subjects.Get('SetThreadDpiAwarenessContext').InitialValues := ['']
 
-}
-setheight(*) {
-    global
-    lf.height := g['editheight'].text
-    lf.Apply()
-    lf.get()
-    sz := ControlGetTextExtent(t)
-    _update()
-}
-setsize(*) {
-    global
-    DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
-    lf.OnDpiChanged(g.dpi)
-    _update()
-}
-setsize2(*) {
-    global
-    lf.setfontsize(g['editsize'].text)
-    _update()
-}
-setsize3(*) {
-    global
-    f := g['editsize'].text * g.dpi / 96
-    t.setfont('s' f)
-    _update()
-}
-set(*) {
-    global
-    DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
-    lf.OnDpiChanged(g.dpi)
-    _update()
-}
+        G.Show()
 
-handlescroll(index, scroller, *) {
-    global
-    g['stats'].text := stringify(scroller[index])
-}
-_obj() {
-    global
-    return  { dpi: g.dpi, height: lf.height, size: lf.fontsize, lfdpi: lf.dpi, textW: sz.Width, textH: sz.Height }
-}
+        TI := this.TI := TestInterface('ControlTextExtent', Subjects)
 
-_update() {
-    global
-    sz := ControlGetTextExtent(t)
-    lf.get()
-    g['txtextent'].text := 'text w: ' sz.Width '; h: ' sz.Height
-    g['editdpi'].text := g.dpi
-    g['editheight'].text := lf.height
-    g['editsize'].text := lf.fontsize
-    stats.Push(_obj())
-    g['stats'].text := stringify(stats[-1]) '`r`n`r`n' g['stats'].text
+        for t, o in objects {
+            TI.AddReference(o, t, t)
+        }
+
+        return
+    }
 }

@@ -25,10 +25,13 @@ class Rect extends RectBase {
 
     static FromDimensions(X, Y, W, H) => Rect(X, Y, X + W, Y + H)
 
-    static FromPtr(Ptr) {
-        R := Rect()
-        Rect.Ptr := Ptr
-        return R
+    static FromPtr(ptr) {
+        return Rect(
+            NumGet(ptr, 0, 'int')
+          , NumGet(ptr, 4, 'int')
+          , NumGet(ptr, 8, 'int')
+          , NumGet(ptr, 12, 'int')
+        )
     }
 
     static FromWin(Hwnd) {

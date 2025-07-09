@@ -28,38 +28,48 @@
  * contents of a Gui control. If the `Ctrl.Text` property contains multiple lines of text, the
  * lines are split at each newline character and each line is measured individually. The value
  * returned by this function will be an object where the height represents the sum of the height
- * of each line, and the width is the greatest width of each line. The height value will not be an
- * accurate representation of the height occupied by the text within a control's display text because
+ * of each line, and the width is the greatest width of each line. The height value will **not** be an
+ * accurate representation of the height occupied by the text within a control's display area because
  * padding is added to each line.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {String} Ctrl - The `Gui.Control` object.
- * @returns {Object} - An object with properties { Height, Width }.
+ * @returns {Object} - An object with properties { Height, Lines, Width }. `Lines` is an array of
+ * `SIZE` objects. If there is a blank line in `Ctrl.Text`, its associated index in `Lines` is an
+ * empty string.
  */
 ControlGetTextExtent(Ctrl) {
     W := H := 0
     sz := SIZE()
+    lines := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
     context := SelectFontIntoDc(Ctrl.hWnd)
-    for line in StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text)) {
-        if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', context.hdc, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
-        ) {
-            H += sz.Height
-            W := Max(W, sz.Width)
-        } else {
-            throw OSError()
+    for line in lines {
+        if line {
+            if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+                , 'Ptr', context.hdc, 'Ptr', StrPtr(line), 'Int', StrLen(line), 'Ptr', sz, 'Int'
+            ) {
+                H += sz.Height
+                W := Max(W, sz.Width)
+                lines[A_Index] := sz
+                sz := SIZE()
+            } else {
+                throw OSError()
+            }
         }
     }
     context()
-    return { Height: H, Width: W }
+    return { Height: H, Lines: Lines, Width: W }
 }
 
 /**
  * @description - Gets the height and width in pixels of the string contents of a ListBox control.
+ * This version of the function is only appropriate for single-line strings.
+ *
  * When ListBox controls are created, one of the options available is `Multi`. When `Multi` is in use,
  * the `Text` property returns an array of selected items. This version of the function has an
  * optional `Index` parameter to allow you to specify which item to measure. When unset, all items
  * in the array are measured. If a listbox is created without the `Multi` option, the `Index`
  * property has no effect because the `Text` property will return a string.
+ *
  * @param {Gui.Control} Ctrl - The control object.
  * @param {Integer} [Index] - If an integer, the index of the item to measure. If unset, all items
  * returned by the `Text` property are measured.
@@ -87,7 +97,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             , 'Ptr', sz := SIZE()
             , 'Int'
         ) {
-            sz.Index := Index
+            sz.Index := Ctrl.Value
             Result.Push(sz)
         } else {
             throw OSError()
@@ -116,9 +126,12 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
 
 /**
  * @description - Gets the height and width in pixels of the string contents of a link control.
+ * This version of the function is only appropriate for single-line strings.
+ *
  * Since the content displayed by a link control is different than the string returned by its `Text`
  * property, this version of the function removes the anchor html tags from the string and only
  * measures the inner text.
+ *
  * @param {Gui.Control} Ctrl - The control object.
  * @returns {SIZE} - A `SIZE` object with properties { Height, Width }.
  */
@@ -143,8 +156,11 @@ ControlGetTextExtent_Link(Ctrl) {
 
 /**
  * @description - Gets the height and width in pixels of the string contents of a ListView control.
+ * This version of the function is only appropriate for single-line strings.
+ *
  * This version of the function has `RowNumber` and `ColumnNumber` parameters to pass to the the
  * `GetText` method of the control.
+ *
  * @param {Gui.Control} Ctrl - The control object.
  * @param {Array|Integer} [RowNumber] - If an integer, the row number of the item to measure. If an
  * array, an array of row numbers as integers. Leave unset to get the SIZE for items from all rows.
@@ -173,14 +189,14 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
             Result.Capacity := RowNumber.Length * ColumnNumber.Length
             for r in RowNumber {
                 for c in ColumnNumber {
-                    _Proc()
+                    _Proc(r, c)
                 }
             }
         } else {
             Result.Capacity := RowNumber.Length
             c := ColumnNumber
             for r in RowNumber {
-                _Proc()
+                _Proc(r, c)
             }
         }
     } else {
@@ -188,18 +204,18 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
         if IsObject(ColumnNumber) {
             Result.Capacity := ColumnNumber.Length
             for c in ColumnNumber {
-                _Proc()
+                _Proc(r, c)
             }
         } else {
             c := ColumnNumber
-            _Proc()
+            _Proc(r, c)
         }
     }
     context()
 
     return Result
 
-    _Proc() {
+    _Proc(r, c) {
         ; Measure the text
         if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
             , 'Ptr', context.hdc
@@ -218,10 +234,13 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
 
 /**
  * @description - Gets the height and width in pixels of the string contents of a TreeView control.
+ * This version of the function is only appropriate for single-line strings.
+ *
  * This version of the function has two usage options which depend on the value passed to `Count`.
  * {@link https://www.autohotkey.com/docs/v2/lib/TreeView.htm}.
+ *
  * @param {Gui.Control} Ctrl - The control object.
- * @param {Array|Integer} [Id=0] - The id of the item to measure, or an array of ids. The ids are
+ * @param {Array|Integer} [Id = 0] - The id of the item to measure, or an array of ids. The ids are
  * passed to the `GetText` method. If `Id` is `0`, `TreeViewObj.GetChild(0)` is called, which returns
  * the top item in the TreeView.
  * @param {Integer} [Count] - If set, `ControlGetTextExtent_TV` traverses the TreeView starting from
@@ -272,18 +291,24 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
 }
 
 /**
- * @description - Calls `GetTextExtentExPoint` using the control as context. You can use this in
- * two general ways.
+ * @description - Calls `GetTextExtentExPoint` using the control as context.
+ *
+ * This function is only appropriate for single-line strings. For multi-line usage,
+ *
+ * You can use this in two general ways.
+ *
  * - Leave `MaxExtent` 0: `OutExtentPoints` will receive an `IntegerArray` object, which will be a
  * buffer object containing the partial extent points of every character in the string. Said another
  * way, the integers in the array will be a cumulative representation of how wide the string is up
  * to that character, in pixels. E.g. "H" is 3 pixels wide, "He" is 6 pixels wide, "Hel" is 8 pixels
  * wide, etc. `OutCharacterFit` is not measured in this usage of the function, and will receive 0.
+ *
  * - Set `MaxExtent` with a maximum width in pixels: `OutCharacterFit` is assigned the maximum
  * number of characters in the string that can fit `MaxExtent` pixels without going over.
  * `OutExtentPoints` is assigned an `IntegerArray` object, but in this case it only contains the
  * partial extent points up to `OutCharacterFit` number of characters.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointa}
+ *
  * @param {Gui.Control} Ctrl - The control object.
  * @param {Integer} [MaxExtent=0] - The maximum width of the string. See the function description
  * for further details.
@@ -357,7 +382,11 @@ ControlGetTextExtentEx_Link(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentP
  * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx_LV(Ctrl, RowNumber, ColumnNumber, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
-    return __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(Ctrl.GetText(RowNumber, ColumnNumber)), StrLen(Ctrl.GetText(RowNumber, ColumnNumber)), &MaxExtent, &OutCharacterFit, &OutExtentPoints)
+    text := Ctrl.GetText(RowNumber, ColumnNumber)
+    sz := __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(text), StrLen(text), &MaxExtent, &OutCharacterFit, &OutExtentPoints)
+    sz.Row := RowNumber
+    sz.Column := ColumnNumber
+    return sz
 }
 
 /**
@@ -379,7 +408,10 @@ ControlGetTextExtentEx_TV(Ctrl, Id := 0, MaxExtent := 0, &OutCharacterFit?, &Out
     if !Id {
         Id := Ctrl.GetChild(0)
     }
-    return __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(Ctrl.GetText(Id)), StrLen(Ctrl.GetText(Id)), &MaxExtent, &OutCharacterFit, &OutExtentPoints)
+    text := Ctrl.GetText(Id)
+    sz := __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(text), StrLen(text), &MaxExtent, &OutCharacterFit, &OutExtentPoints)
+    sz.Id := Id
+    return sz
 }
 
 __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacterFit, &OutExtentPoints) {

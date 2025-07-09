@@ -3,14 +3,11 @@
 ; There are seven components to using `FilterWords`
 
 ; 1. A list of words
-wordsall := strsplit(fileread('words.txt'), '|', '`s`t`r`n')
-words := []
-loop 25 {
-    words.Push(wordsall[Random(1, wordsall.Length)])
-}
+words := ['numerically','swathe','viverrine','debility','numb','sameness','parablast','disbud'
+,'insoluble','indubitable','proposer','niccolite','immesh','seaboard','epicycle','petrify','boss'
+,'mignonette','deference','beauxite','dimera','pintado','suzerain','synalepha','silken']
 
-; 2. An object that uses the words for something. In this case,
-; we display them using a ListView.
+; 2. An object that uses the words for something. In this example, we display them using a ListView.
 g := gui('+Resize')
 lv := g.Add('ListView', 'w300 r11 vcb', ['Word'])
 ; Add the words to the listview
@@ -18,29 +15,46 @@ for w in words {
     lv.Add(, w)
 }
 
-; 3. A function that returns the text used for filtering. Typically
-; this would be some input from the user, so in this case we will
-; accomplish this by using an `Edit` control and defining the function
+; 3. A function that returns the text used for filtering. Typically this would be some input from
+; the user, so in this case we will accomplish this by using an Edit control and defining the function
 ; to return its text value.
 edt := g.Add('Edit', 'w300 r1 Section vEdtInput')
-GetTextCallback := ((Ctrl) => Ctrl.Text).Bind(edt)
+GetTextCallback := (*) => edt.Text
 
-; 4. A function that adds items to the object. The function should
-; have one parameter, the string to add to the object. In this case,
-; the `ListView` control already has a function for doing that, so
-; we can just use that. Note that we have to bind an empty string to
-; the first parameter of `Gui.ListView.Prototype.Add`.
-AddCallback := ObjBindMethod(lv, 'Add', '')
+; 4. A function that adds items to the object. The function should have one to two parameters.
+;   1. The index of the string in the array.
+;   2. The filtered index, which is the index of the index in the "Indices" array. I can't think
+;      of a good way to describe this in a way that would make more sense than simply looking at the
+;      class definition to see what the "Indices" array is used for.
+; In this case, we need to add the string to the ListView control. We exclude the second parameter
+; because we don't need it here.
+AddCallback := (Index, *) => lv.Add( , Words[Index])
 
-; 5. A function that deletes items from the object. The function should
-; have one parameter, the index of the item *in the filtered list*. Similar to
-; adding, the `ListView` control also has a method for deleting.
-DeleteCallback := ObjBindMethod(lv, 'Delete')
+; 5. A function that deletes items from the object. The function should have one to two parameters.
+;   1. The index of the string in the array.
+;   2. The filtered index, which is the index of the index in the "Indices" array. As long as the
+;      listview's contents has not been sorted or changed by he user, the `FilteredIndex` should be
+;      the correct index to delete the string. However, if one's code cannot guarantee that this is
+;      true, then it would be better to iterate the ListView's contents and find the string.
+DeleteCallback(Index, *) {
+    loop lv.GetCount() {
+        if lv.GetText(A_Index, 1) = words[index] {
+            lv.Delete(A_Index)
+            return
+        }
+    }
+}
 
-; 6. A function that compares the strings. The parameters passed to the function are 1. The array
-; item being evaluated, and 2. the input string returned from #3 above. The default is `InStr`, but
-; we could do something more compelex like the below function. See the bottom of this page for a
-; description of this function.
+; 6. A function that compares the strings. The function should have two parameters.
+;   1. The array item (string) being evaluated.
+;   2. The input string returned from #3 above.
+; The function should return:
+; - Nonzero if the array item (parameter 1) is to be kept in the active list and, if appropriate,
+;   `AddCallback` will be called.
+; - Zero or an empty string if the array item is to be filtered out of the list and, if appropriate,
+;   `DeleteCallback` will be called.
+; You could use a simple function like `InStr`, but let's use something more complex. Details about
+; `FilterCallback` here are at the bottom of this page.
 FilterCallback(Item, Input) {
     LeftOffsetInput := LeftOffsetItem := 1
     RightOffsetInput := 0
@@ -74,60 +88,59 @@ FilterCallback(Item, Input) {
 
 ; 7. An event that calls the filter.
 HChangeEdit(Ctrl, *) {
-    ; Our event handler must disable the event handler,
-    ; call the filter, then re-enable the event handler before
-    ; returning.
+    ; Our event handler must disable the event handler, call the filter, then re-enable the event
+    ; handler before returning.
     Ctrl.OnEvent('Change', HChangeEdit, 0)
     Ctrl.Gui.Filter.Call()
     Ctrl.OnEvent('Change', HChangeEdit, 1)
 }
 edt.OnEvent('Change', HChangeEdit)
 
-; In this example I assign the reference to the `FilterWords` instance to a property on the gui object,
-; but this isn't strictly necessary. In this example, it's the best place for the reference because
-; it makes it easy to access the instance from gui control event handlers. But you can keep the reference
-; anywhere as long as your event handler has access to the refence. Also keep in mind that, while
-; the `FilterWords` function is active, to add items to the array you must call `FilterWords.Prototype.Add`,
-; and to delete items you must call `FilterWords.Prototype.Delete`.
+; In this example I assign the `FilterWords` instance to a property on the gui object. This is usually
+; a convenient choice, but isn't strictly necessary. The reference must be accessible from the event
+; handler that calls the filter, and from any event handlers or functions that handle adding or
+; deleting items from the array. While the `FilterWords` function is active, to add items to the array
+; you must call `FilterWords.Prototype.Add`, and to delete items you must call `FilterWords.Prototype.Delete`.
+; If you don't do this, the filter and the list of words will be out of sync.
 g.Filter := FilterWords(words, GetTextCallback, AddCallback, DeleteCallback, FilterCallback)
 
 ; Let's also add a couple buttons and another edit control to demonstrate adding and deleting items.
-g.Add('Button', 'w93 xs ys+40 Section vBtnAdd', 'Add').OnEvent('Click', HClickButtonGeneral)
-g.Add('Button', 'w93 ys vBtnDelete', 'Delete').OnEvent('Click', HClickButtonGeneral)
+g.Add('Button', 'w93 xs ys+40 Section vBtnAdd', 'Add').OnEvent('Click', HClickButtonAdd)
+g.Add('Button', 'w93 ys vBtnDelete', 'Delete').OnEvent('Click', HClickButtonDelete)
 g.Add('Button', 'w93 ys vBtnClear', 'Clear').OnEvent('Click', (Ctrl, *) => Ctrl.Gui['EdtInput2'].Text := '')
 g.Add('Edit', 'w300 xs vEdtInput2')
-HClickButtonGeneral(Ctrl, *) {
+
+HClickButtonAdd(Ctrl, *) {
     g := Ctrl.Gui
-    Edt := g['EdtInput2']
-    if Edt.Text {
+    if g['EdtInput2'].Text {
         if g.HasOwnProp('TxtMessage') {
             g.TxtMessage.Text := ''
         }
-        if InStr(Ctrl.Name, 'Add') {
-            g.Filter.Add(Edt.Text)
-        } else if InStr(Ctrl.Name, 'Delete') {
-            g.Filter.Delete(Edt.Text)
-        } else {
-            throw Error('An unexpected button called ``HClickButtonGeneral``.', -1, Ctrl.Name)
-        }
+        g.Filter.Add(g['EdtInput2'].Text)
     } else {
-        if InStr(Ctrl.Name, 'Add') {
-            msg := 'Enter a word to add.'
-        } else if InStr(Ctrl.Name, 'Delete') {
-            msg := 'Enter a word to delete.'
-        } else {
-            throw Error('An unexpected button called ``HClickButtonGeneral``.', -1, Ctrl.Name)
-        }
-        if g.HasOwnProp('TxtMessage') {
-            g.TxtMessage.Text := msg
-        } else {
-            g.TxtMessage := g.Add('Text', 'xs w300', msg)
-            g.TxtMessage.GetPos(, &txty, , &txth)
-            g.Show('h' (txty + txth + g.MarginY))
-        }
+        Helper(g, 'Enter a word to add.')
     }
 }
-
+HClickButtonDelete(Ctrl, *) {
+    g := Ctrl.Gui
+    if g['EdtInput2'].Text {
+        if g.HasOwnProp('TxtMessage') {
+            g.TxtMessage.Text := ''
+        }
+        g.Filter.Delete(, g['EdtInput2'].Text)
+    } else {
+        Helper(g, 'Enter a word to delete.')
+    }
+}
+Helper(g, msg) {
+    if g.HasOwnProp('TxtMessage') {
+        g.TxtMessage.Text := msg
+    } else {
+        g.TxtMessage := g.Add('Text', 'xs w300', msg)
+        g.TxtMessage.GetPos(, &txty, , &txth)
+        g.Show('h' (txty + txth + g.MarginY))
+    }
+}
 g.show()
 
 
