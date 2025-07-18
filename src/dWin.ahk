@@ -1,14 +1,13 @@
 ﻿
-; Dependencies
-#include ..\lib
-#include SetThreadDpiAwareness__Call.ahk
 
-#include ..\struct
-#include Rect.ahk
-#include RectBase.ahk
-#include POINT.ahk
-#include WINDOWINFO.ahk
-
+;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+#include <POINT>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
+#include <SetThreadDpiAwareness__Call>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+#include <Rect>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/WINDOWINFO.ahk
+#include <WindowInfo>
 #include ..\src\dMon.ahk
 
 /**
@@ -16,9 +15,22 @@
  * @description - Win is a namespace for functions that interact with windows.
  */
 class dWin extends RectBase {
+    static AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
+        return DllCall('AdjustWindowRectEx', 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
+    }
 
-    static GetDpi(hWnd) => DllCall('GetDpiForWindow', 'ptr', hWnd, 'int')
+    static AdjustWindowRectExForDpi(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
+        return DllCall('AdjustWindowRectExForDpi', 'ptr', lpRect, 'int', dwStyle, 'int', bMenu, 'int', dwExStyle, 'int', dMon.Dpi.Rect(lpRect))
+    }
 
+    static AllowSetForegroundWindow(PID?) {
+        if !IsSet(PID) {
+            PID := WinGetPID(A_ScriptHwnd)
+        }
+        if !DllCall('AllowSetForegroundProcess', 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
+            throw OSError()
+        }
+    }
 
     /**
      * @description - Calls `BeginDeferWindowPos`, which is used to prepare for adjusting the
@@ -33,6 +45,14 @@ class dWin extends RectBase {
      */
     static BeginDeferWindowPos(InitialCount := 2) {
         return DllCall('BeginDeferWindowPos', 'int', InitialCount, 'ptr')
+    }
+
+    static ChildWindowFromPoint(hWnd, X, Y) {
+        return DllCall('ChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
+
+    static ChildWindowFromPointEx(hWnd, X, Y, flags := 0) {
+        return DllCall('ChildWindowFromPointEx', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
     }
 
     /**
@@ -70,12 +90,183 @@ class dWin extends RectBase {
         return DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr')
     }
 
+    static EnumChildWindows(HwndParent, Callback, lParam := 0) {
+        cb := CallbackCreate(Callback)
+        result := DllCall('EnumChildWindows', 'ptr', HwndParent, 'ptr', cb, 'uint', lParam, 'int')
+        CallbackFree(cb)
+        return result
+    }
 
-    static ToRect(hWnd) => Rect.FromWin(hWnd)
+    static EnumThreadWindows(PID, Callback, lParam := 0) {
+        cb := CallbackCreate(Callback)
+        result := DllCall('EnumThreadWindows', 'uint', PID, 'ptr', cb, 'uint', lParam, 'int')
+        CallbackFree(cb)
+        return result
+    }
 
+    static EnumWindows(Callback, lParam := 0) {
+        cb := CallbackCreate(Callback)
+        result := DllCall('EnumWindows', 'ptr', cb, 'uint', lParam, 'int')
+        CallbackFree(cb)
+        return result
+    }
 
+    static FromPhysicalPoint(X, Y) {
+        return DllCall('WindowFromPhysicalPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
 
-    ;@region Move
+    static FromPoint(X, Y) {
+        return DllCall('WindowFromPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
+
+    static GetActiveWindow() {
+        return DllCall('GetActiveWindow', 'ptr')
+    }
+
+    /**
+     * @param Flags -
+     * - 1 : Retrieves the parent window. This does not include the owner, as it does with the GetParent function.
+     * - 2 : Retrieves the root window by walking the chain of parent windows.
+     * - 3 : Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
+     */
+    static GetAncestor(Hwnd, Flags) {
+        return DllCall('GetAncestor', 'ptr', Hwnd, 'uint', Flags, 'ptr')
+    }
+
+    /**
+     * @description - Gets the bounding rectangle of all child windows of a given window.
+     * @param {Integer} hWnd - The handle to the parent window.
+     * @returns {Rect} - The bounding rectangle of all child windows, specifically the smallest
+     * rectangle that contains all child windows.
+     */
+    static GetChildrenBoundingRect(hWnd) {
+        rects := [Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), Rect()]
+        DllCall('EnumChildWindows', 'ptr', hWnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+        CallbackFree(cb)
+        return rects[1]
+
+        _EnumChildWindowsProc(hWnd) {
+            DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rects[1], 'int')
+            DllCall('UnionRect', 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
+            rects.Push(rects.RemoveAt(1))
+            return 1
+        }
+    }
+
+    static GetClientRect(hWnd, &lpRect) {
+        return DllCall('GetClientRect', 'ptr', hWnd, 'ptr', lpRect := Rect(), 'int')
+    }
+
+    static GetDesktopWindow() {
+        return DllCall('GetDesktopWindow', 'ptr')
+    }
+
+    static GetDpi(hWnd) => DllCall('GetDpiForWindow', 'ptr', hWnd, 'int')
+
+    /**
+     * @param Cmd -
+     * - 2 : Returns a handle to the window below the given window.
+     * - 3 : Returns a handle to the window above the given window.
+     */
+    static GetNextWindow(Hwnd, Cmd) {
+        return DllCall('GetNextWindow', 'ptr', Hwnd, 'uint', Cmd, 'ptr')
+    }
+
+    static GetParent(Hwnd) {
+        return DllCall('GetParent', 'ptr', Hwnd, 'ptr')
+    }
+
+    static GetShellWindow() {
+        return DllCall('GetShellWindow', 'ptr')
+    }
+
+    static GetTopWindow(Hwnd := 0) {
+        return DllCall('GetTopWindow', 'ptr', Hwnd, 'ptr')
+    }
+
+    /**
+     * @param Cmd -
+     * - GW_CHILD - 5 - The retrieved handle identifies the child window at the top of the Z order,
+     *  if the specified window is a parent window; otherwise, the retrieved handle is NULL. The
+     *  function examines only child windows of the specified window. It does not examine descendant
+     *  windows.
+     *
+     * - GW_ENABLEDPOPUP - 6 - The retrieved handle identifies the enabled popup window owned by the
+     *  specified window (the search uses the first such window found using GW_HWNDNEXT); otherwise,
+     *  if there are no enabled popup windows, the retrieved handle is that of the specified window.
+     *
+     * - GW_HWNDFIRST - 0 - The retrieved handle identifies the window of the same type that is highest
+     *  in the Z order. If the specified window is a topmost window, the handle identifies a topmost
+     *  window. If the specified window is a top-level window, the handle identifies a top-level
+     *  window. If the specified window is a child window, the handle identifies a sibling window.
+     *
+     * - GW_HWNDLAST - 1 - The retrieved handle identifies the window of the same type that is lowest
+     *  in the Z order. If the specified window is a topmost window, the handle identifies a topmost
+     *  window. If the specified window is a top-level window, the handle identifies a top-level window.
+     *  If the specified window is a child window, the handle identifies a sibling window.
+     *
+     * - GW_HWNDNEXT - 2 - The retrieved handle identifies the window below the specified window in
+     *  the Z order. If the specified window is a topmost window, the handle identifies a topmost
+     *  window. If the specified window is a top-level window, the handle identifies a top-level
+     *  window. If the specified window is a child window, the handle identifies a sibling window.
+     *
+     * - GW_HWNDPREV - 3 - The retrieved handle identifies the window above the specified window in
+     *  the Z order. If the specified window is a topmost window, the handle identifies a topmost
+     *  window. If the specified window is a top-level window, the handle identifies a top-level
+     *  window. If the specified window is a child window, the handle identifies a sibling window.
+     *
+     * - GW_OWNER - 4 - The retrieved handle identifies the specified window's owner window, if any.
+     *  For more information, see Owned Windows.
+     */
+    static GetWindow(Hwnd, Cmd) {
+        return DllCall('GetWindow', 'ptr', Hwnd, 'uint', Cmd, 'ptr')
+    }
+
+    /**
+     * @description - Retrieves the dimensions of the bounding rectangle of the specified window.
+     * The dimensions are given in screen coordinates that are relative to the upper-left corner of
+     * the screen.
+     * @param {Integer} hWnd - The window handle.
+     * @returns {Rect}
+     */
+    static GetWindowRect(hWnd) {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rc, 'int') {
+            throw OSError()
+        }
+        return rc
+    }
+
+    static IsChild(HwndParent, HwndChild) {
+        return DllCall('IsChild', 'ptr', HwndParent, 'ptr', HwndChild, 'int')
+    }
+
+    static IsVisible(hWnd) {
+        return DllCall('IsWindowVisible', 'Ptr', hWnd, 'int')
+    }
+
+    static LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
+        AspectRatio := W1 / H1
+        WidthFromHeight := H2 / AspectRatio
+        HeightFromWidth := W2 * AspectRatio
+        if WidthFromHeight > W2 {
+            W2 := W2
+            H2 := HeightFromWidth
+        } else {
+            W2 := WidthFromHeight
+            H2 := H2
+        }
+    }
+
+    /**
+     * @param code -
+     * - 1 : Disables calls to SetForegroundWindow
+     * - 2 : Enables calls to SetForegroundWindow
+     */
+    static LockSetForegroundWindow(code) {
+        return DllCall('LockSetForegroundWindow', 'uint', code, 'int')
+    }
+
     /**
      * @description - Sets the Dpi awareness context, then moves the window.
      * @param {Integer} hWnd - The handle of the window.
@@ -98,84 +289,51 @@ class dWin extends RectBase {
     }
 
     /**
-     * @description - Moves the window, scaling for dpi.
-     * @param {Integer} hWnd - The handle of the window.
-     * @param {Integer} [X] - The new x-coordinate of the window.
-     * @param {Integer} [Y] - The new y-coordinate of the window.
-     * @param {Integer} [W] - The new Width of the window.
-     * @param {Integer} [H] - The new Height of the window.
+     * @description - A function for getting a new position for a window as a function of the mouse's
+     * current position. This function restricts the window's new position to being within the
+     * visible area of the monitor. Using the default value for `UseWorkArea`, this also accounts
+     * for the taskbar and other docked windows. `OffsetMouse` and `OffsetEdgeOfMonitor` provide
+     * some control over the new position relative to the mouse pointer or the edge of the monitor.
+     * Use this when moving something on-screen next to the mouse pointer.
+     * @param {Integer} hWnd - The handle to the window.
+     * @param {Integer} [PaddingX=5] - Any number of pixels to pad between the mouse cursor's position
+     * and the window along the X axis.
+     * @param {Integer} [PaddingY=5] - Any number of pixels to pad between the mouse cursor's position
+     * and the window along the Y axis.
+     * @param {VarRef} [OutX] - A variable that will receive the new X coordinate.
+     * @param {VarRef} [OutY] - A variable that will receive the new Y coordinate.
+     * @param {Boolean} [CalculateOnly = false] - If true, the window will not be moved.
      */
-    static MoveScaled(hWnd, X?, Y?, W?, H?) {
-        OriginalDpi := DllCall('GetDpiForWindow', 'ptr', hWnd, 'int')
-        NewDpi := IsSet(X) || IsSet(Y) ? dMon.Dpi.Pt(X, Y) : OriginalDpi
-        if !NewDpi {
-            NewDpi := dMon.Dpi.Pt(X * 96 / A_ScreenDpi, Y * 96 / A_ScreenDpi)
-        }
-        DpiRatio := NewDpi / OriginalDpi
-        WinMove(
-            IsSet(X) ? X / DpiRatio : unset
-          , IsSet(Y) ? Y / DpiRatio : unset
-          , IsSet(W) ? W / DpiRatio : unset
-          , IsSet(H) ? H / DpiRatio : unset
-          , hWnd
-        )
-    }
-    ;@endregion
-
-
-
-    ;@region WhichQuadrant
-    /**
-     * @description - Compares the center axes of a window with the center axes of the display
-     * monitor to determine which quadrant the window occupies most.
-     * @param {Integer} hWnd - The handle of the window.
-     * @param {VarRef} [OutDiffHorizontal] - Receives the difference between the window's horizontal
-     * axis and the monitor's horizontal axis.
-     * @param {VarRef} [OutDiffVertical] - Receives the difference between the window's vertical
-     * axis and the monitor's vertical axis.
-     * @returns {Integer} - One of the following:
-     * - 1: Center left
-     * - 2: Left top
-     * - 3: Center top
-     * - 4: Right top
-     * - 5: Center right
-     * - 6: Right bottom
-     * - 7: Center bottom
-     * - 8: Left bottom
-     */
-    static WhichQuadrant(hWnd, &OutDiffHorizontal?, &OutDiffVertical?) {
-        Unit := dMon.FromWin(hWnd)
-        if !Unit
-            return
+    static MoveByMouse(hWnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?, CalculateOnly := false) {
+        Mon := dMon(dMon.FromMouse(&X, &Y))
         WinGetPos(&wx, &wy, &ww, &wh, hWnd)
-        OutDiffHorizontal := (ww / 2 + wx) - (Unit.L + Unit.W / 2)
-        OutDiffVertical := (wh / 2 + wy) - (Unit.T + Unit.H / 2)
-        if OutDiffHorizontal < 0 {
-            if OutDiffVertical < 0
-                return 2 ; Left top
-            if OutDiffVertical == 0
-                return 1 ; Center left
-            return 8 ; Left bottom
+        if !DllCall('MoveWindow', 'ptr', hWnd, 'int', OutX := _GetX(), 'int', OutY := _GetY(), 'int', ww, 'int', wh, 'int') {
+            throw OSError()
         }
-        if OutDiffHorizontal == 0 {
-            if OutDiffVertical < 0
-                return 3 ; Center top
-            if OutDiffVertical == 0
-                return 0 ; Center
-            return 7 ; Center bottom
+        ; WinMove(OutX := _GetX(), OutY := _GetY(), , hWnd)
+
+        return
+
+        _GetX() {
+            if X + ww + PaddingX <= Mon.RW {
+                return X + PaddingX
+            } else if X - ww - PaddingX >= Mon.LW {
+                return X - ww - PaddingX
+            } else {
+                return 100
+            }
         }
-        if OutDiffHorizontal > 0 {
-            if OutDiffVertical < 0
-                return 4 ; Right top
-            if OutDiffVertical == 0
-                return 5 ; Center right
-            return 6 ; Right bottom
+        _GetY() {
+            if Y + wh + PaddingY <= Mon.BW {
+                return Y + PaddingY
+            } else if Y - wh - PaddingY >= Mon.TW {
+                return Y - wh - PaddingY
+            } else {
+                return 100
+            }
         }
     }
 
-
-
-    ;@region MoveByWinH
     /**
      * @description - Moves a window to a new position relative to another window. If the target
      * window is on the Left side of the display, the moved window will be placed to the Right of
@@ -231,12 +389,7 @@ class dWin extends RectBase {
             WinMove(tx + tw + Padding, my - YOffset, , , MovehWnd)
         return Result
     }
-    ;@endregion
 
-
-
-
-    ;@region MoveByWinV
     /**
      * @description - Moves a window to a new position relative to another window. If the target
      * window is on the Top side of the display, the moved window will be placed below the target,
@@ -292,60 +445,66 @@ class dWin extends RectBase {
             WinMove(mx - XOffset, ty + th + Padding, , , MovehWnd)
         return Result
     }
-    ;@endregion
 
-
-
-
-    ;@region MoveByMouse
     /**
-     * @description - A function for getting a new position for a window as a function of the mouse's
-     * current position. This function restricts the window's new position to being within the
-     * visible area of the monitor. Using the default value for `UseWorkArea`, this also accounts
-     * for the taskbar and other docked windows. `OffsetMouse` and `OffsetEdgeOfMonitor` provide
-     * some control over the new position relative to the mouse pointer or the edge of the monitor.
-     * Use this when moving something on-screen next to the mouse pointer.
-     * @param {Integer} hWnd - The handle to the window.
-     * @param {Integer} [PaddingX=5] - Any number of pixels to pad between the mouse cursor's position
-     * and the window along the X axis.
-     * @param {Integer} [PaddingY=5] - Any number of pixels to pad between the mouse cursor's position
-     * and the window along the Y axis.
-     * @param {VarRef} [OutX] - A variable that will receive the new X coordinate.
-     * @param {VarRef} [OutY] - A variable that will receive the new Y coordinate.
-     * @param {Boolean} [CalculateOnly = false] - If true, the window will not be moved.
+     * @description - Moves the window, scaling for dpi.
+     * @param {Integer} hWnd - The handle of the window.
+     * @param {Integer} [X] - The new x-coordinate of the window.
+     * @param {Integer} [Y] - The new y-coordinate of the window.
+     * @param {Integer} [W] - The new Width of the window.
+     * @param {Integer} [H] - The new Height of the window.
      */
-    static MoveByMouse(hWnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?, CalculateOnly := false) {
-        Mon := dMon(dMon.FromMouse(&X, &Y))
-        WinGetPos(&wx, &wy, &ww, &wh, hWnd)
-        if !DllCall('MoveWindow', 'ptr', hWnd, 'int', OutX := _GetX(), 'int', OutY := _GetY(), 'int', ww, 'int', wh, 'int') {
-            throw OSError()
+    static MoveScaled(hWnd, X?, Y?, W?, H?) {
+        OriginalDpi := DllCall('GetDpiForWindow', 'ptr', hWnd, 'int')
+        NewDpi := IsSet(X) || IsSet(Y) ? dMon.Dpi.Pt(X, Y) : OriginalDpi
+        if !NewDpi {
+            NewDpi := dMon.Dpi.Pt(X * 96 / A_ScreenDpi, Y * 96 / A_ScreenDpi)
         }
-        ; WinMove(OutX := _GetX(), OutY := _GetY(), , hWnd)
+        DpiRatio := NewDpi / OriginalDpi
+        WinMove(
+            IsSet(X) ? X / DpiRatio : unset
+          , IsSet(Y) ? Y / DpiRatio : unset
+          , IsSet(W) ? W / DpiRatio : unset
+          , IsSet(H) ? H / DpiRatio : unset
+          , hWnd
+        )
+    }
 
-        return
-
-        _GetX() {
-            if X + ww + PaddingX <= Mon.RW {
-                return X + PaddingX
-            } else if X - ww - PaddingX >= Mon.LW {
-                return X - ww - PaddingX
-            } else {
-                return 100
-            }
-        }
-        _GetY() {
-            if Y + wh + PaddingY <= Mon.BW {
-                return Y + PaddingY
-            } else if Y - wh - PaddingY >= Mon.TW {
-                return Y - wh - PaddingY
-            } else {
-                return 100
-            }
+    /**
+     * @description - Uses RegEx to extract the path from a Window's title.
+     * @param {String} hWnd - The handle to the window.
+     * @returns {RegExMatchInfo} - If found, returns the `RegExMatchInfo` object obtained from
+     * the match. The object has the subcapture groups available:
+     * - drive: The drive letter, if present.
+     * - dir: The directory path starting from the drive letter.
+     * - name: The file name.
+     * - ext: The file extension.
+     * If not found, returns an empty string.
+     * @example
+     *  G := Gui(, 'C:\Users\YourName\Documents\AutoHotkey\lib\Win.ahk')
+     *  TitleMatch := dWin.PathFromTitle(G.hWnd)
+     *  MsgBox(TitleMatch.drive) ; C
+     *  MsgBox(TitleMatch.dir) ; C:\Users\YourName\Documents\AutoHotkey\lib
+     *  MsgBox(TitleMatch.file) ; Win
+     *  MsgBox(TitleMatch.ext) ; ahk
+     * @
+     */
+    static PathFromTitle(hWnd) {
+        if RegExMatch(WinGetTitle(hWnd)
+        , '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
+        , &Match) {
+            return Match
         }
     }
-    ;@endregion
 
-    ;@region ScalePreserveAspectRatio
+    static PhysicalToLogicalPoint(hWnd, X, Y) {
+        return DllCall('PhysicalToLogicalPoint', 'ptr', hWnd, 'ptr', Point(X, y), 'ptr')
+    }
+
+    static RealChildWindowFromPoint(hWnd, X, Y) {
+        return DllCall('RealChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    }
+
     /** ### Description - Monitor.dWin.ScalePreserveAspectRatio()
      * This function requires any two either an hWnd or a pseudo-`Rect` object
      * (object with 'Left,Top,Right,Bottom' properties). It identifies the largest
@@ -373,9 +532,28 @@ class dWin extends RectBase {
         else
             return Map('w', WidthFromHeight, 'h', h2)
     }
-    ;@endregion
 
-    ;@region Snap
+    static SetActiveWindow(Hwnd) {
+        return DllCall('SetActiveWindow', 'ptr', Hwnd, 'int')
+    }
+
+    static SetForegroundWindow(Hwnd) {
+        return DllCall('SetForegroundWindow', 'ptr', Hwnd, 'int')
+    }
+
+    /**
+     * @param {Integer} hWnd - The handle to the window that will be modified.
+     * @param {Integer} hWndNewParent - The handle to the window that will be set as the parent.
+     * @returns {Integer} - The handle to the previous parent window.
+     */
+    static SetParent(HwndChild, HwndNewParent := 0) {
+        return DllCall('SetParent', 'ptr', HwndChild, 'ptr', HwndNewParent, 'ptr')
+    }
+
+    static Show(hWnd, nCmdShow) {
+        return DllCall('ShowWindow', 'ptr', hWnd, 'int', nCmdShow)
+    }
+
     static Snap(hWnd, Hmon, style, position) {
         position.DefineProp('__Get', {Call:((*)=>'')})
         unitCurrent := dMon.FromWin(hWnd)
@@ -422,135 +600,54 @@ class dWin extends RectBase {
         }
 
     }
-    ;@endregion
 
-    static IsVisible(hWnd) {
-        return DllCall('IsWindowVisible', 'Ptr', hWnd, 'int')
-    }
+    static ToRect(hWnd) => Rect.FromWin(hWnd)
 
     /**
-     * @description - Gets the bounding rectangle of all child windows of a given window.
-     * @param {Integer} hWnd - The handle to the parent window.
-     * @returns {Rect} - The bounding rectangle of all child windows, specifically the smallest
-     * rectangle that contains all child windows.
+     * @description - Compares the center axes of a window with the center axes of the display
+     * monitor to determine which quadrant the window occupies most.
+     * @param {Integer} hWnd - The handle of the window.
+     * @param {VarRef} [OutDiffHorizontal] - Receives the difference between the window's horizontal
+     * axis and the monitor's horizontal axis.
+     * @param {VarRef} [OutDiffVertical] - Receives the difference between the window's vertical
+     * axis and the monitor's vertical axis.
+     * @returns {Integer} - One of the following:
+     * - 1: Center left
+     * - 2: Left top
+     * - 3: Center top
+     * - 4: Right top
+     * - 5: Center right
+     * - 6: Right bottom
+     * - 7: Center bottom
+     * - 8: Left bottom
      */
-    static GetChildrenBoundingRect(hWnd) {
-        rects := [Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), Rect()]
-        DllCall('EnumChildWindows', 'ptr', hWnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
-        CallbackFree(cb)
-        return rects[1]
-
-        _EnumChildWindowsProc(hWnd) {
-            DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rects[1], 'int')
-            DllCall('UnionRect', 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
-            rects.Push(rects.RemoveAt(1))
-            return 1
+    static WhichQuadrant(hWnd, &OutDiffHorizontal?, &OutDiffVertical?) {
+        Unit := dMon.FromWin(hWnd)
+        if !Unit
+            return
+        WinGetPos(&wx, &wy, &ww, &wh, hWnd)
+        OutDiffHorizontal := (ww / 2 + wx) - (Unit.L + Unit.W / 2)
+        OutDiffVertical := (wh / 2 + wy) - (Unit.T + Unit.H / 2)
+        if OutDiffHorizontal < 0 {
+            if OutDiffVertical < 0
+                return 2 ; Left top
+            if OutDiffVertical == 0
+                return 1 ; Center left
+            return 8 ; Left bottom
         }
-    }
-
-    ;@region PathFromTitle
-    /**
-     * @description - Uses RegEx to extract the path from a Window's title.
-     * @param {String} hWnd - The handle to the window.
-     * @returns {RegExMatchInfo} - If found, returns the `RegExMatchInfo` object obtained from
-     * the match. The object has the subcapture groups available:
-     * - drive: The drive letter, if present.
-     * - dir: The directory path starting from the drive letter.
-     * - name: The file name.
-     * - ext: The file extension.
-     * If not found, returns an empty string.
-     * @example
-     *  G := Gui(, 'C:\Users\YourName\Documents\AutoHotkey\lib\Win.ahk')
-     *  TitleMatch := dWin.PathFromTitle(G.hWnd)
-     *  MsgBox(TitleMatch.drive) ; C
-     *  MsgBox(TitleMatch.dir) ; C:\Users\YourName\Documents\AutoHotkey\lib
-     *  MsgBox(TitleMatch.file) ; Win
-     *  MsgBox(TitleMatch.ext) ; ahk
-     * @
-     */
-    static PathFromTitle(hWnd) {
-        if RegExMatch(WinGetTitle(hWnd)
-        , '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
-        , &Match) {
-            return Match
+        if OutDiffHorizontal == 0 {
+            if OutDiffVertical < 0
+                return 3 ; Center top
+            if OutDiffVertical == 0
+                return 0 ; Center
+            return 7 ; Center bottom
         }
-    }
-    ;@endregion
-
-    static AdjustWindowRectExForDpi(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
-        return DllCall('AdjustWindowRectExForDpi', 'ptr', lpRect, 'int', dwStyle, 'int', bMenu, 'int', dwExStyle, 'int', dMon.Dpi.Rect(lpRect))
-    }
-
-    static FromPoint(X, Y) {
-        return DllCall('WindowFromPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
-    }
-
-    static FromPhysicalPoint(X, Y) {
-        return DllCall('WindowFromPhysicalPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
-    }
-
-    static PhysicalToLogicalPoint(hWnd, X, Y) {
-        return DllCall('PhysicalToLogicalPoint', 'ptr', hWnd, 'ptr', Point(X, y), 'ptr')
-    }
-
-    static Show(hWnd, nCmdShow) {
-        return DllCall('ShowWindow', 'ptr', hWnd, 'int', nCmdShow)
-    }
-
-    static AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
-        return DllCall('AdjustWindowRectEx', 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
-    }
-
-    static GetClientRect(hWnd, &lpRect) {
-        return DllCall('GetClientRect', 'ptr', hWnd, 'ptr', lpRect := Rect(), 'int')
-    }
-
-    static RealChildWindowFromPoint(hWnd, X, Y) {
-        return DllCall('RealChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
-    }
-
-    static ChildWindowFromPoint(hWnd, X, Y) {
-        return DllCall('ChildWindowFromPoint', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
-    }
-
-    static ChildWindowFromPointEx(hWnd, X, Y, flags := 0) {
-        return DllCall('ChildWindowFromPointEx', 'ptr', hWnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
-    }
-
-    /**
-     * @description - Retrieves the dimensions of the bounding rectangle of the specified window.
-     * The dimensions are given in screen coordinates that are relative to the upper-left corner of
-     * the screen.
-     * @param {Integer} hWnd - The window handle.
-     * @returns {Rect}
-     */
-    static GetWindowRect(hWnd) {
-        rc := Rect()
-        if !DllCall('GetWindowRect', 'ptr', hWnd, 'ptr', rc, 'int') {
-            throw OSError()
-        }
-        return rc
-    }
-
-    /**
-     * @param {Integer} hWnd - The handle to the window that will be modified.
-     * @param {Integer} hWndNewParent - The handle to the window that will be set as the parent.
-     * @returns {Integer} - The handle to the previous parent window.
-     */
-    static SetParent(hWnd, hWndNewParent) {
-        return DllCall('SetParent', 'ptr', hWnd, 'ptr', hWndNewParent, 'ptr')
-    }
-
-    static LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
-        AspectRatio := W1 / H1
-        WidthFromHeight := H2 / AspectRatio
-        HeightFromWidth := W2 * AspectRatio
-        if WidthFromHeight > W2 {
-            W2 := W2
-            H2 := HeightFromWidth
-        } else {
-            W2 := WidthFromHeight
-            H2 := H2
+        if OutDiffHorizontal > 0 {
+            if OutDiffVertical < 0
+                return 4 ; Right top
+            if OutDiffVertical == 0
+                return 5 ; Center right
+            return 6 ; Right bottom
         }
     }
 }

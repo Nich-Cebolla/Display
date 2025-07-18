@@ -1,13 +1,10 @@
 ﻿
-; Dependencies
+;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+#include <POINT>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
+#include <SetThreadDpiAwareness__Call>
 #include ..\definitions\Define-Scrollbar.ahk
-
-#include ..\struct
-#include POINT.ahk
-
-#include ..\lib
-#include SetThreadDpiAwareness__Call.ahk
-#include Text.ahk
+#include ..\lib\Text.ahk
 
 #include ..\src\dWin.ahk
 

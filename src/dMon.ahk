@@ -1,15 +1,13 @@
 ﻿
-; Dependencies
+;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+#include <POINT>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
+#include <SetThreadDpiAwareness__Call>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+#include <Rect>
+
 #include ..\definitions
 #include Define-Dpi.ahk
-
-#include ..\struct
-#include RectBase.ahk
-#include RECT.ahk
-#include POINT.ahk
-
-#include ..\lib
-#include SetThreadDpiAwareness__Call.ahk
 
 
 /**

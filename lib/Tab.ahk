@@ -1,7 +1,8 @@
 ﻿#include ..\definitions\Define-Tab.ahk
-#include ..\struct
-#include RECT.ahk
-#include POINT.ahk
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+#include <Rect>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+#Include <Point>
 
 /**
  * @description - Calculates a tab control's display area given a window rectangle, or calculates

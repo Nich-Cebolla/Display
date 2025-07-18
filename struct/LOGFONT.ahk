@@ -35,7 +35,7 @@ class LOGFONT extends Buffer {
      * @description - Attempts to set a window's font object using this object's values.
      */
     Apply(Redraw := true) {
-        this.FindFont()
+        ; this.FindFont()
         if !(hFontOld := SendMessage(0x0031,,, this.hWnd)) {
             throw Error('Failed to get hFont.', -1)
         }
@@ -82,7 +82,7 @@ class LOGFONT extends Buffer {
         hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
         names := this.__FontNames
         cb := CallbackCreate(_EnumFontFamilies, 'F')
-        found := false
+        this.found := false
         loop names.Length {
             name := names[A_Index]
             if StrLen(name) > 31 {
@@ -90,12 +90,12 @@ class LOGFONT extends Buffer {
             }
             StrPut(name, this.ptr + 28, 32, this.Encoding)
             DllCall('EnumFontFamiliesEx', 'ptr', hdc, 'ptr', this, 'ptr', cb, 'ptr', 0, 'uint', 0, 'int')
-            if found {
+            if this.found {
                 break
             }
         }
         CallbackFree(cb)
-        if !found {
+        if !this.found {
             loop 32 {
                 NumPut('char', 0, this.ptr + 28, A_Index - 1)
             }
@@ -107,7 +107,7 @@ class LOGFONT extends Buffer {
         return
 
         _EnumFontFamilies(lpelfe, lpntme, FontType, lParam) {
-            found := true
+            this.found := true
             return 0
         }
     }

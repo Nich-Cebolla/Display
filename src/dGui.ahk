@@ -1,21 +1,16 @@
 ﻿
-; Dependencies
-
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+#include <Rect>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
+#include <SetThreadDpiAwareness__Call>
 #include ..\definitions
 #include Define-Dpi.ahk
 #include Define-Font.ahk
-
-#include ..\struct
-#include RectBase.ahk
-#include RECT.ahk
-
 #include ..\src
 #include dMon.ahk
-
 #include ..\lib
 #include ControlTextExtent.ahk
 #include Dpi.ahk
-#include SetThreadDpiAwareness__Call.ahk
 #include Text.ahk
 
 class dGui extends Gui {
