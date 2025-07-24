@@ -1,7 +1,8 @@
 ﻿
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
+#include <IntegerArray>
 #include SelectFontIntoDc.ahk
 #include ..\struct
-#include IntegerArray.ahk
 #include SIZE.ahk
 
 class WrapText {

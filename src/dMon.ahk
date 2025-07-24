@@ -1,6 +1,4 @@
 ﻿
-;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
-#include <POINT>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
 #include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
@@ -15,7 +13,7 @@
  * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfo"
  * and that expose methods and properties that simplify usage of that information.
  */
-class dMon extends RectBase {
+class dMon {
 
     /**
      * @description
@@ -23,10 +21,10 @@ class dMon extends RectBase {
      * @returns {dMon} - The dMon instance object.
      */
     __New(Hmon) {
-        this.Size := 40
+        this.Buffer := Buffer(40)
         this.Hmon := Hmon
-        NumPut('Uint', 40, this)
-        if !DllCall('user32\GetMonitorInfo', 'ptr', Hmon, 'ptr', this) {
+        NumPut('Uint', 40, this.Buffer)
+        if !DllCall('user32\GetMonitorInfo', 'ptr', Hmon, 'ptr', this.Buffer) {
             throw OSError()
         }
     }
@@ -284,7 +282,7 @@ class dMon extends RectBase {
                 List.Push(Unit)
             }
         }
-        Rect.Order(List, Primary, LeftToRight, TopToBottom)
+        OrderRects(List, Primary, LeftToRight, TopToBottom)
         if IsSet(Temp) {
             Result.Push(dMon.FromPoint(Temp.L, Temp.T))
         }
@@ -435,6 +433,9 @@ class dMon extends RectBase {
     Dpi => dMon.Dpi(this.Hmon)
     Dpi_Raw => dMon.Dpi(this.Hmon, MDT_RAW_DPI)
     Dpi_Angular => dMon.Dpi(this.Hmon, MDT_ANGULAR_DPI)
+
+    Ptr => this.Buffer.Ptr
+    Size => this.Buffer.Size
 
 
     static __Item_Get_NotOrdered(N, params*) {

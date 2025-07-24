@@ -1,7 +1,6 @@
 ﻿
 #include ..\definitions\Define-Tab.ahk
-;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
-#include <POINT>
+
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
 #include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
@@ -59,7 +58,7 @@ class dTab extends Gui.Tab {
         if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
             throw OSError()
         }
-        RectObj.ToClientInPlace(this.Gui.hWnd)
+        RectObj.ToClient(this.Gui.hWnd, true)
         SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
         return RectObj
     }
@@ -73,7 +72,7 @@ class dTab extends Gui.Tab {
         if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
             throw OSError()
         }
-        RectObj.ToClientInPlace(this.Gui.hWnd)
+        RectObj.ToClient(this.Gui.hWnd, true)
         return RectObj
     }
 
@@ -197,7 +196,7 @@ class dTab extends Gui.Tab {
         if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
             throw OSError()
         }
-        RectObj.ToClientInPlace(this.Gui.hWnd)
+        RectObj.ToClient(this.Gui.hWnd, true)
         SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
         rc := Rect(X ?? RectObj.X, Y ?? RectObj.Y, (W ?? RectObj.W) + (X ?? RectObj.X), (H ?? RectObj.H) + (Y ?? RectObj.Y))
         SendMessage(TCM_ADJUSTRECT, true, rc, this.hWnd, this.Gui.hWnd)

@@ -30,6 +30,7 @@
 #include ComboBox.ahk
 #include ControlTextExtent.ahk
 #include Dpi.ahk
+#include DrawText.ahk
 #include FilterWords.ahk
 #include Tab.ahk
 #include Text.ahk

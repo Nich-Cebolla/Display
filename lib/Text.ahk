@@ -1,10 +1,11 @@
 ﻿
-; Dependencies:
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
+#include <IntegerArray>
+
 #include ..\src
 #include SelectFontIntoDc.ahk
 #include ..\struct
 #include SIZE.ahk
-#include IntegerArray.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -264,4 +265,36 @@ GetLineEnding(Str) {
     } else {
         return ''
     }
+}
+
+MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWidth?, &OutSumHeight?) {
+    OutLowWidth := { Width: 4294967295 }
+    OutHighWidth := { Width: 0 }
+    OutSumWidth := OutSumHeight := 0
+    result := []
+    result.Capacity := List.Length
+    result.StrAppend := StrAppend
+    for str in List {
+        _str := str StrAppend
+        if !DllCall('Gdi32.dll\GetTextExtentPoint32'
+            , 'Ptr', hdc
+            , 'Ptr', StrPtr(_str)
+            , 'Int', StrLen(_str)
+            , 'Ptr', sz := SIZE()
+            , 'Int'
+        ) {
+            throw OSError()
+        }
+        result.Push(sz)
+        sz.Str := str
+        if sz.Width < OutLowWidth.Width {
+            OutLowWidth := sz
+        }
+        if sz.Width > OutHighWidth.Width {
+            OutHighWidth := sz
+        }
+        OutSumWidth += sz.Width
+        OutSumHeight += sz.Height
+    }
+    return result
 }

@@ -85,8 +85,8 @@ class ControlFitText {
     }
 
     /**
-     * @description - `ControlFitText` resizes a control to fit the text contents of the control, plus
-     * any additional padding.
+     * @description - `ControlFitText` returns the width and height for a control to fit its text
+     * contents, plus any additional padding.
      *
      * @param {dGui.Control} Ctrl - The control object. See the notes in the class description above
      * {@link ControlFitText} for compatibility requirements.
@@ -104,8 +104,9 @@ class ControlFitText {
     static Call(Ctrl, PaddingX := 0, PaddingY := 0, UseCache := true, &OutExtentPoints?, &OutWidth?, &OutHeight?) {
         OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
         context := SelectFontIntoDc(Ctrl.hWnd)
-        GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, &OutHeight, true)
+        GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, , true)
         context()
+        OutHeight := 0
         if UseCache {
             if !this.Cache.Has(Ctrl.Type) {
                 this.Cache.Set(Ctrl.Type, this.TextExtentPadding(Ctrl))
@@ -123,7 +124,6 @@ class ControlFitText {
             }
         }
         OutHeight += PaddingY + Padding.Height + Padding.LinePadding * OutExtentPoints.Length
-        Ctrl.Move(, , OutWidth, OutHeight)
     }
 
     /**

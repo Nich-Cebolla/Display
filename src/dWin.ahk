@@ -1,13 +1,10 @@
 ﻿
 
-;  https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
-#include <POINT>
+
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
 #include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
 #include <Rect>
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/WINDOWINFO.ahk
-#include <WindowInfo>
 #include ..\src\dMon.ahk
 
 /**

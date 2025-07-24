@@ -119,6 +119,13 @@ class dGui extends Gui {
         }
         ;@endregion
 
+        ;@region CtrlSetTextEx
+        dGui.Text.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
+        dGui.Text.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx })
+        dGui.Edit.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
+        dGui.Edit.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx })
+        ;@endregion
+
         Proto.DefineProp('DpiExclude', { Value: false })
         Proto.DefineProp('DpiChangedCallbackBefore', { Value: false })
         Proto.DefineProp('DpiChangedCallbackAfter', { Value: false })

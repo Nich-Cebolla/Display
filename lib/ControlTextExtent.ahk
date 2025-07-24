@@ -1,5 +1,7 @@
 ﻿
-; Dependencies:
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
+#include <IntegerArray>
+
 #include Text.ahk
 #include ..\definitions
 #include Define-Font.ahk
@@ -7,7 +9,6 @@
 #include SelectFontIntoDc.ahk
 #include ..\struct
 #include SIZE.ahk
-#include IntegerArray.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -451,4 +452,43 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             throw OSError()
         }
     }
+}
+
+/**
+ * @description - Sets the text and adjusts the width of the control to fit all of the text. This
+ * assumes there are no line breaks in the text. If the text has multiple lines, use
+ * {@link ControlFitText}.
+ * @param {Gui.Control} Ctrl - The `Gui.Control` or `dGui.Control` object.
+ * @param {String} Text - The new text.
+ * @param {Integer} [PaddingX = 0] - A number of pixels to add to the width.
+ * @param {Boolean} [AdjustHeight = false] - If true, the height will be adjusted to the vertical
+ * extent of the text + `PaddingY`. If false, the height is not changed.
+ * @param {Integer} [PaddingY = 0] - A number of pixels to add to the height. If `AdjustHeight` is
+ * zero or an empty string, this `PaddingY` is ignored.
+ * @param {Integer} [MaxWidth] - If set, and if the horizontal extent of `Text` plus `PaddingX`
+ * exceeds `MaxWidth`, the width of `Ctrl` will be adjusted to `MaxWidth`.
+ */
+ControlSetTextEx(Ctrl, Text, PaddingX := 0, AdjustHeight := false, PaddingY := 0, MaxWidth?) {
+    sz := SIZE()
+    context := SelectFontIntoDc(Ctrl.Hwnd)
+    if Text is Integer {
+        Text := String(Text)
+    } else if IsObject(Text) {
+        throw TypeError('Expected a string but received an object.', -1)
+    }
+    if !DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+        , 'Ptr', context.hdc, 'Ptr', StrPtr(Text), 'Int', StrLen(Text), 'Ptr', sz, 'Int'
+    ) {
+        throw OSError()
+    }
+    context()
+    if IsSet(PaddingY) {
+        H := sz.Height + PaddingY
+    }
+    if IsSet(MaxWidth) {
+        Ctrl.Move(, , Min(sz.Width + PaddingX, MaxWidth), H ?? unset)
+    } else {
+        Ctrl.Move(, , sz.Width + PaddingX, H ?? unset)
+    }
+    Ctrl.Text := Text
 }
