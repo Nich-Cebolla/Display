@@ -10,7 +10,6 @@
 #include Dpi.ahk
 #include Text.ahk
 #include ..\struct
-#include LOGFONT.ahk
 
 
 /**
@@ -96,12 +95,13 @@ class ControlFitText {
      * `ControlFitText.TextExtentPadding`. If false, a new instance is evaluated.
      * @param {VarRef} [OutExtentPoints] - A variable that will receive an array of `SIZE` objects
      * returned from `GetMultiExtentPoints`.
-     * @param {VarRef} [OutWidth] - A variable that will receive an integer value representing the
-     * width that was passed to `Ctrl.Move`.
-     * @param {VarRef} [OutHeight] - A variable that will receive an integer value representing the
-     * height that was passed to `Ctrl.Move`.
+     * @param {VarRef} [OutWidth] - A variable that will receive the width as integer.
+     * @param {VarRef} [OutHeight] - A variable that will receive the height as integer.
+     * @param {Boolean} [MoveControl = true] - If true, the `Gui.Control.Prototype.Move` will be
+     * called for `Ctrl` using `OutWidth` and `OutHeight`. If false, the calculations are performed
+     * without moving the control.
      */
-    static Call(Ctrl, PaddingX := 0, PaddingY := 0, UseCache := true, &OutExtentPoints?, &OutWidth?, &OutHeight?) {
+    static Call(Ctrl, PaddingX := 0, PaddingY := 0, UseCache := true, &OutExtentPoints?, &OutWidth?, &OutHeight?, MoveControl := true) {
         OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
         context := SelectFontIntoDc(Ctrl.hWnd)
         GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, , true)
@@ -124,6 +124,9 @@ class ControlFitText {
             }
         }
         OutHeight += PaddingY + Padding.Height + Padding.LinePadding * OutExtentPoints.Length
+        if MoveControl {
+            Ctrl.Move(, , OutWidth, OutHeight)
+        }
     }
 
     /**
@@ -144,8 +147,11 @@ class ControlFitText {
      * returned from `GetMultiExtentPoints`.
      * @param {VarRef} [OutHeight] - A variable that will receive an integer value representing the
      * height that was passed to `Ctrl.Move`.
+     * @param {Boolean} [MoveControl = true] - If true, the `Gui.Control.Prototype.Move` will be
+     * called for `Ctrl` using `OutHeight`. If false, the calculations are performed without moving
+     * the control.
      */
-    static MaxWidth(Ctrl, MaxWidth?, PaddingX := 0, PaddingY := 0, UseCache := true, &OutExtentPoints?, &OutHeight?) {
+    static MaxWidth(Ctrl, MaxWidth?, PaddingX := 0, PaddingY := 0, UseCache := true, &OutExtentPoints?, &OutHeight?, MoveControl := true) {
         OutExtentPoints := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
         context := SelectFontIntoDc(Ctrl.hWnd)
         GetMultiExtentPoints(context.hDc, OutExtentPoints, &OutWidth, , true)
@@ -171,7 +177,9 @@ class ControlFitText {
                 OutHeight += Padding.LineHeight
             }
         }
-        Ctrl.Move(, , , OutHeight)
+        if MoveControl {
+            Ctrl.Move(, , , OutHeight)
+        }
     }
 
     class TextExtentPadding {
@@ -204,6 +212,7 @@ class ControlFitText {
                 originalContext := SetThreadDpiAwarenessContext(ThreadDpiAwarenessContext)
             }
             lf := LOGFONT(Ctrl.Hwnd)
+            lf()
             G := dGui()
             G.SetFont('s' lf.FontSize, lf.FaceName)
             lf.DisposeFont()

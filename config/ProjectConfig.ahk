@@ -24,6 +24,9 @@
 ; Comment out any files which your project is not going to use.
 ; --------------------
 
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/LOGFONT.ahk
+#include <LOGFONT>
+
 #include ..
 
 #include lib
