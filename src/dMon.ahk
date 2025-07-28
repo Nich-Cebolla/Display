@@ -24,8 +24,8 @@ class dMon {
         this.Buffer := Buffer(40)
         this.Hmon := Hmon
         NumPut('Uint', 40, this.Buffer)
-        if !DllCall('user32\GetMonitorInfo', 'ptr', Hmon, 'ptr', this.Buffer) {
-            throw OSError()
+        if !DllCall('user32\GetMonitorInfo', 'ptr', Hmon, 'ptr', this.Buffer, 'int') {
+            throw OSError('``GetMonitorInfo`` failed.', -1)
         }
     }
 
