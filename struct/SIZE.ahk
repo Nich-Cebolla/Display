@@ -1,15 +1,15 @@
 ﻿
 /**
  * @class
- * @description - Implements the `SIZE` struct.
+ * @description - Implements the `Size` struct.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/windef/ns-windef-size}
  */
-class SIZE extends Buffer {
+class Size extends Buffer {
     /**
-     * @description - The `SIZE` constructor.
+     * @description - The `Size` constructor.
      * @param [Width] - The width value.
      * @param [Height] - The height value.
-     * @returns {SIZE}
+     * @returns {Size}
      */
     __New(Width?, Height?) {
         this.Size := 8

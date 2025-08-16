@@ -17,7 +17,7 @@ WM_DPICHANGED_BEFOREPARENT := 0x02E2
 WM_DPICHANGED_AFTERPARENT := 0x02E3
 
 /** {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize} */
-WM_GETDPISCALEDSIZE := 0x02E4
+WM_GETDPISCALEDSize := 0x02E4
 
 /** {@link https://learn.microsoft.com/en-us/windows/win32/gdi/wm-setredraw} */
 WM_SETREDRAW := 0x000B

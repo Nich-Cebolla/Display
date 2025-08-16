@@ -1,14 +1,14 @@
 ﻿
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
 #include <Rect>
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
-#include <SetThreadDpiAwareness__Call>
+
 #include ..\definitions
 #include Define-Dpi.ahk
 #include Define-Font.ahk
 #include ..\src
 #include dMon.ahk
 #include ..\lib
+#include MetaSetThreadDpiAwareness.ahk
 #include ControlTextExtent.ahk
 #include Dpi.ahk
 #include Text.ahk
@@ -135,9 +135,9 @@ class dGui extends Gui {
         Proto.DefineProp('DpiChangedCallbackAfterActive', { Value: false })
         Proto.DefineProp('ToggleCallbackBeforeActive', { Value: false })
         Proto.DefineProp('ToggleCallbackAfterActive', { Value: false })
-        this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        Proto.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
-        cProto.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+        this.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
+        Proto.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
+        cProto.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
         Proto.DefineProp('__Add', gProto.GetOwnPropDesc('Add'))
         Proto.DefineProp('__SetFont', gProto.GetOwnPropDesc('SetFont'))
         cProto.DefineProp('__SetFont', gcProto.GetOwnPropDesc('SetFont'))
@@ -780,7 +780,7 @@ class dGui extends Gui {
             this.__SetFont('s' (this.BaseFontSize * NewDpi / BASE_DPI))
             sz2 := this.GetTextExtent()
 
-            ; OutputDebug(Format('SIZE1.Width == {:4} SIZE1.HEIGHT == {}`nSIZE2.Width == {:4} SIZE2.Height == {}`n', sz1.Width, sz1.Height, sz2.Width, sz2.Height))
+            ; OutputDebug(Format('Size1.Width == {:4} Size1.HEIGHT == {}`nSize2.Width == {:4} Size2.Height == {}`n', sz1.Width, sz1.Height, sz2.Width, sz2.Height))
 
             ; Scale using the ratios defined by the change in the text's dimensions.
             this.ScaleMonoRatio(&OutX, &OutY, &OutW, &OutH, sz2.Width / sz1.Width, sz2.Height / sz1.Height)

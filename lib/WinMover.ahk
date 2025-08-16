@@ -1,15 +1,10 @@
 ﻿
-#include <SetThreadDpiAwareness__Call>
-#include Dpi.ahk
-#include ..\src
-#include dMon.ahk
-; #include <Align>
+#include ..\src\dMon.ahk
 
 class WinMover {
     static __New() {
         this.DeleteProp('__New')
         Proto := this.Prototype
-        Proto.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
         Proto.MonNum := 1
         Proto.Presets := Map(
             1, { PosXQuotient: 0, PosYQuotient: 0, WidthQuotient: 0.5, HeightQuotient: 1 }
@@ -85,7 +80,7 @@ class WinMover {
 
     DynamicMove(*) {
         MouseMode := CoordMode('Mouse', 'Screen')
-        DpiAwareness := SetThreadDpiAwarenessContext(-4)
+        DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
         MouseGetPos(&x, &y, &hwnd)
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         cb := this.TerminateMoveCallback
@@ -98,12 +93,12 @@ class WinMover {
             sleep 10
         }
         CoordMode('Mouse', MouseMode)
-        SetThreadDpiAwarenessContext(DpiAwareness)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
     }
 
     DynamicResize(*) {
         MouseMode := CoordMode('Mouse', 'Screen')
-        DpiAwareness := SetThreadDpiAwarenessContext(-4)
+        DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
         MouseGetPos(&x, &y, &hwnd)
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         if x > wx + ww / 2 {
@@ -142,6 +137,6 @@ class WinMover {
             return wy + y2 - y
         }
         CoordMode('Mouse', MouseMode)
-        SetThreadDpiAwarenessContext(DpiAwareness)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
     }
 }

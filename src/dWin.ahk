@@ -1,17 +1,20 @@
 ﻿
-
-
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
-#include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
 #include <Rect>
+
 #include ..\src\dMon.ahk
+#include ..\lib
+#include MetaSetThreadDpiAwareness.ahk
 
 /**
  * @class
  * @description - Win is a namespace for functions that interact with windows.
  */
 class dWin extends RectBase {
+    static __New() {
+        this.DeleteProp('__New')
+        this.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
+    }
     static AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
         return DllCall('AdjustWindowRectEx', 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
     }

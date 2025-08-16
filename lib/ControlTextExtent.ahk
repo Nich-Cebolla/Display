@@ -8,7 +8,7 @@
 #include ..\src
 #include SelectFontIntoDc.ahk
 #include ..\struct
-#include SIZE.ahk
+#include Size.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -35,12 +35,12 @@
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
  * @param {String} Ctrl - The `Gui.Control` object.
  * @returns {Object} - An object with properties { Height, Lines, Width }. `Lines` is an array of
- * `SIZE` objects. If there is a blank line in `Ctrl.Text`, its associated index in `Lines` is an
+ * `Size` objects. If there is a blank line in `Ctrl.Text`, its associated index in `Lines` is an
  * empty string.
  */
 ControlGetTextExtent(Ctrl) {
     W := H := 0
-    sz := SIZE()
+    sz := Size()
     lines := StrSplit(Ctrl.Text, GetLineEnding(Ctrl.Text))
     context := SelectFontIntoDc(Ctrl.hWnd)
     for line in lines {
@@ -51,7 +51,7 @@ ControlGetTextExtent(Ctrl) {
                 H += sz.Height
                 W := Max(W, sz.Width)
                 lines[A_Index] := sz
-                sz := SIZE()
+                sz := Size()
             } else {
                 throw OSError()
             }
@@ -95,7 +95,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.Text)
             , 'Int', StrLen(Ctrl.Text)
-            , 'Ptr', sz := SIZE()
+            , 'Ptr', sz := Size()
             , 'Int'
         ) {
             sz.Index := Ctrl.Value
@@ -114,7 +114,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
             , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.Text[Index])
             , 'Int', StrLen(Ctrl.Text[Index])
-            , 'Ptr', sz := SIZE()
+            , 'Ptr', sz := Size()
             , 'Int'
         ) {
             sz.Index := Index
@@ -134,7 +134,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
  * measures the inner text.
  *
  * @param {Gui.Control} Ctrl - The control object.
- * @returns {SIZE} - A `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - A `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtent_Link(Ctrl) {
     context := SelectFontIntoDc(Ctrl.hWnd)
@@ -145,7 +145,7 @@ ControlGetTextExtent_Link(Ctrl) {
         , 'Ptr', context.hdc
         , 'Ptr', StrPtr(Text)
         , 'Int', StrLen(Text)
-        , 'Ptr', sz := SIZE()
+        , 'Ptr', sz := Size()
         , 'Int'
     ) {
         context()
@@ -164,9 +164,9 @@ ControlGetTextExtent_Link(Ctrl) {
  *
  * @param {Gui.Control} Ctrl - The control object.
  * @param {Array|Integer} [RowNumber] - If an integer, the row number of the item to measure. If an
- * array, an array of row numbers as integers. Leave unset to get the SIZE for items from all rows.
+ * array, an array of row numbers as integers. Leave unset to get the Size for items from all rows.
  * @param {Array|Integer} [ColumnNumber] - If an integer, the column number of the item to measure.
- * If an array, an array of column numbers as integers. Leave unset to get the SIZE for items from
+ * If an array, an array of column numbers as integers. Leave unset to get the Size for items from
  * all columns.
  * @returns {Array} - An array of objects with properties { Column, Height, Row, Width }.
  */
@@ -222,7 +222,7 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
             , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.GetText(r, c))
             , 'Int', StrLen(Ctrl.GetText(r, c))
-            , 'Ptr', sz := SIZE()
+            , 'Ptr', sz := Size()
         ) {
             sz.Row := r
             sz.Column := c
@@ -280,7 +280,7 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
             , 'Ptr', context.hdc
             , 'Ptr', StrPtr(Ctrl.GetText(_id))
             , 'Int', StrLen(Ctrl.GetText(_id))
-            , 'Ptr', sz := SIZE()
+            , 'Ptr', sz := Size()
             , 'Int'
         ) {
             sz.Id := _id
@@ -317,7 +317,7 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
  * that fit within `MaxExtent` pixels. If `MaxExtent` is 0, `OutCharacterFit` will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`. See the
  * function description for further details.
- * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - The `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     return __ControlGetTextExtentEx_Process(Ctrl.hWnd, StrPtr(Ctrl.Text), StrLen(Ctrl.Text), &MaxExtent, &OutCharacterFit, &OutExtentPoints)
@@ -337,7 +337,7 @@ ControlGetTextExtentEx(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints
  * that fit within `MaxExtent` pixels. If `MaxExtent` is 0, `OutCharacterFit` will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`. See the function
  * description for {@link ControlGetTextExtentEx} for further details.
- * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - The `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx_LB(Ctrl, Index?, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if IsSet(Index) {
@@ -359,7 +359,7 @@ ControlGetTextExtentEx_LB(Ctrl, Index?, MaxExtent := 0, &OutCharacterFit?, &OutE
  * that fit within `MaxExtent` pixels. If `MaxExtent` is 0, `OutCharacterFit` will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`. See the function
  * description for {@link ControlGetTextExtentEx} for further details.
- * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - The `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx_Link(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     ; Remove the html anchor tags
@@ -380,7 +380,7 @@ ControlGetTextExtentEx_Link(Ctrl, MaxExtent := 0, &OutCharacterFit?, &OutExtentP
  * that fit within `MaxExtent` pixels. If `MaxExtent` is 0, `OutCharacterFit` will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`. See the function
  * description for {@link ControlGetTextExtentEx} for further details.
- * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - The `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx_LV(Ctrl, RowNumber, ColumnNumber, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     text := Ctrl.GetText(RowNumber, ColumnNumber)
@@ -403,7 +403,7 @@ ControlGetTextExtentEx_LV(Ctrl, RowNumber, ColumnNumber, MaxExtent := 0, &OutCha
  * that fit within `MaxExtent` pixels. If `MaxExtent` is 0, `OutCharacterFit` will be set to 0.
  * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`. See the function
  * description for {@link ControlGetTextExtentEx} for further details.
- * @returns {SIZE} - The `SIZE` object with properties { Height, Width }.
+ * @returns {Size} - The `Size` object with properties { Height, Width }.
  */
 ControlGetTextExtentEx_TV(Ctrl, Id := 0, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if !Id {
@@ -425,7 +425,7 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             , 'int', MaxExtent                                      ; Maximum width
             , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
             , 'ptr', OutExtentPoints := IntegerArray(cchString)     ; An array to receives partial string extents.
-            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := NumGet(lpnFit, 0, 'int')
@@ -442,7 +442,7 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
             , 'int', 0
             , 'ptr', 0
             , 'ptr', OutExtentPoints := IntegerArray(cchString)     ; An array to receives partial string extents.
-            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := 0
@@ -469,7 +469,7 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
  * exceeds `MaxWidth`, the width of `Ctrl` will be adjusted to `MaxWidth`.
  */
 ControlSetTextEx(Ctrl, Text, PaddingX := 0, AdjustHeight := false, PaddingY := 0, MaxWidth?) {
-    sz := SIZE()
+    sz := Size()
     context := SelectFontIntoDc(Ctrl.Hwnd)
     if Text is Integer {
         Text := String(Text)

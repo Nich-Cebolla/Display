@@ -5,7 +5,7 @@
 #include ..\src
 #include SelectFontIntoDc.ahk
 #include ..\struct
-#include SIZE.ahk
+#include Size.ahk
 
 /**
     The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
@@ -37,7 +37,7 @@
  *
  * @param {Integer} hdc - A handle to the device context you want used to measure the string.
  * @param {String} Str - The string to measure.
- * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
+ * @returns {Size} - A `Size` object with properties { Width, Height }.
  */
 GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
@@ -45,7 +45,7 @@ GetTextExtentPoint32(hdc, Str) {
         , 'Ptr', hdc
         , 'Ptr', StrPtr(Str)
         , 'Int', StrLen(Str)
-        , 'Ptr', sz := SIZE()
+        , 'Ptr', sz := Size()
         , 'Int'
     ) {
         return sz
@@ -55,7 +55,7 @@ GetTextExtentPoint32(hdc, Str) {
 }
 
 /**
- * @description - Iterates an array of strings. For each string, a SIZE object is added to an array.
+ * @description - Iterates an array of strings. For each string, a Size object is added to an array.
  * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
  * width, of the items. For any string values that are empty strings, the associated value added to
  * the output array is also an empty string.
@@ -67,9 +67,9 @@ GetTextExtentPoint32(hdc, Str) {
  * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
  * array.
  * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of the lines.
- * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the `SIZE`
+ * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the `Size`
  * objects, and the strings are replaced with the objects. If false, a new array is created.
- * @returns {SIZE[]} - An array of `SIZE` objects, each with properties { Width, Height }.
+ * @returns {Size[]} - An array of `Size` objects, each with properties { Width, Height }.
  */
 GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     if ReplaceItems {
@@ -85,7 +85,7 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
                 , 'Ptr', hdc
                 , 'Ptr', StrPtr(Str)
                 , 'Int', StrLen(Str)
-                , 'Ptr', sz := SIZE()
+                , 'Ptr', sz := Size()
                 , 'Int'
             ) {
                 Result[A_Index] := sz
@@ -128,7 +128,7 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
  * has properties { __Item, Capacity, Size, Type }. See struc\IntegerArray.ahk for more
  * information.
- * @returns {SIZE} - A `SIZE` object with properties { Width, Height }.
+ * @returns {Size} - A `Size` object with properties { Width, Height }.
  */
 GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if MaxExtent {
@@ -139,7 +139,7 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
             , 'int', MaxExtent                                      ; Maximum width
             , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
             , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
-            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := NumGet(lpnFit, 0, 'int')
@@ -155,7 +155,7 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
             , 'int', 0
             , 'ptr', 0
             , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
-            , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := 0
@@ -212,7 +212,7 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                     , 'int', MaxExtent                                      ; Maximum width
                     , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
                     , 'ptr', ExtentPoints := IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
-                    , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+                    , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
                     , 'ptr'
                 ) {
                     Result[A_Index] := { CharacterFit: NumGet(lpnFit, 0, 'int'), ExtentPoints: ExtentPoints, Size: sz }
@@ -231,7 +231,7 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                     , 'int', 0
                     , 'ptr', 0
                     , 'ptr', ExtentPoints := IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
-                    , 'ptr', sz := SIZE()                                   ; To receive the dimensions of the string.
+                    , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
                     , 'ptr'
                 ) {
                     Result[A_Index] := { CharacterFit: 0, ExtentPoints: ExtentPoints, Size: sz }
@@ -280,7 +280,7 @@ MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWi
             , 'Ptr', hdc
             , 'Ptr', StrPtr(_str)
             , 'Int', StrLen(_str)
-            , 'Ptr', sz := SIZE()
+            , 'Ptr', sz := Size()
             , 'Int'
         ) {
             throw OSError()

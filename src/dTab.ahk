@@ -1,10 +1,10 @@
 ﻿
-#include ..\definitions\Define-Tab.ahk
-
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
-#include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
 #include <Rect>
+
+#include ..\definitions\Define-Tab.ahk
+#include ..\lib
+#include MetaSetThreadDpiAwareness.ahk
 
 /**
  * The display area is the area within which the tab's controls are visible.

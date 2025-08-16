@@ -8,11 +8,29 @@
 /*
    This is a work in progress and will change frequently while I finish it. If you use this
    library in a project, do not use your git clone directory for the project. I will break things
-   as I release updates.
+   as I release updates. I recommend these steps for using the repo:
+
+   - Clone the repo: `git clone https://github.com/Nich-Cebolla/Display`
+
+   - Make a copy of the directory
+
+   - Prepare a copy of this configuration template to place in your lib folder
+   (see https://www.autohotkey.com/docs/v2/Scripts.htm#lib)
+   By having this configuration file in your lib folder, whenever you want to use this
+   in one of your scripts, you can simply write `#include <DisplayConfig>` (assuming you named the
+   file "DisplayConfig.ahk". This is convenient for testing and development, and for quick personal
+   scripts where optimization isn't a concern. But for production code or code one intends to share,
+   it would be best to to create a dedicated configuration file for the project and keep that in the
+   project directory.
+
+   - When you pull updates to the repository, before copying those updates you should test any scripts
+   that use "Display" to see if an update breaks the script. I'm pretty close to calling this project
+   "done"; when I release this officially breaking changes will be rare and when they occur I will
+   include migration instructions.
 */
 
 ; *************************************************************************************************
-; There are 7 steps in this document.
+; There are 8 steps to prepare your configuation file.
 
 ; Step 1:
 ; Copy this document to your project directory then open the copy and work on that one.
@@ -24,33 +42,46 @@
 ; Comment out any files which your project is not going to use.
 ; --------------------
 
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/LOGFONT.ahk
-#include <LOGFONT>
 
-#include ..
+#include ..     ; adjust this statement to point to the "Display" directory
 
 #include lib
 #include ComboBox.ahk
-#include ControlTextExtent.ahk
+#include ControlTextExtent.ahk  ; Requires IntegerArray.ahk
 #include Dpi.ahk
-#include DrawText.ahk
 #include FilterWords.ahk
-#include Tab.ahk
-#include Text.ahk
+#include Tab.ahk                ; Requires Rect.ahk
+#include Text.ahk               ; Requires IntegerArray.ahk
 
 #include ..\src
-#include ControlFitText.ahk
-#include dGui.ahk
+#include ControlFitText.ahk     ; Requires Logfont.ahk
+#include dGui.ahk               ; Requires Rect.ahk
 #include dLv.ahk
-#include dMon.ahk
-#include dTab.ahk
-#include dWin.ahk
+#include dMon.ahk               ; Requires Rect.ahk
+#include dTab.ahk               ; Requires Rect.ahk
+#include dWin.ahk               ; Requires Rect.ahk
 #include SelectFontIntoDc.ahk
 #include WrapText.ahk
-; #include dScrollbar.ahk not working
 
 ; --------------------
 ; Step 4:
+; (This step only needs to be completed once)
+; If you are using any files which require an external library as indicated above,
+; clone the needed library/libraries. You then need to create a file in your lib folder
+; (https://www.autohotkey.com/docs/v2/Scripts.htm#lib)
+; that has an #include statement that points to the local copy of the script(s). This allows you to
+; use that script in any project using the `#include <FileName>` syntax without filling up your
+; lib folder with a bunch of README documents and other secondary documents that are typically
+; included in Github repositories. This also has the benefit of not needing to update multiple
+; local copies when pulling updates.
+;
+; IntegerArray.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
+; Logfont.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Logfont.ahk
+; Rect.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Rect.ahk
+;
+; If you would prefer not to use the lib folder, run the file "config\ExternalLibraryDownloader.ahk"
+
+; Step 5:
 ; Adjust global variables.
 ; These are some global variables that are intended to be adjusted according to project needs.
 ; --------------------
@@ -64,7 +95,7 @@
 
 /**
  * @var {Integer} DPI_AWARENESS_CONTEXT_DEFAULT - The default DPI awareness context used by
- * various functions. This is used by "Dpi.ahk", "SetThreadDpiAwareness__Call.ahk", "dMon.ahk",
+ * various functions. This is used by "Dpi.ahk", "MetaSetThreadDpiAwareness.ahk", "dMon.ahk",
  * and "dWin.ahk". To learn how it affects the functions which use it, refer to this page:
  * {@link https://learn.microsoft.com/en-us/windows/win32/hidpi/dpi-awareness-context}.
  */
@@ -77,7 +108,7 @@
 ; DPI_CHANGED_DPI_AWARENESS_CONTEXT := DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 
 ; --------------------
-; Step 5:
+; Step 6:
 ; Select "dMon.ahk" options.
 ; If you are not using "dMon.ahk", skip this step.
 ; --------------------
@@ -247,37 +278,3 @@ Text
 TreeView
 UpDown
 
-
-
-/**
- * @property {Object} DisplayConfig.ControlOffset - Needs more work, not currently in use.
- */
-; static ControlOffset := {
-;      ActiveX:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Button:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , CheckBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , ComboBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Control:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Custom:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , DateTime:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , DDL:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Edit:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , GroupBox:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Hotkey:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Link:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , List:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , ListBox:     { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , ListView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , MonthCal:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Pic:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Progress:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Radio:       { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Slider:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , StatusBar:   { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Tab:         { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Tab2:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Tab3:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , Text:        { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , TreeView:    { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;    , UpDown:      { X: 0, Y: 0, W: 2, H: 2, F: 0 }
-;  }

@@ -1,4 +1,5 @@
 ﻿
+#include <Logfont>
 #include dGui.ahk
 #include SelectFontIntoDc.ahk
 #include ..\definitions
@@ -93,7 +94,7 @@ class ControlFitText {
      * @param {Integer} [PaddingY = 0] - A number of pixels to add to the height.
      * @param {Boolean} [UseCache = true] - If true, stores or retrieves the output from
      * `ControlFitText.TextExtentPadding`. If false, a new instance is evaluated.
-     * @param {VarRef} [OutExtentPoints] - A variable that will receive an array of `SIZE` objects
+     * @param {VarRef} [OutExtentPoints] - A variable that will receive an array of `Size` objects
      * returned from `GetMultiExtentPoints`.
      * @param {VarRef} [OutWidth] - A variable that will receive the width as integer.
      * @param {VarRef} [OutHeight] - A variable that will receive the height as integer.
@@ -143,7 +144,7 @@ class ControlFitText {
      * @param {Integer} [PaddingY = 0] - A number of pixels to add to the height.
      * @param {Boolean} [UseCache = true] - If true, stores or retrieves the output from
      * `ControlFitText.TextExtentPadding`. If false, a new instance is evaluated.
-     * @param {VarRef} [OutExtentPoints] - A variable that will receive an array of `SIZE` objects
+     * @param {VarRef} [OutExtentPoints] - A variable that will receive an array of `Size` objects
      * returned from `GetMultiExtentPoints`.
      * @param {VarRef} [OutHeight] - A variable that will receive an integer value representing the
      * height that was passed to `Ctrl.Move`.

@@ -30,7 +30,7 @@ This only shows primary dependencies.
 - Source:                  dWin
 - Lib:                     --
 
-### lib\SetThreadDpiAwareness__Call.ahk
+### lib\MetaSetThreadDpiAwareness.ahk
 - Definitions:             --
 - Structs:                 --
 - Classes:                 --
@@ -43,7 +43,7 @@ Note: It requires the globalvariable `DPI_AWARENESS_CONTEXT_DEFAULT`to be set.
                            Rect
 - Source:                  DefaultConfig
                            dMon
-- Lib:                     SetThreadDpiAwareness__Call
+- Lib:                     MetaSetThreadDpiAwareness
                            Gui
 
 ### Lv.ahk
@@ -110,7 +110,7 @@ Note: It requires the globalvariable `DPI_AWARENESS_CONTEXT_DEFAULT`to be set.
 - Definitions:             --
 - Structs:                 Point
 - Classes:                 --
-- Lib:                     SetThreadDpiAwareness__Call
+- Lib:                     MetaSetThreadDpiAwareness
 
 ### WINDOWINFO.ahk
 - Definitions:             --

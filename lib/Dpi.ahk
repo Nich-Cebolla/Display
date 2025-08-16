@@ -45,7 +45,7 @@ GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
  * @description - DPI_AWARENESS_CONTEXT handles associated with values of
  * DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE and DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 will
  * return a value of 0 for their DPI. This is because the DPI of a per-monitor-aware window can
- * change, and the actual DPI cannot be returned without the window's HWND.
+ * change, and the actual DPI cannot be returned without the window's Hwnd.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpifromdpiawarenesscontext}
  * @param {Integer} DPI_AWARENESS_CONTEXT - The DPI_AWARENESS_CONTEXT from which to obtain the
  * dpi.
@@ -94,14 +94,14 @@ GetDpiForSystem() {
 /**
  * @description - Returns the dots per inch (dpi) value for the specified window.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow}
- * @param {Integer} hWnd - The window handle.
+ * @param {Integer} Hwnd - The window handle.
  * @returns {Integer} - The DPI for the window, which depends on the DPI_AWARENESS of the window.
  * - DPI_AWARENESS_UNAWARE - The base value of DPI which is set to 96 (defined as `USER_DEFAULT_SCREEN_DPI`)
  * - DPI_AWARENESS_SYSTEM_AWARE - The system DPI
  * - DPI_AWARENESS_PER_MONITOR_AWARE - The DPI of the monitor where the window is located.
  */
-GetDpiForWindow(hWnd) {
-    return DllCall('GetDpiForWindow', 'ptr', hWnd, 'uint')
+GetDpiForWindow(Hwnd) {
+    return DllCall('GetDpiForWindow', 'ptr', Hwnd, 'uint')
 }
 
 /**
@@ -147,13 +147,13 @@ GetThreadDpiAwarenessContext() {
 /**
  * @description - Returns the DPI_AWARENESS_CONTEXT associated with a window. The return value of
  * GetWindowDpiAwarenessContext is not affected by the DPI_AWARENESS of the current thread. It only
- * indicates the context of the window specified by the hwnd input parameter.
+ * indicates the context of the window specified by the Hwnd input parameter.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowdpiawarenesscontext}
- * @param {Integer} hWnd - The window handle.
+ * @param {Integer} Hwnd - The window handle.
  * @returns {Integer} - The window's DPI_AWARENESS_CONTEXT.
  */
-GetWindowDpiAwarenessContext(hWnd) {
-    return DllCall('GetWindowDpiAwarenessContext', 'ptr', hWnd, 'ptr')
+GetWindowDpiAwarenessContext(Hwnd) {
+    return DllCall('GetWindowDpiAwarenessContext', 'ptr', Hwnd, 'ptr')
 }
 
 /**

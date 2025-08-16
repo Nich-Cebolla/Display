@@ -95,11 +95,11 @@ class test {
         Subjects.Get('FilterWords').InitialValues.Set('Call', [])
         Subjects.Get('FilterWords').InitialValues.Set('FilterCallback', [])
 
-        ; SetThreadDpiAwareness__Call
-        Script5 := ScriptParser('C:\Users\Shared\001_Repos\Display\lib\SetThreadDpiAwareness__Call.ahk')
+        ; MetaSetThreadDpiAwareness
+        Script5 := ScriptParser('C:\Users\Shared\001_Repos\Display\lib\MetaSetThreadDpiAwareness.ahk')
         ; Functions
-        Subjects.AddFunc(SetThreadDpiAwareness__Call, , Script5)
-        Subjects.Get('SetThreadDpiAwareness__Call').InitialValues := []
+        Subjects.AddFunc(MetaSetThreadDpiAwareness, , Script5)
+        Subjects.Get('MetaSetThreadDpiAwareness').InitialValues := []
         ; Tab
         Script6 := ScriptParser('C:\Users\Shared\001_Repos\Display\lib\Tab.ahk')
         ; Functions
@@ -408,15 +408,15 @@ class test {
         Subjects.Get('RectBase').InitialValues.Set('__Call', [])
         Subjects.Get('RectBase').InitialValues.Set('Call', [])
 
-        ; SIZE
-        Script22 := ScriptParser('C:\Users\Shared\001_Repos\Display\struct\SIZE.ahk')
-        ; SIZE
-        PropsInfo_SIZE := GetPropsInfo(SIZE, , '__Init,Prototype,Base', false)
-        PropsInfo_SIZE.FilterSet(Filter)
-        Subjects.Add('SIZE', PropsInfo_SIZE, , Script22)
-        Subjects.Get('SIZE').InitialValues := Map()
+        ; Size
+        Script22 := ScriptParser('C:\Users\Shared\001_Repos\Display\struct\Size.ahk')
+        ; Size
+        PropsInfo_Size := GetPropsInfo(Size, , '__Init,Prototype,Base', false)
+        PropsInfo_Size.FilterSet(Filter)
+        Subjects.Add('Size', PropsInfo_Size, , Script22)
+        Subjects.Get('Size').InitialValues := Map()
         ; Methods
-        Subjects.Get('SIZE').InitialValues.Set('Call', [])
+        Subjects.Get('Size').InitialValues.Set('Call', [])
 
         ; WINDOWINFO
         Script23 := ScriptParser('C:\Users\Shared\001_Repos\Display\struct\WINDOWINFO.ahk')
@@ -439,7 +439,7 @@ class test {
 #include C:\Users\Shared\001_Repos\Display\lib\ControlTextExtent.ahk
 #include C:\Users\Shared\001_Repos\Display\lib\Dpi.ahk
 #include C:\Users\Shared\001_Repos\Display\lib\FilterWords.ahk
-#include C:\Users\Shared\001_Repos\Display\lib\SetThreadDpiAwareness__Call.ahk
+#include C:\Users\Shared\001_Repos\Display\lib\MetaSetThreadDpiAwareness.ahk
 #include C:\Users\Shared\001_Repos\Display\lib\Tab.ahk
 #include C:\Users\Shared\001_Repos\Display\lib\Text.ahk
 #include C:\Users\Shared\001_Repos\Display\src\ControlFitText.ahk
@@ -456,7 +456,7 @@ class test {
 #include C:\Users\Shared\001_Repos\Display\struct\Point.ahk
 #include C:\Users\Shared\001_Repos\Display\struct\Rect.ahk
 #include C:\Users\Shared\001_Repos\Display\struct\RectBase.ahk
-#include C:\Users\Shared\001_Repos\Display\struct\SIZE.ahk
+#include C:\Users\Shared\001_Repos\Display\struct\Size.ahk
 #include C:\Users\Shared\001_Repos\Display\struct\WINDOWINFO.ahk
 
 

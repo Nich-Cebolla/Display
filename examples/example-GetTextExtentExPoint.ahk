@@ -1,5 +1,5 @@
 ﻿#include ..\struct\IntegerArray.ahk
-#include ..\struct\SIZE.ahk
+#include ..\struct\Size.ahk
 #include ..\lib\Text.ahk
 G := Gui()
 G.SetFont('s11 q5', 'Roboto')

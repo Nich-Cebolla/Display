@@ -3,7 +3,7 @@
 #include <IntegerArray>
 #include SelectFontIntoDc.ahk
 #include ..\struct
-#include SIZE.ahk
+#include Size.ahk
 
 class WrapText {
 
@@ -71,7 +71,7 @@ class WrapText {
      * used is `Options.MaxExtent`. The height used depends on the value of `Options.MeasureLines`. If
      * `Options.MeasureLines` is nonzero, then `OutHeight` is set with the cumulative height of the
      * string, and its value gets used. If `Options.MeasureLines` is false, the height is set to
-     * `sz.Height * LineCount` where `sz` is the `SIZE` object produced from the last `GetTextExtentExPoint`
+     * `sz.Height * LineCount` where `sz` is the `Size` object produced from the last `GetTextExtentExPoint`
      * function call. In general this will be pretty close to the true height of the string, but should
      * be expected to be slightly off.
      * @param {String} [Options.BreakChars='-'] - `BreakChars` is a list of characters that defines what
@@ -92,7 +92,7 @@ class WrapText {
      * each line during processing. This allows `WrapText` to set `OutHeight` with the correct height
      * of the string, and `OutWidth` with an accurate width of the string (see the note about this
      * in the function description). If `Options.MeasureLines` is an array object, `WrapText` will also
-     * add each `SIZE` object that is produced from the measurement to that array. For large strings
+     * add each `Size` object that is produced from the measurement to that array. For large strings
      * or many consecutive function calls, you should set the capacity of the array to what you expect
      * it will need prior to calling `WrapText`. If `WrapText` is false, no additional measurements occur.
      * @param {Number} [Options.MinExtent] - Either an integer or a float between 0 and 1.
@@ -185,7 +185,7 @@ class WrapText {
         ; Initialize the buffers
         fitBuf := Buffer(4)
         Extent := IntegerArray(StrLen(Text))
-        sz := SIZE()
+        sz := Size()
 
         ; Measure the width of a hyphen
         hyphen := '-'
@@ -470,7 +470,7 @@ class WrapText {
                 , 'Ptr', hdc
                 , 'Ptr', StrPtr(Part)
                 , 'Int', StrLen(Part)
-                , 'Ptr', measure_sz := SIZE()
+                , 'Ptr', measure_sz := Size()
                 , 'Int'
             ) {
                 if measure_sz.Width > MaxExtent {

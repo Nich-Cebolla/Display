@@ -306,7 +306,7 @@ class test_WrapText extends test_Base {
         ;         , 'Ptr', hdc
         ;         , 'Ptr', StrPtr(Line)
         ;         , 'Int', StrLen(Line)
-        ;         , 'Ptr', sz := SIZE()
+        ;         , 'Ptr', sz := Size()
         ;         , 'Int'
         ;     ) {
         ;         return sz

@@ -1,11 +1,11 @@
 ﻿
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
-#include <SetThreadDpiAwareness__Call>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
 #include <Rect>
 
 #include ..\definitions
 #include Define-Dpi.ahk
+#include ..\lib
+#include MetaSetThreadDpiAwareness.ahk
 
 
 /**
@@ -147,7 +147,7 @@ class dMon {
     class Dpi {
         static __New() {
             if this.Prototype.__Class == 'dMon.Dpi' {
-                this.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
+                this.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
             }
         }
         static Call(Hmon, DpiType := MDT_DEFAULT) {
