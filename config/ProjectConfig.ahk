@@ -117,7 +117,7 @@
 ; --------------------
 
 /**
- * @property {Boolean} dMon.UseOrderedMonitors - When true, the monitors are ordered by their
+ * @property {Boolean|Object} dMon.UseOrderedMonitors - When true, the monitors are ordered by their
  * coordinates. See the parameter hint above {@link dMon.GetOrder} for more information. Leave
  * commented out if not using "dMon.ahk".
  * You can also set `dMon.UseOrderedMonitors` with an object with property : value pairs, where
@@ -142,41 +142,6 @@
  * - The text content contains one or more "`r`n".
  */
 ; dGui.ScrollbarPadding := 1
-
- /**
-  * @property {Boolean|Array} dGui.ControlIncludeByDefault -
-  * Default = true
-  * When true, all controls are processed by the built-in dpi change handler by default.
-  *
-  * You can also set it to an array of control types as strings to specify a subset of control
-  * types which will be processed by the built-in dpi change handler by default.
-  *
-  * You can also set it to `false` to exclude all controls from being processed by the built-in
-  * dpi change handler by default.
-  *
-  * This feature is implemented by creating a `Gui.Control.Prototype.DpiExclude` property.
-  *
-  * When an array of type strings, the library sets `Gui.Control.Prototype.DpiExclude := true`
-  * and then for each type in the array sets `Gui.<Ctrl Type>.Prototype.DpiExclude := false`.
-  *
-  * In both cases, you can change the value of the property at any any time to toggle the behavior.
-  * @example
-  * ; To exclude ListView controls from being processed by the built-in dpi change handler.
-  *  Gui.ListView.Prototype.DpiExclude := true
-  * ; To exclude all controls from being processed by default.
-  *  Gui.Control.Prototype.DpiExclude := true
-  * ; To later include all controls from being processed by default (except ListView controls, per
-  * ; the above setting).
-  *  Gui.Control.Prototype.DpiExclude := false
-  * @
-  * You can also set this on an individual control.
-  * @example
-  *  G := Gui('-DPIScale +Resize')
-  *  MainEdit := G.Add('Edit', 'w800 r50 vmain')
-  *  MainEdit.DpiExclude := true
-  * @
-  */
-; dGui.ControlIncludeByDefault := true
 
  /**
   * @property {Array|Boolean} dGui.ResizeByText -

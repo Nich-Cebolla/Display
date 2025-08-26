@@ -77,27 +77,6 @@ class dGui extends Gui {
             }
         }
 
-        ;@region ControlIncludeByDefault
-        if this.ControlIncludeByDefault is Array {
-            list := this.ControlIncludeByDefault.Clone()
-            for Cls in ClassList {
-                Cls.Prototype.DefineProp('DpiExclude', { Value: true })
-                for CtrlType in list {
-                    if Cls.Prototype.__Class = CtrlType {
-                        Cls.Prototype.DefineProp('DpiExclude', { Value: false })
-                        list.RemoveAt(A_Index)
-                        continue 2
-                    }
-                }
-            }
-        } else {
-            value := !this.ControlIncludeByDefault
-            for Cls in ClassList {
-                Cls.Prototype.DefineProp('DpiExclude', { Value: value })
-            }
-        }
-        ;@endregion
-
         ;@region ResizeByText
         if this.ResizeByText {
             list := this.ResizeByText.Clone()
