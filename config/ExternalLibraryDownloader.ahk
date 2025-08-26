@@ -25,6 +25,10 @@ class Main {
                 Url: 'https://github.com/Nich-Cebolla/AutoHotkey-LibV2/raw/refs/heads/main/structs/Rect.ahk'
               , FileName: 'Rect'
             }
+          , {
+                Url: 'https://github.com/Nich-Cebolla/AutoHotkey-LibV2/raw/refs/heads/main/Win32/WindowSubclass.ahk'
+              , FileName: 'WindowSubclass'
+            }
         ]
     }
     static Call(encoding := 'UTF-8') {

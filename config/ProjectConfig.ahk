@@ -78,8 +78,11 @@
 ; IntegerArray.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
 ; Logfont.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Logfont.ahk
 ; Rect.ahk: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Rect.ahk
+; WindowSubclass: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/WindowSubclass.ahk
 ;
-; If you would prefer not to use the lib folder, run the file "config\ExternalLibraryDownloader.ahk"
+; If you would prefer not to use the lib folder or clone the repositories, run the file
+; "config\ExternalLibraryDownloader.ahk" which will handle modifying this library and downloading
+; the needed files. You'll need to run it again after any updates.
 
 ; Step 5:
 ; Adjust global variables.

@@ -82,6 +82,10 @@ class WinMover {
         MouseMode := CoordMode('Mouse', 'Screen')
         DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
         MouseGetPos(&x, &y, &hwnd)
+        if !hwnd {
+            this.ShowTooltip('No window found')
+            return
+        }
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         cb := this.TerminateMoveCallback
         loop {
@@ -95,11 +99,35 @@ class WinMover {
         CoordMode('Mouse', MouseMode)
         DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
     }
-
+    DynamicMoveControl(*) {
+        MouseMode := CoordMode('Mouse', 'Client')
+        DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
+        MouseGetPos(&x, &y, , &hwnd, 2)
+        if !hwnd {
+            this.ShowTooltip('No window found')
+            return
+        }
+        ControlGetPos(&wx, &wy, &ww, &wh, hwnd)
+        cb := this.TerminateMoveCallback
+        loop {
+            if cb() {
+                break
+            }
+            MouseGetPos(&x2, &y2)
+            ControlMove(wx + x2 - x, wy + y2 - y, , , hwnd)
+            sleep 10
+        }
+        CoordMode('Mouse', MouseMode)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
+    }
     DynamicResize(*) {
         MouseMode := CoordMode('Mouse', 'Screen')
         DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
         MouseGetPos(&x, &y, &hwnd)
+        if !hwnd {
+            this.ShowTooltip('No window found')
+            return
+        }
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         if x > wx + ww / 2 {
             x_quotient := 1
@@ -138,5 +166,69 @@ class WinMover {
         }
         CoordMode('Mouse', MouseMode)
         DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
+    }
+    DynamicResizeControl(*) {
+        MouseMode := CoordMode('Mouse', 'Client')
+        DpiAwareness := DllCall('SetThreadDpiAwarenessContext', 'ptr', -4, 'ptr')
+        MouseGetPos(&x, &y, , &hwnd, 2)
+        if !hwnd {
+            this.ShowTooltip('No window found')
+            return
+        }
+        ControlGetPos(&wx, &wy, &ww, &wh, hwnd)
+        if x > wx + ww / 2 {
+            x_quotient := 1
+            GetX := XCallback1
+        } else {
+            x_quotient := -1
+            GetX := XCallback2
+        }
+        if y > wy + wh / 2 {
+            y_quotient := 1
+            GetY := YCallback1
+        } else {
+            y_quotient := -1
+            GetY := YCallback2
+        }
+        cb := this.TerminateSizeCallback
+        loop {
+            if cb() {
+                break
+            }
+            MouseGetPos(&x2, &y2)
+            ControlMove(GetX(), GetY(), ww + (x2 - x) * x_quotient, wh + (y2 - y) * y_quotient, hwnd)
+            sleep 10
+        }
+        XCallback1() {
+            return wx
+        }
+        XCallback2() {
+            return wx + x2 - x
+        }
+        YCallback1() {
+            return wy
+        }
+        YCallback2() {
+            return wy + y2 - y
+        }
+        CoordMode('Mouse', MouseMode)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
+    }
+
+    ShowTooltip(Str) {
+        static N := [1,2,3,4,5,6,7]
+        Z := N.Pop()
+        OM := CoordMode('Mouse', 'Screen')
+        OT := CoordMode('Tooltip', 'Screen')
+        MouseGetPos(&x, &y)
+        Tooltip(Str, x, y, Z)
+        SetTimer(_End.Bind(Z), -2000)
+        CoordMode('Mouse', OM)
+        CoordMode('Tooltip', OT)
+
+        _End(Z) {
+            ToolTip(,,,Z)
+            N.Push(Z)
+        }
     }
 }
