@@ -3,6 +3,7 @@
 #include <Rect>
 
 #include ..\definitions\Define-Tab.ahk
+#include ..\struct\TCITEMW.ahk
 #include ..\lib
 #include MetaSetThreadDpiAwareness.ahk
 
@@ -41,12 +42,12 @@ class dTab extends Gui.Tab {
     /**
      * @description - The input is a display rectangle, and the output is the window rectangle
      * necessary for a tab control to have a display rectangle of the input dimensions.
-     * @param {Rect} RectObj - The display rectangle.
+     * @param {Rect} rc - The display rectangle.
      * @returns {Rect} - The window rectangle (same object with new values)
      */
-    DisplayToWindow(RectObj) {
-        SendMessage(TCM_ADJUSTRECT, true, RectObj, this.hWnd, this.Gui.hWnd)
-        return RectObj
+    DisplayToWindow(rc) {
+        SendMessage(TCM_ADJUSTRECT, true, rc, this.hWnd, this.Gui.hWnd)
+        return rc
     }
 
     /**
@@ -54,13 +55,13 @@ class dTab extends Gui.Tab {
      * @returns {Rect}
      */
     GetClientDisplayRect() {
-        RectObj := Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', rc, 'int') {
             throw OSError()
         }
-        RectObj.ToClient(this.Gui.hWnd, true)
-        SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
-        return RectObj
+        rc.ToClient(this.Gui.hWnd, true)
+        SendMessage(TCM_ADJUSTRECT, false, rc, this.hWnd, this.Gui.hWnd)
+        return rc
     }
 
     /**
@@ -68,12 +69,12 @@ class dTab extends Gui.Tab {
      * @returns {Rect}
      */
     GetClientWindowRect() {
-        RectObj := Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', rc, 'int') {
             throw OSError()
         }
-        RectObj.ToClient(this.Gui.hWnd, true)
-        return RectObj
+        rc.ToClient(this.Gui.hWnd, true)
+        return rc
     }
 
     /**
@@ -124,11 +125,11 @@ class dTab extends Gui.Tab {
      * @throws {OSError} - If the `SendMessage` call fails.
      */
     GetItemRect(Index) {
-        RectObj := Rect()
-        if !SendMessage(TCM_GETITEMRECT, Index, RectObj, this.hWnd, this.Gui.hWnd) {
+        rc := Rect()
+        if !SendMessage(TCM_GETITEMRECT, Index, rc, this.hWnd, this.Gui.hWnd) {
             throw OSError('Failed to get item rect.', -1)
         }
-        return RectObj
+        return rc
     }
 
     /**
@@ -144,12 +145,12 @@ class dTab extends Gui.Tab {
      * @returns {Rect}
      */
     GetScreenDisplayRect() {
-        RectObj := Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', rc, 'int') {
             throw OSError()
         }
-        SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
-        return RectObj
+        SendMessage(TCM_ADJUSTRECT, false, rc, this.hWnd, this.Gui.hWnd)
+        return rc
     }
 
     /**
@@ -157,15 +158,40 @@ class dTab extends Gui.Tab {
      * @returns {Rect}
      */
     GetScreenWindowRect() {
-        RectObj := Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', rc, 'int') {
             throw OSError()
         }
-        return RectObj
+        return rc
     }
 
     /**
-     * @description - Determins if a tab is at the input coordinate.
+     * @param {Integer} Index - The index of the tab for which to get the text.
+     * @param {Integer} MaxChars - The maximum characters to copy to the buffer. This can be an
+     * overestimate.
+     * @returns {String} - The tab's text, or an empty string if the operation failed.
+     */
+    GetTabText(Index, MaxChars) {
+        tcitem := TCITEMW(TCIF_TEXT, , , , MaxChars)
+        if SendMessage(TCM_GETITEMW, Index, tcitem.Ptr, this.hWnd, this.Gui.hWnd) {
+            return tcitem.pszText
+        } else {
+            return ''
+        }
+    }
+
+    /**
+     * @param {Integer} Index - The index of the tab to highlight / remove higlighting.
+     * @param {Boolean} [Value = true] - If true, activates the highlight state. If false, deactivates
+     * the highlight state.
+     * @returns {Integer} - 1 if successful, 0 if unsuccessful.
+     */
+    HighlightItem(Index, Value := true) {
+        return SendMessage(TCM_HIGHLIGHTITEM, Index, (0 & 0xFFFF) << 16 | (Value & 0xFFFF), this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
+     * @description - Determines if a tab is at the input coordinate.
      * @param {Integer} X - The x-coordinate.
      * @param {Integer} Y - The y-coordinate.
      * @returns {Integer} - One of the following values:
@@ -192,13 +218,13 @@ class dTab extends Gui.Tab {
      * @returns {Rect} - The window rectangle.
      */
     MoveEx(X?, Y?, W?, H?) {
-        RectObj := Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', RectObj, 'int') {
+        rc := Rect()
+        if !DllCall('GetWindowRect', 'ptr', this.hWnd, 'ptr', rc, 'int') {
             throw OSError()
         }
-        RectObj.ToClient(this.Gui.hWnd, true)
-        SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
-        rc := Rect(X ?? RectObj.X, Y ?? RectObj.Y, (W ?? RectObj.W) + (X ?? RectObj.X), (H ?? RectObj.H) + (Y ?? RectObj.Y))
+        rc.ToClient(this.Gui.hWnd, true)
+        SendMessage(TCM_ADJUSTRECT, false, rc, this.hWnd, this.Gui.hWnd)
+        rc := Rect(X ?? rc.X, Y ?? rc.Y, (W ?? rc.W) + (X ?? rc.X), (H ?? rc.H) + (Y ?? rc.Y))
         SendMessage(TCM_ADJUSTRECT, true, rc, this.hWnd, this.Gui.hWnd)
         this.Move(rc.X, rc.Y, rc.W, rc.H)
         return rc
@@ -213,6 +239,32 @@ class dTab extends Gui.Tab {
     }
 
     /**
+     * @description - Sets the focus to a specified tab in a tab control.
+     * @param {Integer} Index - The index of the tab to focus.
+     */
+    SetCurFocus(Index) {
+        SendMessage(TCM_SETCURFOCUS, Index, 0, this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
+     * @description - Selects a tab in a tab control.
+     * @param {Integer} Index - The index of the tab to select.
+     */
+    SetCurSel(Index) {
+        SendMessage(TCM_SETCURSEL, Index, 0, this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
+     * @param {Integer} Style - One of the following:
+     * - 1: TCS_EX_FLATSEPARATORS
+     * - 2: TCS_EX_REGISTERDROP
+     * @param {Integer} Value - Either 1 or 0 to enable or clear the style, respectively.
+     */
+    SetExtendedStyle(Style, Value) {
+        return SendMessage(TCM_SETEXTENDEDSTYLE, Style, Value, this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
      * @description - Assigns an image list to a tab control.
      * {@link https://learn.microsoft.com/en-us/windows/win32/controls/tcm-setimagelist}
      * @param {Integer} Index - The index of the image to remove.
@@ -224,14 +276,46 @@ class dTab extends Gui.Tab {
     }
 
     /**
+     * @description - Sets the width and height of tabs in a fixed-width or owner-drawn tab control.
+     * @param {Integer} Width - The width in pixels.
+     * @param {Integer} Height - The height in pixels.
+     * @param {VarRef} [OutOldWidth] - A variable that will receive the previous width in pixels
+     * @param {VarRef} [OutOldHeight] - A variable that will receive the previous height in pixels
+     */
+    SetItemSize(Width, Height, &OutOldWidth?, &OutOldHeight?) {
+        old := SendMessage(TCM_SETITEMSIZE, 0, (Height & 0xFFFF) << 16 | (Width & 0xFFFF), this.hWnd, this.Gui.hWnd)
+        OutOldWidth := old & 0xFFFF
+        OutOldHeight := (old >> 16)
+    }
+
+    /**
+     * @description - Sets the minimum tab width.
+     * @param {Integer} Width - The minimum tab width in pixels.
+     * @returns {Integer} - The previous minimum tab width.
+     */
+    SetMinTabWidth(Width) {
+        return SendMessage(TCM_SETMINTABWIDTH, 0, Width, this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
+     * @param {Integer} Index - The index of the tab which will have its text changed.
+     * @param {String} NewText - The new text.
+     * @returns {Integer} - 1 if successful, 0 otherwise.
+     */
+    SetTabText(Index, NewText) {
+        tcitem := TCITEMW(TCIF_TEXT, , , NewText)
+        return SendMessage(TCM_SETITEMW, Index, tcitem.Ptr, this.hWnd, this.Gui.hWnd)
+    }
+
+    /**
      * @description - The input is a window rectangle, and the output is the display rectangle
      * area for a tab control with the input dimensions.
-     * @param {Rect} RectObj - The window rectangle. If unset, the control's current dimensions
+     * @param {Rect} rc - The window rectangle. If unset, the control's current dimensions
      * are used.
      * @returns {Rect} - The display rectangle (same object with new values)
      */
-    WindowToDisplay(RectObj) {
-        SendMessage(TCM_ADJUSTRECT, false, RectObj, this.hWnd, this.Gui.hWnd)
-        return RectObj
+    WindowToDisplay(rc) {
+        SendMessage(TCM_ADJUSTRECT, false, rc, this.hWnd, this.Gui.hWnd)
+        return rc
     }
 }

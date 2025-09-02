@@ -51,6 +51,8 @@ class dGui extends Gui {
             if HasProp(ExtendedOptions, 'FontName') {
                 dGuiObj.SetFont(, ExtendedOptions.FontName)
             }
+        } else {
+            dGuiObj.__SetFont('s' dGuiObj.FontSizeScaled)
         }
         if IsSet(EventHandler) {
             dGuiObj.EventHandler := EventHandler
@@ -246,7 +248,8 @@ class dGui extends Gui {
             ObjSetBase(Ctrl, dGui.%CtrlType%.Prototype)
         }
         Ctrl.DefineProp('BaseFontSize', { Value: Ctrl.Gui.BaseFontSize })
-        Ctrl.__SetFont('s' Ctrl.FontSizeScaled)
+        fss := Ctrl.FontSizeScaled
+        Ctrl.__SetFont('s' fss)
         Ctrl.DefineProp('__Rounding', { Value: { X: 0, Y: 0, W: 0, H: 0 } })
         this.Count++
         if !IsSet(Options) || !InStr(Options, '-vscroll') {
@@ -766,7 +769,7 @@ class dGui extends Gui {
         }
 
         Dpi => DllCall('GetDpiForWindow', 'ptr', this.hWnd, 'int')
-        FontSizeScaled => this.BaseFontSize * this.dpi / BASE_DPI
+        FontSizeScaled => Round(this.BaseFontSize * this.dpi / BASE_DPI, 0)
     }
 
     ;@region CtrlTypes
