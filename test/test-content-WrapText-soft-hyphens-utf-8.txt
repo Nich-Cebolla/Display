@@ -1,0 +1,6 @@
+Here is a test with soft hyphens inserted into words:
+su­per­califragilistic­expialidocious
+in­ter­na­tion­alization
+un­be­liev­able
+com­pu­ta­tion­al
+hy­phen­a­tion
