@@ -14,7 +14,6 @@
  */
 class dTab extends Gui.Tab {
 
-
     static Call(GuiObj, Which, Opt?, Text?) {
         tab := GuiObj.Add(Which, Opt ?? unset, Text ?? unset)
         tab.__Controls := Map()

@@ -13,7 +13,20 @@
  * @returns {Boolean} - 1 if true, else 0.
  */
 AreDpiAwarenessContextsEqual(DpiContextA, DpiContextB?) {
-    return DllCall('AreDpiAwarenessContextsEqual', 'ptr', DpiContextA, 'ptr', DpiContextB ?? GetThreadDpiAwarenessContext(), 'uint')
+    return DllCall('AreDpiAwarenessContextsEqual', 'ptr', DpiContextA, 'ptr', DpiContextB ?? GetThreadDpiAwarenessContext(), 'int')
+}
+
+/**
+ * @description - A DPI_AWARENESS_CONTEXT contains multiple pieces of information. For example, it
+ * includes both the current and the inherited DPI_AWARENESS. This method retrieves the DPI_AWARENESS
+ * from the structure.
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getawarenessfromdpiawarenesscontext}
+ * @param {Integer} DPI_AWARENESS_CONTEXT - The `DPI_AWARENESS_CONTEXT` from which to obtain the
+ * DPI_AWARENESS.
+ * @returns {Integer} - The DPI_AWARENESS value.
+ */
+GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
+    return DllCall('GetAwarenessFromDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'int')
 }
 
 /**
@@ -27,34 +40,6 @@ GetDpiAwarenessContextForProcess(hProcess := 0) {
     return DllCall('GetDpiAwarenessContextForProcess', 'ptr', hProcess, 'ptr')
 }
 
-
-/**
- * @description - A DPI_AWARENESS_CONTEXT contains multiple pieces of information. For example, it
- * includes both the current and the inherited DPI_AWARENESS. This method retrieves the DPI_AWARENESS
- * from the structure.
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getawarenessfromdpiawarenesscontext}
- * @param {Integer} DPI_AWARENESS_CONTEXT - The `DPI_AWARENESS_CONTEXT` from which to obtain the
- * DPI_AWARENESS.
- * @returns {Integer} - The DPI_AWARENESS value.
- */
-GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
-    return DllCall('GetAwarenessFromDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'ptr')
-}
-
-/**
- * @description - DPI_AWARENESS_CONTEXT handles associated with values of
- * DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE and DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 will
- * return a value of 0 for their DPI. This is because the DPI of a per-monitor-aware window can
- * change, and the actual DPI cannot be returned without the window's Hwnd.
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpifromdpiawarenesscontext}
- * @param {Integer} DPI_AWARENESS_CONTEXT - The DPI_AWARENESS_CONTEXT from which to obtain the
- * dpi.
- * @returns {Integer} - The dpi value.
- */
-GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
-    return DllCall('GetDpiFromDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'uint')
-}
-
 /**
  * @description - This API is not DPI aware and should not be used if the calling thread is
  * per-monitor DPI aware. For the DPI-aware version of this API, see GetDpiForWindow. When you call
@@ -65,15 +50,14 @@ GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
  * value of your application.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/nf-shellscalingapi-getdpiformonitor}
  * @param {Integer} hMonitor - The handle of the monitor being queried.
- * @param {Integer} [DpiType=MDT_DEFAULT] - The type of DPI being queried. Possible values are from the
+ * @param {Integer} [DpiType = MDT_DEFAULT] - The type of DPI being queried. Possible values are from the
  * MONITOR_DPI_TYPE enumeration.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/ne-shellscalingapi-monitor_dpi_type}
  * @returns {Integer} - If succesful, the dpi for the monitor. If unsuccessful, an empty string.
  * An unsuccessful function call would be caused by an invalid parameter.
  */
 GetDpiForMonitor(hMonitor, DpiType := MDT_DEFAULT) {
-    if !DllCall('Shcore\GetDpiForMonitor', 'ptr'
-    , hMonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'uint') {
+    if !DllCall('Shcore\GetDpiForMonitor', 'ptr', hMonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'int') {
         return DpiX
     }
 }
@@ -105,8 +89,22 @@ GetDpiForWindow(Hwnd) {
 }
 
 /**
+ * @description - DPI_AWARENESS_CONTEXT handles associated with values of
+ * DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE and DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 will
+ * return a value of 0 for their DPI. This is because the DPI of a per-monitor-aware window can
+ * change, and the actual DPI cannot be returned without the window's Hwnd.
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpifromdpiawarenesscontext}
+ * @param {Integer} DPI_AWARENESS_CONTEXT - The DPI_AWARENESS_CONTEXT from which to obtain the
+ * dpi.
+ * @returns {Integer} - The dpi value.
+ */
+GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
+    return DllCall('GetDpiFromDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'uint')
+}
+
+/**
  * @description - Retrieves the dots per inch (dpi) awareness of the specified process.
- * @param {VarRef} OutValue - A variable that will receive the PROCESS_DPI_AWARENESS.
+ * @param {VarRef} OutValue - A variable that will receive the process DPI_AWARENESS.
  * @param {IntegeR} [hProcess=0] - Handle of the process that is being queried. If this parameter is
  * 0, the current process is queried.
  * @returns {Integer} - One of the following:
@@ -115,7 +113,7 @@ GetDpiForWindow(Hwnd) {
  * - E_ACCESSDENIED - The application does not have sufficient privileges.
  */
 GetProcessDpiAwareness(&OutValue, hProcess := 0) {
-    return DllCall('Shcore\GetProcessDpiAwareness', 'ptr', hProcess, 'uint*', &OutValue := 0, 'uint')
+    return DllCall('Shcore\GetProcessDpiAwareness', 'ptr', hProcess, 'int*', &OutValue := 0, 'int')
 }
 
 /**
@@ -167,7 +165,7 @@ GetWindowDpiAwarenessContext(Hwnd) {
  * @returns {Boolean} - 1 if valid, else 0.
  */
 IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
-    return DllCall('IsValidDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'uint')
+    return DllCall('IsValidDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'int')
 }
 
 /**

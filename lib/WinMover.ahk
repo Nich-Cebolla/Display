@@ -15,11 +15,12 @@ class WinMover {
         Proto.TerminateMoveCallback := (*) => !GetKeyState('LButton', 'P')
         Proto.TerminateSizeCallback := (*) => !GetKeyState('RButton', 'P')
     }
-    __New(Presets?) {
+    __New(Presets?, ChordTimerDuration := 2000) {
         if IsSet(Presets) {
             this.Presets := Presets
         }
-        this.Active := 0
+        this.ChordTimerDuration := -Abs(ChordTimerDuration)
+        this.Timer := 0
     }
     Call(Hwnd, PosXQuotient, PosYQuotient, WidthQuotient, HeightQuotient, MonNum?) {
         mon := dMon[MonNum ?? this.MonNum]
@@ -47,34 +48,44 @@ class WinMover {
      * an identifier to the method which corresponds with some value in the map `WinMoverObj.Presets`.
      * For example, this is how I define my hotkeys:
      * @example
-     *  #include <WinMover>
-     *  #SingleInstance force
-     *  CapsLock & 1::WinMoveHelper(1)
-     *  CapsLock & 2::WinMoveHelper(2)
-     *  CapsLock & 3::WinMoveHelper(3)
+     * #include <WinMover>
+     * #SingleInstance force
+     * CapsLock & 1::WinMoveHelper(1)
+     * CapsLock & 2::WinMoveHelper(2)
+     * CapsLock & 3::WinMoveHelper(3)
      *
-     *  global WinMoveObj := WinMover()
+     * global WinMoveObj := WinMover()
      *
-     *  WinMoveHelper(Num) {
-     *      global WinMoveObj
-     *      WinMoveObj.Chord(Num)
-     *      ; This is necessary because the caps lock is toggled when the key is lifted, so we
-     *      ; must toggle it first so the second toggle returns it to its original state.
-     *      SetCapsLockState(!GetKeyState('CapsLock', 'T'))
-     *  }
+     * WinMoveHelper(Num) {
+     *     global WinMoverObj
+     *     WinMoverObj.Chord(Num, GetKeyState('CapsLock', 'T'))
+     * }
      * @
      */
-    Chord(Value) {
-        if this.Active {
+    Chord(Value, capsLockState) {
+        if this.Timer {
+            SetTimer(this.Timer, 0)
+            this.Timer := 0
             this.CallHelper(WinGetId('A'), Value)
-            this.Active := 0
+            ; If caps lock was off when "Chord" was first called
+            if winMoverObj.capsLockState {
+                ; If caps lock is currently down
+                if GetKeyState('CapsLock', 'P') {
+                    SetCapsLockState(1)
+                } else {
+                    SetCapsLockState(0)
+                }
+            ; If caps lock was on when "Chord" was first called and if caps lock is currently down
+            } else if GetKeyState('CapsLock', 'P') {
+                SetCapsLockState(0)
+            } else {
+                SetCapsLockState(1)
+            }
         } else {
             this.MonNum := Value
-            this.Active := 1
-            SetTimer(_Timer, -1 * this.ChordTimerDuration)
-        }
-        _Timer() {
-            this.Active := 0
+            this.CapsLockState := capsLockState
+            this.Timer := WinMover_Timer.Bind(this)
+            SetTimer(this.Timer, this.ChordTimerDuration)
         }
     }
 
@@ -152,6 +163,11 @@ class WinMover {
             WinMove(GetX(), GetY(), ww + (x2 - x) * x_quotient, wh + (y2 - y) * y_quotient, hwnd)
             sleep 10
         }
+
+        CoordMode('Mouse', MouseMode)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
+        return
+
         XCallback1() {
             return wx
         }
@@ -164,8 +180,6 @@ class WinMover {
         YCallback2() {
             return wy + y2 - y
         }
-        CoordMode('Mouse', MouseMode)
-        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
     }
     DynamicResizeControl(*) {
         MouseMode := CoordMode('Mouse', 'Client')
@@ -199,6 +213,12 @@ class WinMover {
             ControlMove(GetX(), GetY(), ww + (x2 - x) * x_quotient, wh + (y2 - y) * y_quotient, hwnd)
             sleep 10
         }
+
+        CoordMode('Mouse', MouseMode)
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
+
+        return
+
         XCallback1() {
             return wx
         }
@@ -211,8 +231,6 @@ class WinMover {
         YCallback2() {
             return wy + y2 - y
         }
-        CoordMode('Mouse', MouseMode)
-        DllCall('SetThreadDpiAwarenessContext', 'ptr', DpiAwareness, 'ptr')
     }
 
     ShowTooltip(Str) {
@@ -230,5 +248,24 @@ class WinMover {
             ToolTip(,,,Z)
             N.Push(Z)
         }
+    }
+}
+
+
+WinMover_Timer(winMoverObj) {
+    winMoverObj.Timer := 0
+    ; If caps lock was off when "Chord" was first called
+    if winMoverObj.capsLockState {
+        ; If caps lock is currently down
+        if GetKeyState('CapsLock', 'P') {
+            SetCapsLockState(1)
+        } else {
+            SetCapsLockState(0)
+        }
+    ; If caps lock was on when "Chord" was first called and if caps lock is currently down
+    } else if GetKeyState('CapsLock', 'P') {
+        SetCapsLockState(0)
+    } else {
+        SetCapsLockState(1)
     }
 }

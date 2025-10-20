@@ -102,9 +102,9 @@ class dGui extends Gui {
 
         ;@region CtrlSetTextEx
         dGui.Text.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
-        dGui.Text.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx })
+        dGui.Text.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: ControlGetTextEx })
         dGui.Edit.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
-        dGui.Edit.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx })
+        dGui.Edit.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: ControlGetTextEx })
         ;@endregion
 
         Proto.DefineProp('DpiExclude', { Value: false })

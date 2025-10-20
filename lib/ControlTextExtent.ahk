@@ -459,7 +459,7 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
  * assumes there are no line breaks in the text. If the text has multiple lines, use
  * {@link ControlFitText}.
  * @param {Gui.Control} Ctrl - The `Gui.Control` or `dGui.Control` object.
- * @param {String} Text - The new text.
+ * @param {String} [Text] - If set, the new text. If unset, the current text is used.
  * @param {Integer} [PaddingX = 0] - A number of pixels to add to the width.
  * @param {Boolean} [AdjustHeight = false] - If true, the height will be adjusted to the vertical
  * extent of the text + `PaddingY`. If false, the height is not changed.
@@ -468,7 +468,10 @@ __ControlGetTextExtentEx_Process(hWnd, Ptr, cchString, &MaxExtent, &OutCharacter
  * @param {Integer} [MaxWidth] - If set, and if the horizontal extent of `Text` plus `PaddingX`
  * exceeds `MaxWidth`, the width of `Ctrl` will be adjusted to `MaxWidth`.
  */
-ControlSetTextEx(Ctrl, Text, PaddingX := 0, AdjustHeight := false, PaddingY := 0, MaxWidth?) {
+ControlSetTextEx(Ctrl, Text?, PaddingX := 0, AdjustHeight := false, PaddingY := 0, MaxWidth?) {
+    if !IsSet(Text) {
+        Text := Ctrl.Text
+    }
     sz := Size()
     context := SelectFontIntoDc(Ctrl.Hwnd)
     if Text is Integer {
@@ -491,4 +494,7 @@ ControlSetTextEx(Ctrl, Text, PaddingX := 0, AdjustHeight := false, PaddingY := 0
         Ctrl.Move(, , sz.Width + PaddingX, H ?? unset)
     }
     Ctrl.Text := Text
+}
+ControlGetTextEx(Ctrl) {
+    return Ctrl.Text
 }
