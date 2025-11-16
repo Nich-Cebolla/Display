@@ -106,9 +106,9 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * additional functions to work with. `GetTextExtentExPoint` measures a string's dimensions and the
  * width (extent point) in pixels of each character's position in the string.
  *
- * An example function call is available in file {@link examples\example_Text_GetTextExtentExPoint.ahk}
+ * An example function call is available in file {@link examples\example-GetTextExtentExPoint.ahk}
  *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointa}
+ * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getteextextentexpointa}
  *
  * @param {Integer} hdc - The handle to the device context to use when measuring the string.
  * @param {String} Str - The string to measure.
@@ -126,7 +126,7 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * `OutExtentPoints` will equal `OutCharacterFit`. If `MaxExtent` is zero, `OutExtentPoints` will
  * contain the extent point for every character in the string. `OutExtentPoints` is not an instance
  * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
- * has properties { __Item, Capacity, Size, Type }. See struc\IntegerArray.ahk for more
+ * has properties { __Item, Capacity, Size, Type }. See struct\IntegerArray.ahk for more
  * information.
  * @returns {Size} - A `Size` object with properties { Width, Height }.
  */

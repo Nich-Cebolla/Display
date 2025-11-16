@@ -52,17 +52,15 @@ class SelectFontIntoDc {
             this.DeleteProp('hdc')
         }
         OnError(this.Callback, 0)
+        this.DeleteProp('Callback')
         return err ?? ''
     }
 
-    __Delete() => this()
-
     static __New() {
-        if this.Prototype.__Class == 'SelectFontIntoDc' {
-            Proto := this.Prototype
-            Proto.DefineProp('hdc', { Value: '' })
-            Proto.DefineProp('hFont', { Value: '' })
-            Proto.DefineProp('oldFont', { Value: '' })
-        }
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.DefineProp('hdc', { Value: '' })
+        proto.DefineProp('hFont', { Value: '' })
+        proto.DefineProp('oldFont', { Value: '' })
     }
 }
