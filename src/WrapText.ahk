@@ -8,16 +8,22 @@
 class WrapText {
 
     /**
-     * @description - Wraps text to a maximum width in pixels, breaking the string at either a whitespace
-     * character, or any characters defined by the `BreakChars` option. This is the function's process:
-     * - If one or more characters between `Options.MinExtent` and `Options.MaxExtent` are break
+     * @description - Wraps text to a maximum width in pixels.
+     *
+     * {@link WrapText} measures the input text
+     *
+     * If one or more characters between `Options.MinExtent` and `Options.MaxExtent` are break
      * characters, then:
-     *   - If the break character closest to `Options.MaxExtent` is a whitespace character, then the line
-     * wraps before the whitespace character. Any extra whitespace characters are trimmed from each line.
-     *   - Else, the line wraps after the break character.
-     * - Else, the line is wrapped after the character closest to `Options.MaxExtent`. A hyphen may be
-     * added depending on the character and the input options. `WrapText` ensures that adding a hyphen does
-     * not cause the line to exceed `Options.MaxExtent`.
+     * - If the break character closest to `Options.MaxExtent` is a whitespace character, then the
+     *   line wraps before the whitespace character. Any extra whitespace characters are trimmed from
+     *   each line.
+     * - If the break character closest to `Options.MaxExtent` is not a whitespace character, then
+     *   the line wraps after the character.
+     *
+     * If there are no break characters, then the line is wrapped after the character closest to
+     * `Options.MaxExtent`. A hyphen may be added depending on the character and the input options.
+     * `WrapText` ensures that adding a hyphen does not cause the line to exceed `Options.MaxExtent`.
+     *
      * Additional details:
      * - When `Options.MeasureLines` is false, and if `WrapText` is directed to use hyphens where
      * appropriate, there is a small chance that some measurements may be off by one or two pixels. This
@@ -30,7 +36,7 @@ class WrapText {
      * `Options.MaxExtent` or one or two pixels under `Options.MinExtent`.
      *   - The value received by `OutWidth` may be one or two pixels off in either direction from the
      * actual width.
-     * - All consecutive newline characters are converted to a single space character prior to processing.
+     * - All consecutive end of line characters are converted to a single space character prior to processing.
      * - When making the decision to add additional characters to `Options.BreakChars`, keep in mind that,
      * if a break character will always be followed by a whitespace character, then adding it to
      * `Options.BreakChars` will only change the amount of time it takes `WrapText` to process the input.
@@ -51,8 +57,10 @@ class WrapText {
      * line shorter than `Options.MinExtent`.
      * - Similar to the above point, if `WrapText` trims whitespace characters from the end of a line,
      * this can cause the line to be shorter than `Options.MinExtent`.
+     *
      * @param {Gui.Control|Integer|Object} Context - Either a handle to the device context to use to
      * measure the text, a `Gui.Control` object, or an object with an `hWnd` property.
+     *
      * @param {VarRef} [Str] - The input string, and/or a variable that will receive the result string.
      * - `Str` is required when `Context` is a handle to a device context.
      * - If you set `Str` with a string value, `WrapText` always processes that value, and sets the
@@ -60,11 +68,13 @@ class WrapText {
      * - If `Context` is an object, then `Str` is optional. If you leave it unset, or pass it as an unset
      * VarRef / empty string VarRef, then `WrapText` processes the contents of `Context.Text`. If the
      * object does not have a `Text` property, AHK will throw an error.
+     *
      * @param {Object} [Options] - An object containing zero or more options as properties.
      * It should be documented that `WrapText` changes the base of your `Options` object. In most cases
      * this information be safely ignored; I included it for completeness. See
      * src/dDefaultOptions.ahk for more information.
-     * @param {Boolean} [Options.AdjustObject=false] - If `Options.AdjustObject == true`, then `WrapText`
+     *
+     * @param {Boolean} [Options.AdjustObject = false] - If `Options.AdjustObject == true`, then `WrapText`
      * expects `Context` to be an object with a `Text` property and a `Move` method, such as a `Gui.Control`
      * object. Before `WrapText` exits, `WrapText` removes any soft hyphens from the result string, then
      * sets the `Context.Text` property with the result string, then calls `Context.Move`. The width
@@ -74,20 +84,25 @@ class WrapText {
      * `sz.Height * LineCount` where `sz` is the `Size` object produced from the last `GetTextExtentExPoint`
      * function call. In general this will be pretty close to the true height of the string, but should
      * be expected to be slightly off.
-     * @param {String} [Options.BreakChars='-'] - `BreakChars` is a list of characters that defines what
+     *
+     * @param {String} [Options.BreakChars = '-'] - `BreakChars` is a list of characters that defines what
      * characters are valid breakpoints for splitting a line other than a space or tab. Do not include
      * any separators between the characters. Do not escape any characters. See the function description
      * for a description of `WrapText`'s process.
-     * @param {Boolean} [Options.HyphenateLetters=true] - When true, `WrapText` hyphenates the line if
+     *
+     * @param {Boolean} [Options.HyphenateLetters = true] - When true, `WrapText` hyphenates the line if
      * the last character in the line causes `IsAlpha(char)` to return true. This option is only invoked
      * if a line does not contain any break characters between `Options.MinExtent` and `Options.MaxExtent`.
-     * @param {Boolean} [Options.HyphenateNumbers=false] - When true, `WrapText` hyphenates the line if
+     *
+     * @param {Boolean} [Options.HyphenateNumbers = false] - When true, `WrapText` hyphenates the line if
      * the last character in the line causes `IsNumber(char)` to return true. This option is only invoked
      * if a line does not contain any break characters between `Options.MinExtent` and `Options.MaxExtent`.
+     *
      * @param {Integer} [Options.MaxExtent] - The maximum width of a line in pixels. This is optional when
      * `Context` is an object with a `GetPos` method, such as a `Gui.Control` object. If `Options.MaxExtent`
      * is unset, `Context.GetPos(, , &MaxExtent)` is called. The maximum width must be at least three times
      * the width of a "W" character in the device context.
+     *
      * @param {Boolean|Array} [Options.MeasureLines] - When a nonzero value, `WrapText` will measure
      * each line during processing. This allows `WrapText` to set `OutHeight` with the correct height
      * of the string, and `OutWidth` with an accurate width of the string (see the note about this
@@ -95,9 +110,15 @@ class WrapText {
      * add each `Size` object that is produced from the measurement to that array. For large strings
      * or many consecutive function calls, you should set the capacity of the array to what you expect
      * it will need prior to calling `WrapText`. If `WrapText` is false, no additional measurements occur.
-     * @param {Number} [Options.MinExtent] - Either an integer or a float between 0 and 1.
-     * - If less than 1, the minimum width is set to `Ceil(Options.MinExtent * Options.MaxExtent)`.
-     * - If greater than 1, the minimum width is set to the value.
+     *
+     * @param {Number} [Options.MinExtent] - Sets the minimum width of a line, directing {@link WrapText}
+     * to require each line to be at least the minimum before inserting a line break.
+     *
+     * If `Options.MinExtent` is between 0 and 1, the minimum width of a line is
+     * `Ceil(Options.MinExtent * Options.MaxExtent)`. Use this to specify a minimum width as a proportion
+     * of the maximum. If `Options.MinExtent` is greater than 1, `Options.MinExtent` is used as the
+     * minimum width of a line, in pixels.
+     *
      * `Options.MinExtent` directs `WrapText` to break each line at an extent point no less than the minimum.
      * This is useful in most situations, but particularly in situations where the input string contains
      * words/substrings that are generally pretty long relative to `Options.MaxExtent`. `WrapText`'s default
@@ -118,8 +139,10 @@ class WrapText {
      *  MsgBox(Split[2]) ; supercalifradulisticexpialidocious then
      *  MsgBox(Split[3]) ; went on her merry way.
      * @
-     * @param {String} [Options.Newline='`r`n'] - The newline character(s) to use.
-     * @param {Boolean} [Options.ZeroWidthSpace=true] - When true, if the input text contains Zero Width
+     *
+     * @param {String} [Options.EndOfLine = '`r`n'] - The end of line character(s) to use.
+     *
+     * @param {Boolean} [Options.ZeroWidthSpace = true] - When true, if the input text contains Zero Width
      * Space characters (code point U+200B), they will be treated as soft hyphens and will be used as
      * a break character. When a line breaks at a Zero Width Space character, a visible hyphen is placed
      * after the Zero Width Space character and the line wraps after the hyphen. When false, Zero Width
@@ -128,17 +151,18 @@ class WrapText {
      * may be hyphenated at any position in the word. Generally this should be left true; if no U+200B
      * characters are present in the input string, `WrapText` adjusts its process to avoid using resources
      * searching for them.
+     *
      * @param {VarRef} [OutWidth] - A variable that will receive the width of the line with the greatest
      * width in the result string.
+     *
      * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of each line.
      * This only receives a value if `Options.MeasureLines` is nonzero.
+     *
      * @returns {Integer} - The number of lines the text was split into.
      */
     static Call(Context, &Str?, Options?, &OutWidth?, &OutHeight?) {
-        static W := 'W'
-        , Wptr := StrPtr(W)
         local Pos
-        Options := this.Options(Options ?? {})
+        options := WrapText.Options(Options ?? unset)
         if IsObject(Context) {
             if HasProp(Context, 'hWnd') {
                 ; If MaxExtent is unset, use the width of the control.
@@ -195,11 +219,10 @@ class WrapText {
         }
         hyphen := sz.Width
 
-
         ; `MaxExtent` must at least be large enough such that the loops can iterate once or twice
         ; before reaching the beginning of the substring.
         if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-            , hdc, 'Ptr', Wptr, 'Int', 1, 'Ptr', sz, 'Int') {
+            , hdc, 'Ptr', StrPtr('W'), 'Int', 1, 'Ptr', sz, 'Int') {
             throw OSError()
         }
         if MaxExtent < sz.Width * 3 {
@@ -283,7 +306,7 @@ class WrapText {
             Set := _Set_3
         }
 
-        nl := Options.Newline
+        eol := Options.EndOfLine
         LineCount := 0
         OutWidth := 0
         Str := ''
@@ -479,7 +502,7 @@ class WrapText {
                 Measurements.Push(measure_sz)
                 OutWidth := Max(OutWidth, measure_sz.Width)
                 OutHeight += sz.Height
-                Str .= Part nl
+                Str .= Part eol
             } else {
                 throw OSError()
             }
@@ -499,7 +522,7 @@ class WrapText {
                 }
                 OutWidth := Max(OutWidth, sz.Width)
                 OutHeight += sz.Height
-                Str .= Part nl
+                Str .= Part eol
             } else {
                 throw OSError()
             }
@@ -512,11 +535,11 @@ class WrapText {
                 }
                 Part := SubStr(Text, 1, SetPos) '-'
                 OutWidth := Max(OutWidth, Extent[SetPos] + hyphen)
-                Str .= Part nl
+                Str .= Part eol
             } else {
                 Part := SubStr(Text, 1, SetPos)
                 OutWidth := Max(OutWidth, Extent[SetPos])
-                Str .= Part nl
+                Str .= Part eol
             }
         }
         _Throw(Id, Line, Fn) {
@@ -560,34 +583,47 @@ class WrapText {
      * @classdesc - Handles the input options.
      */
     class Options {
-        static Default := {
-            AdjustObject: false
-          , BreakChars: '-'
-          , HyphenateLetters: true
-          , HyphenateNumbers: true
-          , MaxExtent: ''
-          , MeasureLines: false
-          , MinExtent: ''
-          , Newline: '`r`n'
-          , RespectSoftHyphen: true
+        static __New() {
+            this.DeleteProp('__New')
+            proto := this.Prototype
+            proto.AdjustObject := false
+            proto.BreakChars := '-'
+            proto.EndOfLine := '`r`n'
+            proto.HyphenateLetters := true
+            proto.HyphenateNumbers := true
+            proto.MaxExtent := ''
+            proto.MeasureLines := false
+            proto.MinExtent := ''
+            proto.RespectSoftHyphen := true
         }
 
-        /**
-         * @description - Sets the base object such that the values are used in this priority order:
-         * - 1: The input object.
-         * - 2: The configuration object (if present).
-         * - 3: The default object.
-         * @param {Object} Options - The input object.
-         * @return {Object} - The same input object.
-         */
-        static Call(Options) {
-            if IsSet(WrapTextConfig) {
-                ObjSetBase(WrapTextConfig, WrapText.Options.Default)
-                ObjSetBase(Options, WrapTextConfig)
-            } else {
-                ObjSetBase(Options, WrapText.Options.Default)
+        __New(options?) {
+            if IsSet(options) {
+                if IsSet(WrapTextConfig) {
+                    for prop in WrapText.Options.Prototype.OwnProps() {
+                        if HasProp(options, prop) {
+                            this.%prop% := options.%prop%
+                        } else if HasProp(WrapTextConfig, prop) {
+                            this.%prop% := WrapTextConfig.%prop%
+                        }
+                    }
+                } else {
+                    for prop in WrapText.Options.Prototype.OwnProps() {
+                        if HasProp(options, prop) {
+                            this.%prop% := options.%prop%
+                        }
+                    }
+                }
+            } else if IsSet(WrapTextConfig) {
+                for prop in WrapText.Options.Prototype.OwnProps() {
+                    if HasProp(WrapTextConfig, prop) {
+                        this.%prop% := WrapTextConfig.%prop%
+                    }
+                }
             }
-            return Options
+            if this.HasOwnProp('__Class') {
+                this.DeleteProp('__Class')
+            }
         }
     }
 }
