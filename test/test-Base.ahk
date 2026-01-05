@@ -1,4 +1,5 @@
-﻿#include <Stringify>
+﻿
+#include <Stringify>
 
 class test_Base {
     static PathEditor := 'code-insiders' ; change to your preferred text editing program. Enclose in quotes if path has spaces

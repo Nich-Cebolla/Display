@@ -1,8 +1,13 @@
-﻿class TCITEMW {
+﻿
+class Display_TcItemW {
     static __New() {
+        global Display_DefaultEncoding
         this.DeleteProp('__New')
+        if !IsSet(Display_DefaultEncoding) {
+            Display_DefaultEncoding := 'cp1200'
+        }
         proto := this.Prototype
-        proto.cbSize :=
+        proto.cbSizeInstance :=
         ; Size      Type        Symbol         Offset                Padding
         4 +         ; UINT      mask           0
         4 +         ; DWORD     dwState        4
@@ -21,7 +26,7 @@
     }
     /**
      * @param {Integer} mask - One or more of the following values. To combine values, use the bitwise
-     * "|", e.g. `tcitemwObj.mask := 16 | 2`.
+     * "|", e.g. `TcItemWObj.mask := 16 | 2`.
      * <pre>
      * |  Symbol             Value    Meaning                                                   |
      * |  ------------------------------------------------------------------------------------  |
@@ -48,10 +53,10 @@
      * |                                 not a dithered color.                                     |
      * </pre>
      *
-     * @param {String} [pszText] - If using the `TCITEMW` structure to set a tab's text, pass
+     * @param {String} [pszText] - If using `Display_TcItemW` to set a tab's text, pass
      * the text as string to `pszText` and leave `cchTextMatch` unset.
      *
-     * @param {Integer} [cchTextMatch] - If using the `TCITEMW` structure to get information about
+     * @param {Integer} [cchTextMatch] - If using `Display_TcItemW` to get information about
      * a tab, pass the maximum string length to `cchTextMax` as integer and leave `pszText` unset.
      *
      * @param {Integer} [iImage] - Index in the tab control's image list, or -1 if there is no
@@ -61,7 +66,7 @@
      *
      */
     __New(mask?, dwState?, dwStateMask?, pszText?, cchTextMax?, iImage?, lParam?) {
-        this.Buffer := Buffer(this.cbSize)
+        this.Buffer := Buffer(this.cbSizeInstance)
         if IsSet(mask) {
             this.mask := mask
         }
@@ -112,18 +117,18 @@
         }
         Set {
             if this.HasOwnProp('__pszText') {
-                bytes := StrPut(Value, 'UTF-16')
+                bytes := StrPut(Value, Display_DefaultEncoding)
                 if this.__pszText.Size < bytes {
                     this.__pszText.Size := bytes
                     NumPut('ptr', this.__pszText.Ptr, this.Buffer, this.offset_pszText)
                     NumPut('int', this.__pszText.Size / 2, this.Buffer, this.offset_cchTextMax)
                 }
             } else {
-                this.__pszText := Buffer(StrPut(Value, 'UTF-16'))
+                this.__pszText := Buffer(StrPut(Value, Display_DefaultEncoding))
                 NumPut('ptr', this.__pszText.Ptr, this.Buffer, this.offset_pszText)
                 NumPut('int', this.__pszText.Size / 2, this.Buffer, this.offset_cchTextMax)
             }
-            StrPut(Value, this.__pszText, 'UTF-16')
+            StrPut(Value, this.__pszText, Display_DefaultEncoding)
         }
     }
     cchTextMax {

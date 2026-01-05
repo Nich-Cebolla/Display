@@ -1,23 +1,36 @@
 ﻿
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
-#include <Rect>
-
-#include ..\definitions
-#include Define-Dpi.ahk
-#include Define-Font.ahk
-#include ..\src
-#include dMon.ahk
-#include ..\lib
-#include MetaSetThreadDpiAwareness.ahk
 #include ControlTextExtent.ahk
+#include dMon.ahk
 #include Dpi.ahk
 #include Text.ahk
+#include ..\struct\Display_Rect.ahk
 
 class dGui extends Gui {
-
+    static __New() {
+        global BASE_DPI, DPI_AWARENESS_CONTEXT_DEFAULT, DPI_CHANGED_DPI_AWARENESS_CONTEXT
+        this.DeleteProp('__New')
+        if !IsSet(BASE_DPI) {
+            BASE_DPI := DllCall('GetDpiForSystem', 'uint')
+        }
+        if !IsSet(DPI_AWARENESS_CONTEXT_DEFAULT) {
+            DPI_AWARENESS_CONTEXT_DEFAULT := -4
+        }
+        if !IsSet(DPI_CHANGED_DPI_AWARENESS_CONTEXT) {
+            DPI_CHANGED_DPI_AWARENESS_CONTEXT := -4
+        }
+        if !this.HasOwnProp('InitialFontSize') {
+            this.InitialFontSize := 10
+        }
+        if !this.HasOwnProp('ResizeByText') {
+            this.ResizeByText := ['Button', 'Edit', 'Link', 'StatusBar', 'Text']
+        }
+        if !this.HasOwnProp('ScrollbarPadding') {
+            this.ScrollbarPadding := 1
+        }
+    }
     /**
      * @description - Creates the `dGui` window and initializes the properties required to use the
-     * built-in `WM_DPICHANGED` handler. `dGui.Call` performs these actions:
+     * built-in `WM_DPICHANGED` handler. {@link dGui.Call} performs these actions:
      * - Creates the `dGui` object.
      * - Processes `ExtendedOptions`.
      * - Sets `dGuiObj.Count := 0`.
@@ -28,7 +41,7 @@ class dGui extends Gui {
      * @param {Object} [ExtendedOptions] - An object that defines additional options. The object can
      * have zero or more of { BackColor, FontName, MarginX, MarginY, MenuBar, Name, OptFont }.
      * If `ExtendedOptions.OptFont` is not set, or if it does not contain a size value, the font size
-     * is set to the `InitialFontSize` value which can be set in your "ProjectConfig.ahk" options.
+     * is set to the {@link dGui.InitialFontSize} value which can be set in your "DisplayConfig.ahk" options.
      * @returns {dGui} - The new `dGui` object.
      */
     static Call(Opt?, Title?, EventHandler?, ExtendedOptions?) {
@@ -102,9 +115,9 @@ class dGui extends Gui {
 
         ;@region CtrlSetTextEx
         dGui.Text.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
-        dGui.Text.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: ControlGetTextEx })
+        dGui.Text.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: _ControlGetTextEx })
         dGui.Edit.Prototype.DefineProp('SetTextEx', { Call: ControlSetTextEx })
-        dGui.Edit.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: ControlGetTextEx })
+        dGui.Edit.Prototype.DefineProp('TextEx', { Set: ControlSetTextEx, Get: _ControlGetTextEx })
         ;@endregion
 
         Proto.DefineProp('DpiExclude', { Value: false })
@@ -116,17 +129,14 @@ class dGui extends Gui {
         Proto.DefineProp('DpiChangedCallbackAfterActive', { Value: false })
         Proto.DefineProp('ToggleCallbackBeforeActive', { Value: false })
         Proto.DefineProp('ToggleCallbackAfterActive', { Value: false })
-        this.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
-        Proto.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
-        cProto.DefineProp('__Call', { Call: MetaSetThreadDpiAwareness })
         Proto.DefineProp('__Add', gProto.GetOwnPropDesc('Add'))
         Proto.DefineProp('__SetFont', gProto.GetOwnPropDesc('SetFont'))
         cProto.DefineProp('__SetFont', gcProto.GetOwnPropDesc('SetFont'))
         TextExtentFuncs := Map(
             'ListBox', 'ControlGetTextExtent{}_LB'
-            , 'Link', 'ControlGetTextExtent{}_Link'
-            , 'ListView', 'ControlGetTextExtent{}_LV'
-            , 'TreeView', 'ControlGetTextExtent{}_TV'
+          , 'Link', 'ControlGetTextExtent{}_Link'
+          , 'ListView', 'ControlGetTextExtent{}_LV'
+          , 'TreeView', 'ControlGetTextExtent{}_TV'
         )
         TextExtentFuncs.Default := 'ControlGetTextExtent{}'
         for CtrlType in ['Button', 'CheckBox', 'DateTime', 'Edit', 'GroupBox', 'Hotkey', 'Link'
@@ -158,25 +168,25 @@ class dGui extends Gui {
     }
 
     /**
-     * @description - Defines a function to call before or after `dGui.Prototype.Toggle`. The
+     * @description - Defines a function to call before or after {@link dGui.Prototype.Toggle}. The
      * functions defined here will apply to all `dGui` objects that have not called their method
-     * `dGui.Prototype.SetToggleCallback`.
+     * {@link dGui.Prototype.SetToggleCallback}.
      *
      * The callbacks can be any callable object, such as a function object, an object with a `Call`
      * property, or an object with a `__Call` property.
      *
      * The function should accept up to three parameters:
      * 1. The `dGui` object.
-     * 2. If the `Value` parameter of `dGui.Prototype.Toggle` is set, `Value`. Else, this parameter
+     * 2. If the `Value` parameter of {@link dGui.Prototype.Toggle} is set, `Value`. Else, this parameter
      * will receive 1 if the window is about to be shown (it is currently hidden), or 0 if the
      * window is about to be hidden.
      * 3. This must be optional. If a value is passed to the `Options` parameter of
-     * `dGui.Prototype.Toggle`, this will receive the value. Else, this will be unset.
+     * {@link dGui.Prototype.Toggle}, this will receive the value. Else, this will be unset.
      *
      * Set `CallbackBefore` or `CallbackAfter` to zero or an empty string to disable a callback.
      *
-     * @param {*} [CallbackBefore] - A callable object to call at the beginning of `dGui.Prototype.Toggle`.
-     * @param {*} [CallbackAfter] - A callable object to call at the end of `dGui.Prototype.Toggle`.
+     * @param {*} [CallbackBefore] - A callable object to call at the beginning of {@link dGui.Prototype.Toggle}.
+     * @param {*} [CallbackAfter] - A callable object to call at the end of {@link dGui.Prototype.Toggle}.
      */
     static SetToggleCallback(CallbackBefore?, CallbackAfter?) {
         if IsSet(CallbackBefore) {
@@ -191,19 +201,19 @@ class dGui extends Gui {
 
     /**
      * @description - Calls `OnMessage` to set the `WM_DPICHANGED` message handler. The default
-     * callback is the global function `HDpiChanged`, the built-in function for handling dpi changes.
+     * callback is the global function `Display_HandlerDpiChanged`, the built-in function for handling dpi changes.
      * @p
-     * @param {*} [Callback = HDpiChanged] - A callable object that will be called when a `Gui` / `dGui`
+     * @param {*} [Callback = Display_HandlerDpiChanged] - A callable object that will be called when a `Gui` / `dGui`
      * window receives the `WM_DPICHANGED` message.
      */
-    static SetDpiChangedHandler(MaxThreads, Callback := HDpiChanged) {
-        OnMessage(WM_DPICHANGED, Callback, MaxThreads)
+    static SetDpiChangedHandler(MaxThreads, Callback := Display_HandlerDpiChanged) {
+        OnMessage(0x02E0, Callback, MaxThreads) ; WM_DPICHANGED
     }
 
     /**
-     * @description - Defines a function to call before or after `dGui.Prototype.OnDpiChanged`. The
+     * @description - Defines a function to call before or after {@link dGui.Prototype.OnDpiChanged}. The
      * functions defined here will apply to all `dGui` objects that have not called their method
-     * `dGui.Prototype.SetToggleCallback`.
+     * {@link dGui.Prototype.SetToggleCallback}.
      *
      * The function should accept up to three parameters:
      * 1. The `dGui` object.
@@ -212,15 +222,15 @@ class dGui extends Gui {
      *
      * Set `CallbackBefore` or `CallbackAfter` to zero or an empty string to disable a callback.
      * Disabling a callback is not the same as deleting it. When a callback is disabled,
-     * `dGuiObj.DpiChangedCallbackBefore`, `dGuiObj.DpiChangedCallbackBeforeActive`,
-     * `dGuiObj.DpiChangedCallbackAfter`, and `dGuiObj.DpiChangedCallbackAfterActive` are all set with a
+     * {@link dGui#DpiChangedCallbackBefore}, {@link dGui#DpiChangedCallbackBeforeActive},
+     * {@link dGui#DpiChangedCallbackAfter}, and {@link dGui#DpiChangedCallbackAfterActive} are all set with a
      * falsy value. If callbacks have been defined on `dGui.Prototype` by calling the static method
-     * `dGui.SetDpiChangedCallback`, those will be ignored because the values are overridden by the
-     * instance's own properties. Call `dGui.Prototype.DeleteDpiChangedCallback` to delete the own
+     * {@link dGui.SetDpiChangedCallback}, those will be ignored because the values are overridden by the
+     * instance's own properties. Call {@link dGui.Prototype.DeleteDpiChangedCallback} to delete the own
      * properties so the prototype's callbacks can be called.
      *
-     * @param {*} [CallbackBefore] - A callable object to call at the beginning of `dGui.Prototype.OnDpiChanged`.
-     * @param {*} [CallbackAfter] - A callable object to call at the end of `dGui.Prototype.OnDpiChanged`.
+     * @param {*} [CallbackBefore] - A callable object to call at the beginning of {@link dGui.Prototype.OnDpiChanged}.
+     * @param {*} [CallbackAfter] - A callable object to call at the end of {@link dGui.Prototype.OnDpiChanged}.
      */
     static SetDpiChangedCallback(CallbackBefore?, CallbackAfter?) {
         if IsSet(CallbackBefore) {
@@ -231,13 +241,6 @@ class dGui extends Gui {
             this.Prototype.DefineProp('DpiChangedCallbackAfter', { Call: CallbackAfter })
             this.Prototype.DpiChangedCallbackAfterActive := CallbackAfter ? 1 : 0
         }
-    }
-
-    static __New() {
-        this.DeleteProp('__New')
-        this.DefineProp('ResizeByText', { Value: ['Button', 'Edit', 'Link', 'StatusBar', 'Text'] })
-        this.DefineProp('ControlIncludeByDefault', { Value: true })
-        this.DefineProp('InitialFontSize', { Value: 10 })
     }
 
     Add(CtrlType, Options?, Text?) {
@@ -254,7 +257,7 @@ class dGui extends Gui {
         this.Count++
         if !IsSet(Options) || !InStr(Options, '-vscroll') {
             switch Ctrl.Type, 0 {
-                case 'Edit':
+                case 'Edit', 'Link', 'Text':
                     if InStr(Ctrl.Text, '`r`n') {
                         Ctrl.GetPos(, , &w)
                         Ctrl.Move(, , w + dGui.ScrollbarPadding)
@@ -294,10 +297,10 @@ class dGui extends Gui {
      * @description - Deletes the own properties related to the callback function, allowing
      * the callback function defined on the prototype to be used if one exists.
      *
-     * @param {Boolean} [CallbackBefore = false] - If true, `dGuiObj.DpiChangedCallbackBefore` and
-     * `dGuiObj.DpiChangedCallbackBeforeActive` are deleted.
-     * @param {Boolean} [CallbackAfter = false] - If true, `dGuiObj.DpiChangedCallbackAfter` and
-     * `dGuiObj.DpiChangedCallbackAfterActive` are deleted.
+     * @param {Boolean} [CallbackBefore = false] - If true, {@link dGui#DpiChangedCallbackBefore} and
+     * {@link dGui#DpiChangedCallbackBeforeActive} are deleted.
+     * @param {Boolean} [CallbackAfter = false] - If true, {@link dGui#DpiChangedCallbackAfter} and
+     * {@link dGui#DpiChangedCallbackAfterActive} are deleted.
      */
     DeleteDpiChangedCallback(CallbackBefore := false, CallbackAfter := false) {
         if CallbackBefore {
@@ -313,10 +316,10 @@ class dGui extends Gui {
      * @description - Deletes the own properties related to the callback function, allowing
      * the callback function defined on the prototype to be used if one exists.
      *
-     * @param {Boolean} [CallbackBefore = false] - If true, `dGuiObj.ToggleCallbackBefore` and
-     * `dGuiObj.ToggleCallbackBeforeActive` are deleted.
-     * @param {Boolean} [CallbackAfter = false] - If true, `dGuiObj.ToggleCallbackAfter` and
-     * `dGuiObj.ToggleCallbackAfterActive` are deleted.
+     * @param {Boolean} [CallbackBefore = false] - If true, {@link dGui#ToggleCallbackBefore} and
+     * {@link dGui#ToggleCallbackBeforeActive} are deleted.
+     * @param {Boolean} [CallbackAfter = false] - If true, {@link dGui#ToggleCallbackAfter} and
+     * {@link dGui#ToggleCallbackAfterActive} are deleted.
      */
     DeleteToggleCallback(CallbackBefore := false, CallbackAfter := false) {
         if CallbackBefore {
@@ -331,13 +334,13 @@ class dGui extends Gui {
     /**
      * @description - Enumerate a subset of controls.
      * @example
-     *  ; Assume `dGuiObj` is already set with a `dGui` object.
-     *  for Ctrl in dGuiObj.EnumerateControls('Button', 1) {
-     *      Ctrl.GetPos(&x, &y)
-     *      if x > 0 && y < 100 {
-     *          Ctrl.Move(x * .85)
-     *      }
-     *  }
+     * ; Assume `dGuiObj` is already set with a `dGui` object.
+     * for Ctrl in dGuiObj.EnumerateControls('Button', 1) {
+     *     Ctrl.GetPos(&x, &y)
+     *     if x > 0 && y < 100 {
+     *         Ctrl.Move(x * .85)
+     *     }
+     * }
      * @
      * @param {String} CtrlType - The control type to enumerate, or a comma-delimited list of
      * control types, e.g. "Text,Button,Edit".
@@ -382,9 +385,9 @@ class dGui extends Gui {
 
     /**
      * @description - This is the core built-in method for resopnding to `WM_DPICHANGED` messages.
-     * This method is called from the global function `HDpiChanged`. `HDpiChanged` must first be
+     * This method is called from the global function `Display_HandlerDpiChanged`. `Display_HandlerDpiChanged` must first be
      * set as the callback for `WM_DPICHANGED` messages, either in your external code, or by calling
-     * `dGui.SetDpiChangedHandler`.
+     * {@link dGui.SetDpiChangedHandler}.
      *
      * The built-in `WM_DPICHANGED` handler performs the following actions. Individual control
      * objects that have a nonzero `Ctrl.DpiExclude` value are skipped. This list does not represent
@@ -398,7 +401,7 @@ class dGui extends Gui {
      * - Calls the `DpiChangedCallbackBefore` and `DpiChangedCallbackAfter` functions.
      *
      * @param {Integer} NewDpi - The new dpi value.
-     * @param {Integer} RectObj - The `Rect` object created from the `lParam` value.
+     * @param {Integer} RectObj - The {@link Display_Rect} object created from the `lParam` value.
      */
     OnDpiChanged(NewDpi) {
         hDwp := DllCall('BeginDeferWindowPos', 'int', this.Count, 'ptr')
@@ -438,7 +441,7 @@ class dGui extends Gui {
                 , 'uint', 0x0004 | 0x0010 ; SWP_NOZORDER | SWP_NOACTIVATE
                 , 'ptr'
             )) {
-                throw Error('``DeferWindowPos`` failed.', -1)
+                throw Error('``DeferWindowPos`` failed.')
             }
         }
         if !DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr') {
@@ -453,7 +456,7 @@ class dGui extends Gui {
     }
 
     /**
-     * @description - Defines a function to call before or after `dGui.Prototype.OnDpiChanged`. The
+     * @description - Defines a function to call before or after {@link dGui.Prototype.OnDpiChanged}. The
      * callbacks can be any callable object, such as a function object, an object with a `Call`
      * property, or an object with a `__Call` property.
      *
@@ -464,15 +467,15 @@ class dGui extends Gui {
      *
      * Set `CallbackBefore` or `CallbackAfter` to zero or an empty string to disable a callback.
      * Disabling a callback is not the same as deleting it. When a callback is disabled,
-     * `dGuiObj.DpiChangedCallbackBefore`, `dGuiObj.DpiChangedCallbackBeforeActive`,
-     * `dGuiObj.DpiChangedCallbackAfter`, and `dGuiObj.DpiChangedCallbackAfterActive` are all set with a
+     * {@link dGui#DpiChangedCallbackBefore}, {@link dGui#DpiChangedCallbackBeforeActive},
+     * {@link dGui#DpiChangedCallbackAfter}, and {@link dGui#DpiChangedCallbackAfterActive} are all set with a
      * falsy value. If callbacks have been defined on `dGui.Prototype` by calling the static method
-     * `dGui.SetDpiChangedCallback`, those will be ignored because the values are overridden by the
-     * instance's own properties. Call `dGui.Prototype.DeleteDpiChangedCallback` to delete the own
+     * {@link dGui.SetDpiChangedCallback}, those will be ignored because the values are overridden by the
+     * instance's own properties. Call {@link dGui.Prototype.DeleteDpiChangedCallback} to delete the own
      * properties so the prototype's callbacks can be called.
      *
-     * @param {*} [CallbackBefore] - A callable object to call at the beginning of `dGui.Prototype.OnDpiChanged`.
-     * @param {*} [CallbackAfter] - A callable object to call at the end of `dGui.Prototype.OnDpiChanged`.
+     * @param {*} [CallbackBefore] - A callable object to call at the beginning of {@link dGui.Prototype.OnDpiChanged}.
+     * @param {*} [CallbackAfter] - A callable object to call at the end of {@link dGui.Prototype.OnDpiChanged}.
      */
     SetDpiChangedCallback(CallbackBefore?, CallbackAfter?) {
         if IsSet(CallbackBefore) {
@@ -486,7 +489,7 @@ class dGui extends Gui {
     }
 
     /**
-     * @description - `dGui.Prototype.SetFontSize` sets the font options for the gui, and if size is
+     * @description - {@link dGui.Prototype.SetFontSize} sets the font options for the gui, and if size is
      * included in `FontOpt`, scales the font size with the monitor's dpi and caches the base font
      * size value.
      * Parameter details copied from {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont}.
@@ -526,7 +529,7 @@ class dGui extends Gui {
      * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
      *
      * @param {String} [FontName] - In contrast with `Gui.Prototype.SetFont`, the `FontName` parameter
-     * of `dGui.Prototype.SetFont` allows multiple font names to be defined in one function call.
+     * of {@link dGui.Prototype.SetFont} allows multiple font names to be defined in one function call.
      * `FontName` here can be a comma-delimited list of font names. The following is copied from
      * the AHK documentation:
      *
@@ -561,8 +564,8 @@ class dGui extends Gui {
     }
 
     /**
-     * @description - Use `dGui.Prototype.SetFontSize` when only changing the font size for slightly
-     * better performance compared to `dGui.Prototype.SetFont`. This scales the font size with the
+     * @description - Use {@link dGui.Prototype.SetFontSize} when only changing the font size for slightly
+     * better performance compared to {@link dGui.Prototype.SetFont}. This scales the font size with the
      * monitor's dpi and caches the base font size value. See the explanation at the top of the code
      * file "dGui.ahk" for details.
      * @param {Integer} FontSize - The new font size.
@@ -572,29 +575,29 @@ class dGui extends Gui {
         this.__SetFont('s' this.FontSizeScaled)
     }
     /**
-     * @description - Defines a function to call before or after `dGui.Prototype.Toggle`. The
+     * @description - Defines a function to call before or after {@link dGui.Prototype.Toggle}. The
      * callbacks can be any callable object, such as a function object, an object with a `Call`
      * property, or an object with a `__Call` property.
      *
      * The function should accept up to three parameters:
      * 1. The `dGui` object.
-     * 2. If the `Value` parameter of `dGui.Prototype.Toggle` is set, `Value`. Else, this parameter
+     * 2. If the `Value` parameter of {@link dGui.Prototype.Toggle} is set, `Value`. Else, this parameter
      * will receive 1 if the window is about to be shown (it is currently hidden), or 0 if the
      * window is about to be hidden.
      * 3. This must be optional. If a value is passed to the `Options` parameter of
-     * `dGui.Prototype.Toggle`, this will receive the value. Else, this will be unset.
+     * {@link dGui.Prototype.Toggle}, this will receive the value. Else, this will be unset.
      *
      * Set `CallbackBefore` or `CallbackAfter` to zero or an empty string to disable a callback.
      * Disabling a callback is not the same as deleting it. When a callback is disabled,
-     * `dGuiObj.ToggleCallbackBefore`, `dGuiObj.ToggleCallbackBeforeActive`,
-     * `dGuiObj.ToggleCallbackAfter`, and `dGuiObj.ToggleCallbackAfterActive` are all set with a
+     * {@link dGui#ToggleCallbackBefore}, {@link dGui#ToggleCallbackBeforeActive},
+     * {@link dGui#ToggleCallbackAfter}, and {@link dGui#ToggleCallbackAfterActive} are all set with a
      * falsy value. If callbacks have been defined on `dGui.Prototype` by calling the static method
-     * `dGui.SetToggleCallback`, those will be ignored because the values are overridden by the
-     * instance's own properties. Call `dGui.Prototype.DeleteToggleCallback` to delete the own
+     * {@link dGui.SetToggleCallback}, those will be ignored because the values are overridden by the
+     * instance's own properties. Call {@link dGui.Prototype.DeleteToggleCallback} to delete the own
      * properties so the prototype's callbacks can be called.
      *
-     * @param {*} [CallbackBefore] - A callable object to call at the beginning of `dGui.Prototype.Toggle`.
-     * @param {*} [CallbackAfter] - A callable object to call at the end of `dGui.Prototype.Toggle`.
+     * @param {*} [CallbackBefore] - A callable object to call at the beginning of {@link dGui.Prototype.Toggle}.
+     * @param {*} [CallbackAfter] - A callable object to call at the end of {@link dGui.Prototype.Toggle}.
      */
     SetToggleCallback(CallbackBefore?, CallbackAfter?) {
         if IsSet(CallbackBefore) {
@@ -611,7 +614,7 @@ class dGui extends Gui {
      * @description - Toggles the window's visibility. Also see {@link dGui#SetToggleCallback }
      * @param {Boolean} [Value] - Set this to specify a value instead of toggling it. A nonzero value
      * will display the window. A falsy value will hide it.
-     * @param {String} [Options] - Any options to pass to `dGui.Prototype.Show`.
+     * @param {String} [Options] - Any options to pass to {@link dGui.Prototype.Show}.
      * See {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Show}
      */
     Toggle(Value?, Options?) {
@@ -722,7 +725,7 @@ class dGui extends Gui {
         }
 
         /**
-         * @description - `dGui.Prototype.SetFontSize` sets the font options for the control, and if
+         * @description - {@link dGui.Prototype.SetFont} sets the font options for the control, and if
          * size is included in `FontOpt`, scales the font size with the monitor's dpi and caches the
          * base font size value.
          * {@link dGui#SetFont}
@@ -754,7 +757,7 @@ class dGui extends Gui {
         }
         __ResizeByText(&OutX, &OutY, &OutW, &OutH, NewDpi) {
             sz1 := this.GetTextExtent()
-            if !sz1.Width || !sz1.Height {
+            if !sz1.W || !sz1.H {
                 ; OutputDebug('No text width or height. Resizing by dpi ratio.`n')
                 dGui.Control.Prototype.__ResizeByDpi.Call(this, &OutX, &OutY, &OutW, &OutH, NewDpi)
                 return
@@ -762,10 +765,10 @@ class dGui extends Gui {
             this.__SetFont('s' (this.BaseFontSize * NewDpi / BASE_DPI))
             sz2 := this.GetTextExtent()
 
-            ; OutputDebug(Format('Size1.Width == {:4} Size1.HEIGHT == {}`nSize2.Width == {:4} Size2.Height == {}`n', sz1.Width, sz1.Height, sz2.Width, sz2.Height))
+            ; OutputDebug(Format('Size1.Width == {:4} Size1.HEIGHT == {}`nSize2.Width == {:4} Size2.Height == {}`n', sz1.W, sz1.H, sz2.W, sz2.H))
 
             ; Scale using the ratios defined by the change in the text's dimensions.
-            this.ScaleMonoRatio(&OutX, &OutY, &OutW, &OutH, sz2.Width / sz1.Width, sz2.Height / sz1.Height)
+            this.ScaleMonoRatio(&OutX, &OutY, &OutW, &OutH, sz2.W / sz1.W, sz2.H / sz1.H)
         }
 
         Dpi => DllCall('GetDpiForWindow', 'ptr', this.hWnd, 'int')
@@ -823,16 +826,16 @@ class dGui extends Gui {
 
 }
 
-HDpiChanged(wParam, lParam, Message, Hwnd) {
+Display_HandlerDpiChanged(wParam, lParam, Message, Hwnd) {
     dGuiObj := GuiFromHwnd(Hwnd)
     if !dGuiObj || dGuiObj.DpiExclude {
         return
     }
     DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_CHANGED_DPI_AWARENESS_CONTEXT, 'ptr')
-    Critical(1)
-    SendMessage(WM_SETREDRAW, false, 0, , Hwnd) ; Prevent window from being redrawn
+    SendMessage(0x000B, false, 0, , Hwnd) ; WM_SETREDRAW
+    originalCritical := Critical(-1)
     dGuiObj.OnDpiChanged(wParam & 0xFFFF)
-    SendMessage(WM_SETREDRAW, true, 0, , Hwnd) ; Permit the window to be redrawn
+    SendMessage(0x000B, true, 0, , Hwnd) ; WM_SETREDRAW
+    Critical(originalCritical)
     WinRedraw(Hwnd) ; Redraw the window
-    Critical(0)
 }

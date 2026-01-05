@@ -146,9 +146,9 @@ class test_WrapText extends test_Base {
                 Edt.Text := _string
                 len := StrLen(_string)
                 Str := unset
-                dWrapTextConfig.BreakChars := _breakChar
-                dWrapTextConfig.MinExtent := _minExtent
-                dWrapTextConfig.MeasureLines := []
+                WrapTextConfig.BreakChars := _breakChar
+                WrapTextConfig.MinExtent := _minExtent
+                WrapTextConfig.MeasureLines := []
                 if test_WrapText.WrapTextCallCount == 10 {
                     sleep 1
                 }
@@ -171,25 +171,25 @@ class test_WrapText extends test_Base {
                 ;     Split := StrSplit(Str, '`r`n')
                     ; loop Split.Length - 1 {
                     ;     sz := _GetTextExtentPoint32(hdc, Split[A_Index])
-                    ;     w1 := sz.Width
+                    ;     w1 := sz.W
                     ;     w2 := Ceil(_minExtent * _maxExtent)
-                    ;     if sz.Width < Ceil(_minExtent * _maxExtent) {
+                    ;     if sz.W < Ceil(_minExtent * _maxExtent) {
                     ;         ; When _minExtent == 0.9, there's a chance that `WrapText` must wrap a line
                     ;         ; at a shorter width than the minimum.
                     ;         chr_sz := _GetTextExtentPoint32(hdc, SubStr(Split[A_Index+1], 1, 1))
-                    ;         if chr_sz.Width + sz.Width < _maxExtent {
+                    ;         if chr_sz.W + sz.W < _maxExtent {
                     ;             if IsAlnum(SubStr(Split[A_Index + 1], 1, 1)) {
                     ;                 hyphen := '-'
                     ;                 if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
                     ;                     , hdc, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', lpSize := Buffer(8)) {
-                    ;                     throw OSError('``GetTextExtentPoint32`` failed.', -1, A_LastError)
+                    ;                     throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
                     ;                 }
-                    ;                 if NumGet(lpSize, 0, 'uint') + chr_sz.Width + sz.Width < _maxExtent {
-                    ;                     this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'sz.Width < _minExtent')
+                    ;                 if NumGet(lpSize, 0, 'uint') + chr_sz.W + sz.W < _maxExtent {
+                    ;                     this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'sz.W < _minExtent')
                     ;                     return 1
                     ;                 }
                     ;             } else {
-                    ;                 this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'sz.Width < _minExtent')
+                    ;                 this.AddProblem(A_LineNumber, A_ThisFunc, A_LineFile, __GetObj(), 'sz.W < _minExtent')
                     ;                 return 1
                     ;             }
                     ;         }
@@ -222,10 +222,10 @@ class test_WrapText extends test_Base {
                 _Proc()
             }
             _Proc() {
-                dWrapTextConfig.BreakChars := _breakChar
-                dWrapTextConfig.MinExtent := _minExtent
-                dWrapTextConfig.MeasureLines := []
-                dWrapTextConfig.MaxExtent := _maxExtent
+                WrapTextConfig.BreakChars := _breakChar
+                WrapTextConfig.MinExtent := _minExtent
+                WrapTextConfig.MeasureLines := []
+                WrapTextConfig.MaxExtent := _maxExtent
                 context := SelectFontIntoDc(Edt.hWnd)
                 Str := _string
                 LineCount := WrapText(context.hdc, &Str, , &ResultWidth, &ResultHeight)
@@ -287,13 +287,13 @@ class test_WrapText extends test_Base {
             hyphen := '-'
             if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
                 , context.hdc, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', lpSize := Buffer(8)) {
-                throw OSError('``GetTextExtentPoint32`` failed.', -1, A_LastError)
+                throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
             }
             hyphen := NumGet(lpSize, 0, 'uint')
             W := 'W'
             if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
                 , context.hdc, 'Ptr', StrPtr(W), 'Int', 1, 'Ptr', lpSize) {
-                throw OSError('``GetTextExtentPoint32`` failed.', -1, A_LastError)
+                throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
             }
             context()
             return NumGet(lpSize, 0, 'uint') * 3 + hyphen
@@ -302,11 +302,11 @@ class test_WrapText extends test_Base {
         ; _GetTextExtentPoint32(hdc, Line) {
         ;     ; Measure the text
         ;     context := SelectFontIntoDc(hdc)
-        ;     if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+        ;     if DllCall('Gdi32.dll\GetTextExtentPoint32'
         ;         , 'Ptr', hdc
         ;         , 'Ptr', StrPtr(Line)
         ;         , 'Int', StrLen(Line)
-        ;         , 'Ptr', sz := Size()
+        ;         , 'Ptr', sz := Display_Size()
         ;         , 'Int'
         ;     ) {
         ;         return sz
@@ -317,7 +317,7 @@ class test_WrapText extends test_Base {
         __GetObj() {
             return { string: _string, opt: _opt, size: _size, quality: _quality, weight: _weight
             , color: _color, family: _family, MaxExtent: _maxExtent, breakChar: _breakChar
-            , index_GetString: index_GetString, LineCount: LineCount, Options: dWrapTextConfig
+            , index_GetString: index_GetString, LineCount: LineCount, Options: WrapTextConfig
             , Edit: Edt, ResultWidth: ResultWidth, ResultHeight: ResultHeight, MinExtent: _minExtent }
         }
     }
@@ -347,6 +347,6 @@ class test_WrapText extends test_Base {
     }
 }
 
-class dWrapTextConfig {
+class WrapTextConfig {
     static MeasureLines := []
 }

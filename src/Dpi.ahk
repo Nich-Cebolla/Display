@@ -1,5 +1,7 @@
 ﻿
-#include ..\definitions\define-Dpi.ahk
+if !IsSet(DPI_AWARENESS_CONTEXT_DEFAULT) {
+    DPI_AWARENESS_CONTEXT_DEFAULT := -4
+}
 
 /**
  * @description - Determines whether two DPI_AWARENESS_CONTEXT values are identical. A
@@ -32,7 +34,7 @@ GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
 /**
  * @description - Gets a DPI_AWARENESS_CONTEXT handle for the specified process.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiawarenesscontextforprocess}
- * @param {Integer} [hProcess=0] - A handle to the process for which the DPI awareness context is
+ * @param {Integer} [hProcess = 0] - A handle to the process for which the DPI awareness context is
  * retrieved. If 0, the context is retrieved for the current process.
  * @returns {Integer} - The DPI_AWARENESS_CONTEXT for the specified process.
  */
@@ -50,20 +52,22 @@ GetDpiAwarenessContextForProcess(hProcess := 0) {
  * value of your application.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/nf-shellscalingapi-getdpiformonitor}
  * @param {Integer} hMonitor - The handle of the monitor being queried.
- * @param {Integer} [DpiType = MDT_DEFAULT] - The type of DPI being queried. Possible values are from the
- * MONITOR_DPI_TYPE enumeration.
+ * @param {Integer} [DpiType = 0] - The type of DPI being queried. Possible values are from the
+ * MONITOR_DPI_TYPE (MDT) enumeration. The default is MDT_DEFAULT (0).
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/shellscalingapi/ne-shellscalingapi-monitor_dpi_type}
- * @returns {Integer} - If succesful, the dpi for the monitor. If unsuccessful, an empty string.
- * An unsuccessful function call would be caused by an invalid parameter.
+ * @returns {Integer} - If succesful, the dpi for the monitor.
+ * @throws {OSError} - If `GetDpiForMonitor` fails.
  */
-GetDpiForMonitor(hMonitor, DpiType := MDT_DEFAULT) {
-    if !DllCall('Shcore\GetDpiForMonitor', 'ptr', hMonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'int') {
+GetDpiForMonitor(hMonitor, DpiType := 0) {
+    if DllCall('Shcore\GetDpiForMonitor', 'ptr', hMonitor, 'ptr', DpiType, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'int') {
+        throw OSError()
+    } else {
         return DpiX
     }
 }
 
 /**
- * @description - The return value will be dependent based upon the calling context. If the current
+ * @description - The return value will depend on the calling context. If the current
  * thread has a DPI_AWARENESS value of DPI_AWARENESS_UNAWARE, the return value will be 96. That is
  * because the current context always assumes a DPI of 96. For any other DPI_AWARENESS value, the
  * return value will be the actual system DPI. You should not cache the system DPI, but should use
@@ -105,7 +109,7 @@ GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
 /**
  * @description - Retrieves the dots per inch (dpi) awareness of the specified process.
  * @param {VarRef} OutValue - A variable that will receive the process DPI_AWARENESS.
- * @param {IntegeR} [hProcess=0] - Handle of the process that is being queried. If this parameter is
+ * @param {IntegeR} [hProcess = 0] - Handle of the process that is being queried. If this parameter is
  * 0, the current process is queried.
  * @returns {Integer} - One of the following:
  * - S_OK (0) - The function successfully retrieved the DPI awareness of the specified process.
@@ -123,7 +127,7 @@ GetProcessDpiAwareness(&OutValue, hProcess := 0) {
  * DPI_AWARENESS value, the return value will be the actual system DPI of the given process.
  * Identical to GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext());
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemdpiforprocess}
- * @param {Integer} [hProcess=0] - The handle to the process. If 0, this function retrieves the dpi
+ * @param {Integer} [hProcess = 0] - The handle to the process. If 0, this function retrieves the dpi
  * for the system.
  * @returns {Integer} - The dpi value.
  */
@@ -174,14 +178,14 @@ IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
  * setting the dpi awareness context. If `IsValidDpiAwarenessContext` returns false, this
  * function returns an empty string and the dpi awareness context is not changed.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext}
- * @param [DPI_AWARENESS_CONTEXT=DPI_AWARENESS_CONTEXT_DEFAULT ?? -4] - Use the `DPI_AWARENESS_CONTEXT_DEFAULT`
+ * @param {Integer} [DPI_AWARENESS_CONTEXT = DPI_AWARENESS_CONTEXT_DEFAULT] - Use the `DPI_AWARENESS_CONTEXT_DEFAULT`
  * global variable to define the default `DPI_AWARENESS_CONTEXT` for various functions, including
  * this one. If unset, this defaults to -4.
  * @returns {Integer} - If successful, returns the original thread `DPI_AWARENESS_CONTEXT`. If
  * unsuccessful, returns an empty string or 0.
  */
-SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT := DPI_AWARENESS_CONTEXT_DEFAULT ?? -4) {
-    if IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT) {
+SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT := DPI_AWARENESS_CONTEXT_DEFAULT) {
+    if DllCall('IsValidDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'int') {
         return DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT, 'ptr')
     }
 }

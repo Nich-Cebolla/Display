@@ -1,33 +1,9 @@
 ﻿
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/IntegerArray.ahk
-#include <IntegerArray>
 
-#include ..\src
-#include SelectFontIntoDc.ahk
+#include ..\src\SelectFontIntoDc.ahk
 #include ..\struct
-#include Size.ahk
-
-/**
-    The WinAPI text functions here require string length measured in WORDs. `StrLen()` handles this
-    for us, as noted here: {@link https://www.autohotkey.com/docs/v2/lib/Chr.htm}
-    "Unicode supplementary characters (where Number is in the range 0x10000 to 0x10FFFF) are counted
-    as two characters. That is, the length of the return value as reported by StrLen may be 1 or 2.
-    For further explanation, see String Encoding."
-    {@link https://www.autohotkey.com/docs/v2/Concepts.htm#string-encoding}
-
-    The functions all require a device context handle. Use the `SelectFontIntoDc` function to get
-    an object that handles the boilerplate code.
-   @example
-    context := SelectFontIntoDc(hWnd)
-    sz := GetTextExtentPoint32(context.hdc, 'Hello, world!')
-    context() ; release the device context
-   @
-
-   If you need help understanding how to handle OS errors, read the section "OSError" here:
-   {@link https://www.autohotkey.com/docs/v2/lib/Error.htm}
-*/
-
-; -------------------------
+#include Display_IntegerArray.ahk
+#include Display_Size.ahk
 
 /**
  * @description - Gets the dimensions of a string within a window's device context. Carriage return
@@ -41,11 +17,11 @@
  */
 GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
-    if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+    if DllCall('Gdi32.dll\GetTextExtentPoint32'
         , 'Ptr', hdc
         , 'Ptr', StrPtr(Str)
         , 'Int', StrLen(Str)
-        , 'Ptr', sz := Size()
+        , 'Ptr', sz := Display_Size()
         , 'Int'
     ) {
         return sz
@@ -81,16 +57,16 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     OutWidth := OutHeight := 0
     for Str in Arr {
         if Str {
-            if DllCall('C:\Windows\System32\Gdi32.dll\GetTextExtentPoint32'
+            if DllCall('Gdi32.dll\GetTextExtentPoint32'
                 , 'Ptr', hdc
                 , 'Ptr', StrPtr(Str)
                 , 'Int', StrLen(Str)
-                , 'Ptr', sz := Size()
+                , 'Ptr', sz := Display_Size()
                 , 'Int'
             ) {
                 Result[A_Index] := sz
-                OutWidth := Max(OutWidth, sz.Width)
-                OutHeight += sz.Height
+                OutWidth := Max(OutWidth, sz.W)
+                OutHeight += sz.H
             } else {
                 throw OSError()
             }
@@ -119,14 +95,14 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * the extent point for every character in the string.
  * @param {VarRef} [OutCharacterFit] - A variable that will receive the number of characters
  * that fit within the given width. If `MaxExtent` is 0, this will be set to 0.
- * @param {VarRef} [OutExtentPoints] - A variable that will receive an `IntegerArray`, a buffer
+ * @param {VarRef} [OutExtentPoints] - A variable that will receive an `Display_IntegerArray`, a buffer
  * object containing the partial string extent points (the cumulative width of the string at
  * each character from left to right measured from the beginning of the string to the right-side of
  * the character). If `MaxExtent` is nonzero, the number of extent points contained by
  * `OutExtentPoints` will equal `OutCharacterFit`. If `MaxExtent` is zero, `OutExtentPoints` will
  * contain the extent point for every character in the string. `OutExtentPoints` is not an instance
  * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
- * has properties { __Item, Capacity, Size, Type }. See struct\IntegerArray.ahk for more
+ * has properties { __Item, Capacity, Size, Type }. See struct\Display_IntegerArray.ahk for more
  * information.
  * @returns {Size} - A `Size` object with properties { Width, Height }.
  */
@@ -138,8 +114,8 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
             , 'int', StrLen(Str)                                    ; String length in WORDs
             , 'int', MaxExtent                                      ; Maximum width
             , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
-            , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
-            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
+            , 'ptr', OutExtentPoints := Display_IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
+            , 'ptr', sz := Display_Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := NumGet(lpnFit, 0, 'int')
@@ -154,8 +130,8 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
             , 'int', StrLen(Str)                                    ; String length in WORDs
             , 'int', 0
             , 'ptr', 0
-            , 'ptr', OutExtentPoints := IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
-            , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
+            , 'ptr', OutExtentPoints := Display_IntegerArray(StrLen(Str))   ; An array to receives partial string extents.
+            , 'ptr', sz := Display_Size()                                   ; To receive the dimensions of the string.
             , 'ptr'
         ) {
             OutCharacterFit := 0
@@ -183,13 +159,13 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
  * number of characters. If 0, `MaxExtent` is ignored, `CharacterFit` is assigned 0, and
  * `ExtentPoints` will contain the extent point for every character in the string.
  *
- * The value set to the `ExtentPoints` property is an `IntegerArray`, a buffer object containing the
+ * The value set to the `ExtentPoints` property is an `Display_IntegerArray`, a buffer object containing the
  * partial string extent points (the cumulative width of the string at each character from left to
  * right measured from the beginning of the string to the right-side of the character).
  *
  * `ExtentPoints` is not an instance of `Array`; it has only one method, `__Enum`, which you can use
  * by calling it in a loop, and it has properties { __Item, Capacity, Size, Type }. See
- * "structIntegerArray.ahk" for more information.
+ * "structDisplay_IntegerArray.ahk" for more information.
  * @param {Boolean} [ReplaceItems = false] - If true, the items in `Arr` are replaced with the output
  * objects. If false, a new array is created.
  *
@@ -203,6 +179,7 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
         Result.Length := Arr.Length
     }
     if MaxExtent {
+        lpnFit := Buffer(4)
         for Str in Arr {
             if Str {
                 if DllCall('Gdi32.dll\GetTextExtentExPoint'
@@ -210,9 +187,9 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                     , 'ptr', StrPtr(Str)                                    ; String to measure
                     , 'int', StrLen(Str)                                    ; String length in WORDs
                     , 'int', MaxExtent                                      ; Maximum width
-                    , 'ptr', lpnFit := Buffer(4)                            ; To receive number of characters that can fit
-                    , 'ptr', ExtentPoints := IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
-                    , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
+                    , 'ptr', lpnFit                                         ; To receive number of characters that can fit
+                    , 'ptr', ExtentPoints := Display_IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
+                    , 'ptr', sz := Display_Size()                                   ; To receive the dimensions of the string.
                     , 'ptr'
                 ) {
                     Result[A_Index] := { CharacterFit: NumGet(lpnFit, 0, 'int'), ExtentPoints: ExtentPoints, Size: sz }
@@ -230,8 +207,8 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                     , 'int', StrLen(Str)                                    ; String length in WORDs
                     , 'int', 0
                     , 'ptr', 0
-                    , 'ptr', ExtentPoints := IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
-                    , 'ptr', sz := Size()                                   ; To receive the dimensions of the string.
+                    , 'ptr', ExtentPoints := Display_IntegerArray(StrLen(Str))      ; An array to receives partial string extents.
+                    , 'ptr', sz := Display_Size()                                   ; To receive the dimensions of the string.
                     , 'ptr'
                 ) {
                     Result[A_Index] := { CharacterFit: 0, ExtentPoints: ExtentPoints, Size: sz }
@@ -280,21 +257,21 @@ MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWi
             , 'Ptr', hdc
             , 'Ptr', StrPtr(_str)
             , 'Int', StrLen(_str)
-            , 'Ptr', sz := Size()
+            , 'Ptr', sz := Display_Size()
             , 'Int'
         ) {
             throw OSError()
         }
         result.Push(sz)
         sz.Str := str
-        if sz.Width < OutLowWidth.Width {
+        if sz.W < OutLowWidth.Width {
             OutLowWidth := sz
         }
-        if sz.Width > OutHighWidth.Width {
+        if sz.W > OutHighWidth.Width {
             OutHighWidth := sz
         }
-        OutSumWidth += sz.Width
-        OutSumHeight += sz.Height
+        OutSumWidth += sz.W
+        OutSumHeight += sz.H
     }
     return result
 }
