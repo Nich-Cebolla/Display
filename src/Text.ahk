@@ -293,8 +293,8 @@ GetLineEnding(Str) {
 }
 
 MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWidth?, &OutSumHeight?) {
-    OutLowWidth := { Width: 4294967295 }
-    OutHighWidth := { Width: 0 }
+    OutLowWidth := { W: 4294967295 }
+    OutHighWidth := { W: 0 }
     OutSumWidth := OutSumHeight := 0
     result := []
     result.Capacity := List.Length
@@ -312,10 +312,10 @@ MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWi
         }
         result.Push(sz)
         sz.Str := str
-        if sz.W < OutLowWidth.Width {
+        if sz.W < OutLowWidth.W {
             OutLowWidth := sz
         }
-        if sz.W > OutHighWidth.Width {
+        if sz.W > OutHighWidth.W {
             OutHighWidth := sz
         }
         OutSumWidth += sz.W
