@@ -113,7 +113,7 @@ Display_GetAncestor(Hwnd, Flags) {
 /**
  * @description - Gets the bounding rectangle of all child windows of a given window.
  * @param {Integer} Hwnd - The handle to the parent window.
- * @returns {Rect} - The bounding rectangle of all child windows, specifically the smallest
+ * @returns {Display_Rect} - The bounding rectangle of all child windows, specifically the smallest
  * rectangle that contains all child windows.
  */
 Display_GetChildrenBoundingRect(Hwnd) {
@@ -237,11 +237,11 @@ Display_LockSetForegroundWindow(code) {
  * { L, T, R, B } of `Subject` are updated with the new values.
  *
  * @param {*} Subject - The object representing the rectangle that will be moved. This can be an
- * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
+ * instance of {@link Display_Rect} or any class that inherits from {@link Display_Rect}, or any object with properties
  * { L, T, R, B }. Those four property values will be updated with the result of this function call.
  *
  * @param {*} [Target] - The object representing the rectangle that will be used as reference. This
- * can be an instance of `Rect` or any class that inherits from `Rect`, or any object with properties
+ * can be an instance of {@link Display_Rect} or any class that inherits from {@link Display_Rect}, or any object with properties
  * { L, T, R, B }. If unset, the mouse's current position relative to the screen is used. To use
  * a point instead of a rectangle, set the properties "L" and "R" equivalent to one another, and
  * "T" and "B" equivalent to one another.

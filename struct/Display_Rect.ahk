@@ -40,28 +40,28 @@ class Display_Rect extends Buffer {
         }
     }
     L {
-        Get => NumGet(this, this.offset_l, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_l)
+        Get => NumGet(this, this.offset_l, 'int')
+        Set => NumPut('int', Value, this, this.offset_l)
     }
     T {
-        Get => NumGet(this, this.offset_t, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_t)
+        Get => NumGet(this, this.offset_t, 'int')
+        Set => NumPut('int', Value, this, this.offset_t)
     }
     R {
-        Get => NumGet(this, this.offset_r, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_r)
+        Get => NumGet(this, this.offset_r, 'int')
+        Set => NumPut('int', Value, this, this.offset_r)
     }
     B {
-        Get => NumGet(this, this.offset_b, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_b)
+        Get => NumGet(this, this.offset_b, 'int')
+        Set => NumPut('int', Value, this, this.offset_b)
     }
     X {
-        Get => NumGet(this, this.offset_l, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_l)
+        Get => NumGet(this, this.offset_l, 'int')
+        Set => NumPut('int', Value, this, this.offset_l)
     }
     Y {
-        Get => NumGet(this, this.offset_t, 'uint')
-        Set => NumPut('uint', Value, this, this.offset_t)
+        Get => NumGet(this, this.offset_t, 'int')
+        Set => NumPut('int', Value, this, this.offset_t)
     }
     W {
         Get => NumGet(this, 8, 'int') - NumGet(this, 0, 'int')

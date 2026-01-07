@@ -9,11 +9,11 @@
  * @description - Gets the dimensions of a string within a window's device context. Carriage return
  * and line feed characters are ignored, the returned height is always that of a one-line string.
  *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
+ * See {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}.
  *
  * @param {Integer} hdc - A handle to the device context you want used to measure the string.
  * @param {String} Str - The string to measure.
- * @returns {Size} - A `Size` object with properties { Width, Height }.
+ * @returns {Display_Size}
  */
 GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
@@ -36,16 +36,17 @@ GetTextExtentPoint32(hdc, Str) {
  * width, of the items. For any string values that are empty strings, the associated value added to
  * the output array is also an empty string.
  *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}
+ * See {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}.
  *
  * @param {Integer} hdc - A handle to the device context to use when measuring the string.
  * @param {String[]} Arr - An array of strings. The array may not have unset indices.
  * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
  * array.
  * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of the lines.
- * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the `Size`
- * objects, and the strings are replaced with the objects. If false, a new array is created.
- * @returns {Size[]} - An array of `Size` objects, each with properties { Width, Height }.
+ * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the
+ * {@link Display_Size} objects, and the strings are replaced with the objects. If false, a new array
+ * is created.
+ * @returns {Display_Size[]}
  */
 GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     if ReplaceItems {
@@ -78,33 +79,79 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
 }
 
 /**
- * @description - `GetTextExtentExPoint` is similar to `GetTextExtentPoint32`, but has several
- * additional functions to work with. `GetTextExtentExPoint` measures a string's dimensions and the
- * width (extent point) in pixels of each character's position in the string.
+ * @description - Iterates an array of strings. For each string, a Size object is added to an array.
+ * The array is returned, and the VarRef parameters receieve the cumulative height, and the greatest
+ * width, of the items. For any string values that are empty strings, the associated value added to
+ * the output array is also an empty string.
  *
- * An example function call is available in file {@link examples\example-GetTextExtentExPoint.ahk}
+ * See {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentpoint32w}.
  *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getteextextentexpointa}
+ * @param {Integer} hdc - A handle to the device context to use when measuring the string.
+ * @param {String[]} Arr - An array of strings. The array may not have unset indices.
+ * @param {VarRef} [OutWidth] - A variable that will receive the greatest width of the strings in the
+ * array.
+ * @param {VarRef} [OutHeight] - A variable that will receive the cumulative height of the lines.
+ * @param {Boolean} [ReplaceItems = false] - If true, the original array is used to store the
+ * {@link Display_Size} objects, and the strings are replaced with the objects. If false, a new array
+ * is created.
+ * @param {VarRef} [OutGreatestHeight] - A variable that will receive the greatest height of the strings
+ * in the array.
+ * @returns {Display_Size[]}
+ */
+GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, &OutGreatestHeight?) {
+    if ReplaceItems {
+        Result := Arr
+    } else {
+        Result := []
+        Result.Length := Arr.Length
+    }
+    OutWidth := OutHeight := OutGreatestHeight := 0
+    for Str in Arr {
+        if Str {
+            if DllCall('Gdi32.dll\GetTextExtentPoint32'
+                , 'Ptr', hdc
+                , 'Ptr', StrPtr(Str)
+                , 'Int', StrLen(Str)
+                , 'Ptr', sz := Display_Size()
+                , 'Int'
+            ) {
+                Result[A_Index] := sz
+                OutWidth := Max(OutWidth, sz.W)
+                OutHeight += sz.H
+                OutGreatestHeight := Max(OutGreatestHeight, sz.H)
+            } else {
+                throw OSError()
+            }
+        } else {
+            Result[A_Index] := ''
+        }
+    }
+    return Result
+}
+
+/**
+ * @description - {@link GetTextExtentExPoint} measures a string's dimensions and the width (extent
+ * point) in pixels of each character's position in the string.
+ *
+ * See {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointw}.
  *
  * @param {Integer} hdc - The handle to the device context to use when measuring the string.
  * @param {String} Str - The string to measure.
- * @param {Integer} [MaxExtent = 0] - The maximum width of the string. When nonzero,
+ * @param {Integer} [MaxExtent = 0] - The maximum width of the string in pixels. When nonzero,
  * `OutCharacterFit` is set to the number of characters that fit within the `MaxExtent` pixels, and
  * `OutExtentPoints` will only contain extent points up to `OutCharacterFit` number of characters.
  * If 0, `MaxExtent` is ignored, `OutCharacterFit` is assigned 0, and `OutExtentPoints` will contain
  * the extent point for every character in the string.
  * @param {VarRef} [OutCharacterFit] - A variable that will receive the number of characters
  * that fit within the given width. If `MaxExtent` is 0, this will be set to 0.
- * @param {VarRef} [OutExtentPoints] - A variable that will receive an `Display_IntegerArray`, a buffer
- * object containing the partial string extent points (the cumulative width of the string at
+ * @param {VarRef} [OutExtentPoints] - A variable that will receive an {@link Display_IntegerArray},
+ * a buffer object containing the partial string extent points (the cumulative width of the string at
  * each character from left to right measured from the beginning of the string to the right-side of
  * the character). If `MaxExtent` is nonzero, the number of extent points contained by
  * `OutExtentPoints` will equal `OutCharacterFit`. If `MaxExtent` is zero, `OutExtentPoints` will
- * contain the extent point for every character in the string. `OutExtentPoints` is not an instance
- * of `Array`; it has only one method, `__Enum`, which you can use by calling it in a loop, and it
- * has properties { __Item, Capacity, Size, Type }. See struct\Display_IntegerArray.ahk for more
- * information.
- * @returns {Size} - A `Size` object with properties { Width, Height }.
+ * contain the extent point for every character in the string. See {@link Display_IntegerArray}
+ * for more information.
+ * @returns {Display_Size}
  */
 GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if MaxExtent {
@@ -143,44 +190,41 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
 }
 
 /**
- * @description - Calls `GetTextExtentExPoint` for each string in an array, adding an object
+ * @description - Calls {@link GetTextExtentExPoint} for each string in an array, adding an object
  * to the output array. If an item in the input array is an empty string, its associated item in the
  * output array is also an empty string.
  *
- * An example function call is available in file {@link examples\example_Text_GetTextExtentExPoint.ahk}
+ * Each item in the array is an object with properties { CharacterFit, ExtentPoints, Size }.
  *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointa}
+ * See {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-gettextextentexpointw}.
  *
  * @param {Integer} hdc - The handle to the device context to use when measuring the string.
- * @param {String} Str - The string to measure.
- * @param {Integer} [MaxExtent = 0] - The maximum width of the string. When nonzero,
- * the `CharacterFit` property is set with number of characters that fit within the `MaxExtent` pixels,
- * and the value set to the `ExtentPoints` property will only contain extent points up to `CharacterFit`
- * number of characters. If 0, `MaxExtent` is ignored, `CharacterFit` is assigned 0, and
- * `ExtentPoints` will contain the extent point for every character in the string.
+ * @param {String[]} list - The array of strings to measure.
+ * @param {Integer} [MaxExtent = 0] - The maximum width of the string in pixels. When nonzero,
+ * the property "CharacterFit is set with number of characters that fit within `MaxExtent` pixels,
+ * and the value set to the property "ExtentPoints" will only contain extent points up to `CharacterFit`
+ * number of characters. If 0, `MaxExtent` is ignored, the property "CharacterFit" is assigned 0, and
+ * the property "ExtentPoints" will contain the extent point for every character in the string.
  *
- * The value set to the `ExtentPoints` property is an `Display_IntegerArray`, a buffer object containing the
- * partial string extent points (the cumulative width of the string at each character from left to
- * right measured from the beginning of the string to the right-side of the character).
+ * The value set to the "ExtentPoints" property is an {@link Display_IntegerArray}, a buffer object
+ * containing the partial string extent points (the cumulative width of the string at each character
+ * from left to right measured from the beginning of the string to the right-side of the character).
  *
- * `ExtentPoints` is not an instance of `Array`; it has only one method, `__Enum`, which you can use
- * by calling it in a loop, and it has properties { __Item, Capacity, Size, Type }. See
- * "structDisplay_IntegerArray.ahk" for more information.
- * @param {Boolean} [ReplaceItems = false] - If true, the items in `Arr` are replaced with the output
+ * @param {Boolean} [ReplaceItems = false] - If true, the items in `list` are replaced with the output
  * objects. If false, a new array is created.
  *
- * @returns {Array} - Each item in the array is an object with properties { CharacterFit, ExtentPoints, Size }
+ * @returns {Object[]} - Each object in the array is an object with properties { CharacterFit, ExtentPoints, Size }.
  */
-GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
+GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
     if ReplaceItems {
-        Result := Arr
+        Result := list
     } else {
         Result := []
-        Result.Length := Arr.Length
+        Result.Length := list.Length
     }
     if MaxExtent {
         lpnFit := Buffer(4)
-        for Str in Arr {
+        for Str in list {
             if Str {
                 if DllCall('Gdi32.dll\GetTextExtentExPoint'
                     , 'ptr', hdc
@@ -196,10 +240,12 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                 } else {
                     throw OSError()
                 }
+            } else {
+                Result[A_Index] := ''
             }
         }
     } else {
-        for Str in Arr {
+        for Str in list {
             if Str {
                 if DllCall('Gdi32.dll\GetTextExtentExPoint'
                     , 'ptr', hdc
@@ -215,6 +261,8 @@ GetMultiTextExtentExPoint(hdc, Arr, MaxExtent := 0, ReplaceItems := false) {
                 } else {
                     throw OSError()
                 }
+            } else {
+                Result[A_Index] := ''
             }
         }
     }

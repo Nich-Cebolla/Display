@@ -80,7 +80,7 @@ class WrapText {
      * used is `Options.MaxExtent`. The height used depends on the value of `Options.MeasureLines`. If
      * `Options.MeasureLines` is nonzero, then `OutHeight` is set with the cumulative height of the
      * string, and its value gets used. If `Options.MeasureLines` is false, the height is set to
-     * `sz.H * LineCount` where `sz` is the `Size` object produced from the last `GetTextExtentExPoint`
+     * `sz.H * LineCount` where `sz` is the  {@link Display_Size} object produced from the last `GetTextExtentExPoint`
      * function call. In general this will be pretty close to the true height of the string, but should
      * be expected to be slightly off.
      *
@@ -106,7 +106,7 @@ class WrapText {
      * each line during processing. This allows `WrapText` to set `OutHeight` with the correct height
      * of the string, and `OutWidth` with an accurate width of the string (see the note about this
      * in the function description). If `Options.MeasureLines` is an array object, `WrapText` will also
-     * add each `Size` object that is produced from the measurement to that array. For large strings
+     * add each  {@link Display_Size} object that is produced from the measurement to that array. For large strings
      * or many consecutive function calls, you should set the capacity of the array to what you expect
      * it will need prior to calling `WrapText`. If `WrapText` is false, no additional measurements occur.
      *

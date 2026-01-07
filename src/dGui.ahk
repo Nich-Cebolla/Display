@@ -201,7 +201,7 @@ class dGui extends Gui {
 
     /**
      * @description - Calls `OnMessage` to set the `WM_DPICHANGED` message handler. The default
-     * callback is the global function `Display_HandlerDpiChanged`, the built-in function for handling dpi changes.
+     * callback is the global function  {@link Display_HandlerDpiChanged}, the built-in function for handling dpi changes.
      * @p
      * @param {*} [Callback = Display_HandlerDpiChanged] - A callable object that will be called when a `Gui` / `dGui`
      * window receives the `WM_DPICHANGED` message.
@@ -376,7 +376,7 @@ class dGui extends Gui {
     }
 
     FitControl(Ctrl, PaddingX := 0, PaddingY := 0) {
-        if Ctrl is String {
+        if !IsObject(Ctrl) {
             Ctrl := this[Ctrl]
         }
         Ctrl.GetPos(&x, &y, &w, &h)
@@ -385,7 +385,7 @@ class dGui extends Gui {
 
     /**
      * @description - This is the core built-in method for resopnding to `WM_DPICHANGED` messages.
-     * This method is called from the global function `Display_HandlerDpiChanged`. `Display_HandlerDpiChanged` must first be
+     * This method is called from the global function  {@link Display_HandlerDpiChanged}. `Display_HandlerDpiChanged` must first be
      * set as the callback for `WM_DPICHANGED` messages, either in your external code, or by calling
      * {@link dGui.SetDpiChangedHandler}.
      *
@@ -758,14 +758,11 @@ class dGui extends Gui {
         __ResizeByText(&OutX, &OutY, &OutW, &OutH, NewDpi) {
             sz1 := this.GetTextExtent()
             if !sz1.W || !sz1.H {
-                ; OutputDebug('No text width or height. Resizing by dpi ratio.`n')
                 dGui.Control.Prototype.__ResizeByDpi.Call(this, &OutX, &OutY, &OutW, &OutH, NewDpi)
                 return
             }
             this.__SetFont('s' (this.BaseFontSize * NewDpi / BASE_DPI))
             sz2 := this.GetTextExtent()
-
-            ; OutputDebug(Format('Size1.Width == {:4} Size1.HEIGHT == {}`nSize2.Width == {:4} Size2.Height == {}`n', sz1.W, sz1.H, sz2.W, sz2.H))
 
             ; Scale using the ratios defined by the change in the text's dimensions.
             this.ScaleMonoRatio(&OutX, &OutY, &OutW, &OutH, sz2.W / sz1.W, sz2.H / sz1.H)

@@ -53,10 +53,10 @@ class Display_TcItemW {
      * |                                 not a dithered color.                                     |
      * </pre>
      *
-     * @param {String} [pszText] - If using `Display_TcItemW` to set a tab's text, pass
+     * @param {String} [pszText] - If using  {@link Display_TcItemW} to set a tab's text, pass
      * the text as string to `pszText` and leave `cchTextMatch` unset.
      *
-     * @param {Integer} [cchTextMatch] - If using `Display_TcItemW` to get information about
+     * @param {Integer} [cchTextMatch] - If using  {@link Display_TcItemW} to get information about
      * a tab, pass the maximum string length to `cchTextMax` as integer and leave `pszText` unset.
      *
      * @param {Integer} [iImage] - Index in the tab control's image list, or -1 if there is no

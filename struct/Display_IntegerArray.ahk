@@ -77,7 +77,7 @@ class Display_IntegerArray extends Buffer {
      * @
      *
      * Regarding the {@link Display_IntegerArray.Prototype.__Item} property, -1 will always be the last position
-     * according to the `Size` property, even if you never added a value there.
+     * according to the "Size" property, even if you never added a value there.
      *
      * @class
      *
