@@ -77,11 +77,12 @@ class WrapText {
      * expects `Context` to be an object with a `Text` property and a `Move` method, such as a `Gui.Control`
      * object. Before `WrapText` exits, `WrapText` removes any soft hyphens from the result string, then
      * sets the `Context.Text` property with the result string, then calls `Context.Move`. The width
-     * used is `Options.MaxExtent`. The height used depends on the value of `Options.MeasureLines`. If
-     * `Options.MeasureLines` is nonzero, then `OutHeight` is set with the cumulative height of the
-     * string, and its value gets used. If `Options.MeasureLines` is false, the height is set to
-     * `sz.H * LineCount` where `sz` is the  {@link Display_Size} object produced from the last `GetTextExtentExPoint`
-     * function call. In general this will be pretty close to the true height of the string, but should
+     * used is the greatest width of each line in the string (same value that `OutWidth` receives).
+     * The height used depends on the value of `Options.MeasureLines`. If `Options.MeasureLines` is
+     * nonzero, then `OutHeight` is set with the cumulative height of the string, and its value gets
+     * used. If `Options.MeasureLines` is false, the height is set to `sz.H * LineCount` where `sz`
+     * is the  {@link Display_Size} object produced from the last `GetTextExtentExPoint` function
+     * call. In general this will be pretty close to the true height of the string, but should
      * be expected to be slightly off.
      *
      * @param {String} [Options.BreakChars = "-"] - `BreakChars` is a list of characters that defines what
@@ -349,9 +350,9 @@ class WrapText {
             if Options.AdjustObject {
                 Context.Text := Str
                 if Options.MeasureLines {
-                    Context.Move(, , MaxExtent, OutHeight)
+                    Context.Move(, , OutWidth, OutHeight)
                 } else {
-                    Context.Move(, , MaxExtent, sz.H * LineCount)
+                    Context.Move(, , OutWidth, sz.H * LineCount)
                 }
             }
             font_context()
