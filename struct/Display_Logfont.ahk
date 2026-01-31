@@ -3,7 +3,6 @@ class Display_Logfont {
     static __New() {
         this.DeleteProp('__New')
         Proto := this.Prototype
-        Proto.Encoding := 'cp1200'
         Proto.Handle := Proto.Hwnd := 0
         Proto.CbSizeInstance :=
         4 + ; LONG  lfHeight                    0
@@ -29,24 +28,14 @@ class Display_Logfont {
      * @param {Integer} [Hwnd] - The window handle to associate with the `Logfont` object. If
      * set, {@link Display_Logfont.Prototype.Call} is called, filling the structure with the values
      * associated with the window. If unset, the buffer is filled with 0.
-     * @param {String} [Encoding] - The encoding used when getting and setting string values associated
-     * with LOGFONT members. The default encoding used by `Logfont` objects is UTF-16 (cp1200).
      */
-    __New(Hwnd?, Encoding?) {
+    __New(Hwnd?) {
         /**
          * A reference to the buffer object which is used as the LOGFONT structure.
          * @memberof Logfont
          * @instance
          */
         this.Buffer := Buffer(this.CbSizeInstance, 0)
-        if IsSet(Encoding) {
-            /**
-             * The encoding to use with `StrPut` and `StrGet` when handling strings.
-             * @memberof Logfont
-             * @instance
-             */
-            this.Encoding := Encoding
-        }
         if IsSet(Hwnd) {
             /**
              * The handle to the window associated with this object, if any.
@@ -70,6 +59,7 @@ class Display_Logfont {
          * The handle to the font object created by this object.
          * @memberof Logfont
          * @instance
+         * @type {Integer}
          */
         this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr')
         SendMessage(0x0030, this.Handle, Redraw, this.Hwnd) ; WM_SETFONT
@@ -80,23 +70,25 @@ class Display_Logfont {
     /**
      * @description - Sends WM_GETFONT to the window associated with this `Logfont` object, updating
      * this object's properties with the values obtained from the window.
-     * @throws {OSError} - Failed to get font object.
+     * @throws {OSError} - "Failed to get font object."
+     * @throws {Error} - "Invalid object type."
      */
     Call(*) {
-        if !DllCall(
-            'Gdi32.dll\GetObject',
-            'ptr', SendMessage(0x0031,,, this.Hwnd), ; WM_GETFONT
-            'int', this.Size,
-            'ptr', this,
-            'uint'
-        ) {
-            throw OSError('Failed to get font object.')
-        }
-    }
-    __Delete() {
-        if this.Handle {
-            DllCall('DeleteObject', 'ptr', this.Handle)
-            this.Handle := 0
+        hFont := SendMessage(0x0031,,, this.Hwnd)
+        if (objectType := DllCall('Gdi32.dll\GetObjectType', 'ptr', hFont, 'int')) = 6 {
+            if !DllCall(
+                'Gdi32.dll\GetObject',
+                'ptr', hFont, ; WM_GETFONT
+                'int', this.Size,
+                'ptr', this,
+                'int'
+            ) {
+                throw OSError('Failed to get font object.')
+            }
+        } else {
+            ; If you get this error, it likely means the hFont references an object that has already
+            ; been deleted.
+            throw Error('Invalid object type.', , objectType)
         }
     }
     /**
@@ -122,7 +114,7 @@ class Display_Logfont {
      * @memberof Logfont
      * @instance
      */
-    Dpi => this.Hwnd ? DllCall('GetDpiForWindow', 'Ptr', this.Hwnd, 'UInt') : ''
+    Dpi => this.Hwnd ? DllCall('GetDpiForWindow', 'ptr', this.Hwnd, 'UInt') : ''
     /**
      * Gets or sets the escapement measured in tenths of a degree.
      * @memberof Logfont
@@ -138,8 +130,8 @@ class Display_Logfont {
      * @instance
      */
     FaceName {
-        Get => StrGet(this.ptr + 28, 32, this.Encoding)
-        Set => StrPut(SubStr(Value, 1, 31), this.Ptr + 28, 32, this.Encoding)
+        Get => StrGet(this.ptr + 28, 32, Display_DefaultEncoding)
+        Set => StrPut(SubStr(Value, 1, 31), this.Ptr + 28, 32, Display_DefaultEncoding)
     }
     /**
      * Gets or sets the font family.
@@ -158,7 +150,7 @@ class Display_Logfont {
      */
     FontSize {
         Get => this.Hwnd ? Round(this.Height * -72 / this.Dpi, 2) : ''
-        Set => this.Height := Round(Value * this.Dpi / -72)
+        Set => this.Height := Round(Value * this.Dpi / -72, 0)
     }
     /**
      * Gets or sets the font height.

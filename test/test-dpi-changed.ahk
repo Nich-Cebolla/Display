@@ -1,15 +1,13 @@
 ﻿
-#include <DisplayConfig>
+#include test-DisplayConfig.ahk
 
 test_dpichanged()
 
 class test_dpichanged {
     static Call() {
-        ; SetThreadDpiAwarenessContext(-3)
         DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
         G := this.G := dGui('-DPIScale +Resize')
         DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
-        ; SetThreadDpiAwarenessContext(-4)
         G.SetFont('s11', 'Roboto Mono')
         s := '
         (
@@ -42,7 +40,7 @@ HandleDpiChange(NewDPI, RECT, msg, hwnd) {
 }
 )'
         StrReplace(s, '`n', , , &Count)
-        edt := G.Add('Edit', 'w600 r' Count ' -Wrap +Hscroll vedt', RegExReplace(s, '\R', '`r`n'))
+        edt := G.Add('Edit', 'w600 r' (Count + 1) ' -Wrap +Hscroll vedt', RegExReplace(s, '\R', '`r`n'))
         btn := G.Add('Button', 'Section vBtnOn', 'On')
         btn.OnEvent('Click', HClickButtonOn)
         btn := G.Add('Button', 'ys vBtnOff', 'Off')
@@ -50,12 +48,13 @@ HandleDpiChange(NewDPI, RECT, msg, hwnd) {
         G.Show()
         HClickButtonOn()
 
+        return
+
         HClickButtonOn(*) {
-            dGui.SetDpiChangedHandler(1)
+            Display_SetOnDpiChanged()
         }
         HClickButtonOff(*) {
-            dGui.SetDpiChangedHandler(0)
+            Display_SetOnDpiChanged(, 0)
         }
-
     }
 }

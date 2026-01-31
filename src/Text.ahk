@@ -18,11 +18,11 @@
 GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
     if DllCall('Gdi32.dll\GetTextExtentPoint32'
-        , 'Ptr', hdc
-        , 'Ptr', StrPtr(Str)
-        , 'Int', StrLen(Str)
-        , 'Ptr', sz := Display_Size()
-        , 'Int'
+        , 'ptr', hdc
+        , 'ptr', StrPtr(Str)
+        , 'int', StrLen(Str)
+        , 'ptr', sz := Display_Size()
+        , 'int'
     ) {
         return sz
     } else {
@@ -59,11 +59,11 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     for Str in Arr {
         if Str {
             if DllCall('Gdi32.dll\GetTextExtentPoint32'
-                , 'Ptr', hdc
-                , 'Ptr', StrPtr(Str)
-                , 'Int', StrLen(Str)
-                , 'Ptr', sz := Display_Size()
-                , 'Int'
+                , 'ptr', hdc
+                , 'ptr', StrPtr(Str)
+                , 'int', StrLen(Str)
+                , 'ptr', sz := Display_Size()
+                , 'int'
             ) {
                 Result[A_Index] := sz
                 OutWidth := Max(OutWidth, sz.W)
@@ -109,11 +109,11 @@ GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, 
     for Str in Arr {
         if Str {
             if DllCall('Gdi32.dll\GetTextExtentPoint32'
-                , 'Ptr', hdc
-                , 'Ptr', StrPtr(Str)
-                , 'Int', StrLen(Str)
-                , 'Ptr', sz := Display_Size()
-                , 'Int'
+                , 'ptr', hdc
+                , 'ptr', StrPtr(Str)
+                , 'int', StrLen(Str)
+                , 'ptr', sz := Display_Size()
+                , 'int'
             ) {
                 Result[A_Index] := sz
                 OutWidth := Max(OutWidth, sz.W)
@@ -302,11 +302,11 @@ MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWi
     for str in List {
         _str := str StrAppend
         if !DllCall('Gdi32.dll\GetTextExtentPoint32'
-            , 'Ptr', hdc
-            , 'Ptr', StrPtr(_str)
-            , 'Int', StrLen(_str)
-            , 'Ptr', sz := Display_Size()
-            , 'Int'
+            , 'ptr', hdc
+            , 'ptr', StrPtr(_str)
+            , 'int', StrLen(_str)
+            , 'ptr', sz := Display_Size()
+            , 'int'
         ) {
             throw OSError()
         }

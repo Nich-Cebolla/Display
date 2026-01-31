@@ -2,6 +2,7 @@
 #include ..\struct
 #include Display_Point.ahk
 #include Display_Rect.ahk
+
 /**
  * @classdesc - `dMon` contains several functions for getting a monitor's handle. The `dMon`
  * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfo"
@@ -178,7 +179,7 @@ class dMon {
      * @returns {dMon}
      */
     static Get(N := 1, *) {
-        return this(this.FromIndex(N))
+        return this.FromIndex(N)
     }
     /**
      * @description - Returns an integer representing 1 pixel to the right of the right-most edge
@@ -206,9 +207,9 @@ class dMon {
      * `MonitorGet`, irrespective of the monitors' position relative to other monitors. With one set
      * of settings, monitor 2 may be at coordinate (-1000, -1200), and later if the user changes
      * the settings, monitor 2 may be at coordinate (1980, -750).
-     * - Using `UseOrderedMonitors` and `dMon[Index]` - `GetOrder` constructs an array of Hmon values,
-     * ordering them according to the input parameters. Monitors are ordered as a function of their
-     * position relative to one another. Example:
+     * - Using `UseOrderedMonitors` and `dMon[Index]` - `GetOrder` constructs an array of {@link dMon}
+     * objects, ordering them according to the input parameters. Monitors are ordered as a function of
+     * their position relative to one another. Example:
      *   - If the user has a three-monitor setup, where one monitor is physically to the left and
      * above the main display, and the third is physically to the right and above the main display,
      * `UseOrderedMonitors` allows your function to refer to a monitor by index where the index will
@@ -237,7 +238,7 @@ class dMon {
      *     ; Get a new list every function call in case the user plugs in / removes a monitor.
      *     List := dMon.GetOrder()
      *     ; Get the `dMon` instance.
-     *     MonUnit := dMon(List[MonitorIndex])
+     *     MonUnit := List[MonitorIndex]
      *     ; Move, fitting the window in the right-half of the monitor's work area.
      *     WinMove(MonUnit.MidXW, MonUnit.TW, MonUnit.WW / 2, MonUnit.HW, Hwnd)
      * }
@@ -300,7 +301,7 @@ class dMon {
      */
     static GetOrder(Primary := 'X', LeftToRight := true, TopToBottom := true, OriginIs1 := true) {
         Result := []
-        constructor := this.FromPoint
+        constructor := this.FromPoint.Bind(this)
         if OriginIs1 {
             List := []
             loop Result.Capacity := List.Capacity := MonitorGetCount() {
@@ -342,7 +343,7 @@ class dMon {
      * @returns {dMon}
      */
     static GetOrdered(N := 1, *) {
-        return this(this.GetOrder()[N])
+        return this.GetOrder()[N]
     }
     static __GetOrdered(N := 1, *) {
         Params := this.__UseOrderedMonitors
@@ -352,36 +353,6 @@ class dMon {
           , HasProp(Params, 'TopToBottom') ? Params.TopToBottom : unset
           , HasProp(Params, 'OriginIs1') ? Params.OriginIs1 : unset
         )[N])
-    }
-
-    /**
-     * @classdesc - Returns the DPI of the monitor using various input types.
-     *
-     * The parameter `DpiType` can be one of the following:
-     * - MDT_EFFECTIVE_DPI - 0
-     * - MDT_ANGULAR_DPI - 1
-     * - MDT_RAW_DPI - 2
-     */
-    class Dpi {
-        /**
-         * @description - Returns the monitor's DPI.
-         * @param {Integer} Hmon - The monitor handle.
-         * @param {Integer} [DpiType = 0] - One of the following:
-         * - MDT_EFFECTIVE_DPI - 0
-         * - MDT_ANGULAR_DPI - 1
-         * - MDT_RAW_DPI - 2
-         */
-        static Call(Hmon, DpiType := 0) {
-            if !DllCall('Shcore\GetDpiForMonitor', 'ptr', Hmon, 'UInt', DpiType, 'UInt*', &DpiX := 0, 'UInt*', &DpiY := 0, 'UInt') {
-                return DpiX
-            }
-        }
-        static Pos(Left, Top, Right, Bottom, DpiType := 0) => this(dMon.FromPosH(Left, Top, Right, Bottom), DpiType)
-        static Rect(RectObj, DpiType := 0) => this(dMon.FromRectH(RectObj), DpiType)
-        static Dimensions(X, Y, W, H, DpiType := 0) => this(dMon.FromDimensionsH(X, Y, W, H), DpiType)
-        static Mouse(DpiType := 0) => this(dMon.FromMouseH(), DpiType)
-        static Display_Point(X, Y, DpiType := 0) => this(dMon.FromPointH(X, Y), DpiType)
-        static Win(Hwnd, DpiType := 0) => this(dMon.FromWinH(Hwnd), DpiType)
     }
 
     static UseOrderedMonitors {
@@ -450,12 +421,12 @@ class dMon {
 
     TL => Display_Point(this.L, this.T)
     BR => Display_Point(this.R, this.B)
-    L => NumGet(this, 4, 'Int')
-    X => NumGet(this, 4, 'Int')
-    T => NumGet(this, 8, 'Int')
-    Y => NumGet(this, 8, 'Int')
-    R => NumGet(this, 12, 'Int')
-    B => NumGet(this, 16, 'Int')
+    L => NumGet(this, 4, 'int')
+    X => NumGet(this, 4, 'int')
+    T => NumGet(this, 8, 'int')
+    Y => NumGet(this, 8, 'int')
+    R => NumGet(this, 12, 'int')
+    B => NumGet(this, 16, 'int')
     W => this.R - this.L
     H => this.B - this.T
     MidX => (this.R - this.L) / 2
@@ -464,9 +435,9 @@ class dMon {
     TLW => Display_Point(this.LW, this.TW)
     BRW => Display_Point(this.RW, this.BW)
     LW => NumGet(this, 20, 'int')
-    XW => NumGet(this, 20, 'Int')
+    XW => NumGet(this, 20, 'int')
     TW => NumGet(this, 24, 'int')
-    YW => NumGet(this, 24, 'Int')
+    YW => NumGet(this, 24, 'int')
     RW => NumGet(this, 28, 'int')
     BW => NumGet(this, 32, 'int')
     WW => this.RW - this.LW
@@ -479,6 +450,36 @@ class dMon {
 
     Ptr => this.Buffer.Ptr
     Size => this.Buffer.Size
+
+    /**
+     * @classdesc - Returns the DPI of the monitor using various input types.
+     *
+     * The parameter `DpiType` can be one of the following:
+     * - MDT_EFFECTIVE_DPI - 0
+     * - MDT_ANGULAR_DPI - 1
+     * - MDT_RAW_DPI - 2
+     */
+    class Dpi {
+        /**
+         * @description - Returns the monitor's DPI.
+         * @param {Integer} Hmon - The monitor handle.
+         * @param {Integer} [DpiType = 0] - One of the following:
+         * - MDT_EFFECTIVE_DPI - 0
+         * - MDT_ANGULAR_DPI - 1
+         * - MDT_RAW_DPI - 2
+         */
+        static Call(Hmon, DpiType := 0) {
+            if !DllCall('Shcore\GetDpiForMonitor', 'ptr', Hmon, 'UInt', DpiType, 'UInt*', &DpiX := 0, 'UInt*', &DpiY := 0, 'UInt') {
+                return DpiX
+            }
+        }
+        static Pos(Left, Top, Right, Bottom, DpiType := 0) => this(dMon.FromPosH(Left, Top, Right, Bottom), DpiType)
+        static Rect(RectObj, DpiType := 0) => this(dMon.FromRectH(RectObj), DpiType)
+        static Dimensions(X, Y, W, H, DpiType := 0) => this(dMon.FromDimensionsH(X, Y, W, H), DpiType)
+        static Mouse(DpiType := 0) => this(dMon.FromMouseH(), DpiType)
+        static Display_Point(X, Y, DpiType := 0) => this(dMon.FromPointH(X, Y), DpiType)
+        static Win(Hwnd, DpiType := 0) => this(dMon.FromWinH(Hwnd), DpiType)
+    }
 }
 /**
  * @description - Reorders the objects in an array according to the input options.

@@ -1,6 +1,30 @@
 ﻿
-
 class dLv extends Gui.ListView {
+    static __New() {
+        this.DeleteProp('__New')
+        if IsSet(dGui) {
+            __Display_Warning_DuplicateFunctionality(this)
+        }
+    }
+    /**
+     * @description - Creates a {@link dLv} control.
+     *
+     * This class is intended to be used when {@link dGui} is not needed. If your project uses
+     * {@link dGui}, your code should create the ListView directly from the {@link dGui} object by
+     * calling {@link dGui.Prototype.AddListView} or {@link dGui.Prototype.Add}.
+     * @class
+     *
+     * @param {Gui} GuiObj - The {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm Gui} object.
+     * @param {String} [Options = ""] - The value to pass to the `Options` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Add Gui.Prototype.Add}.
+     * @param {String} [Text = ""] - The value to pass to the `Text` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Add Gui.Prototype.Add}.
+     * @returns {dLv}
+     */
+    static Call(GuiObj, Options := '', Text := '') {
+        ObjSetBase(lv := GuiObj.Add('ListView', Options, Text), this.Prototype)
+        return lv
+    }
 
     /**
      * @description - Adds one or more rows to the list-view using an array of arrays.

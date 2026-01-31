@@ -35,7 +35,7 @@ if !(sz := GetTextExtentExPoint(MyStr, hdc, MaxWidth, &fit, &extentPoints)) {
     return
 }
 ; Release device context immediately when its no longer needed
-if !DllCall('ReleaseDC', 'Ptr', Txt.hWnd, 'Ptr', hdc, 'int') {
+if !DllCall('ReleaseDC', 'ptr', Txt.hWnd, 'ptr', hdc, 'int') {
     err := OSError()
     ; handle error
 }

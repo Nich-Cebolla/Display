@@ -1,6 +1,6 @@
-﻿#include ..\src\dComboBoxFilter.ahk
+﻿#include ..\src\FilterStrings.ahk
 
-; There are seven components to using `Display_FilterWords`
+; There are seven components to using `FilterStrings`
 
 ; 1. A list of words
 words := ['numerically','swathe','viverrine','debility','numb','sameness','parablast','disbud'
@@ -96,13 +96,13 @@ HChangeEdit(Ctrl, *) {
 }
 edt.OnEvent('Change', HChangeEdit)
 
-; In this example I assign the `Display_FilterWords` instance to a property on the gui object. This is usually
+; In this example I assign the `FilterStrings` instance to a property on the gui object. This is usually
 ; a convenient choice, but isn't strictly necessary. The reference must be accessible from the event
 ; handler that calls the filter, and from any event handlers or functions that handle adding or
-; deleting items from the array. While the `Display_FilterWords` function is active, to add items to the array
-; you must call `Display_FilterWords.Prototype.Add`, and to delete items you must call `Display_FilterWords.Prototype.Delete`.
+; deleting items from the array. While the `FilterStrings` function is active, to add items to the array
+; you must call `FilterStrings.Prototype.Add`, and to delete items you must call `FilterStrings.Prototype.Delete`.
 ; If you don't do this, the filter and the list of words will be out of sync.
-g.Filter := Display_FilterWords(words, GetTextCallback, AddCallback, DeleteCallback, FilterCallback)
+g.Filter := FilterStrings(words, GetTextCallback, AddCallback, DeleteCallback, FilterCallback)
 
 ; Let's also add a couple buttons and another edit control to demonstrate adding and deleting items.
 g.Add('Button', 'w93 xs ys+40 Section vBtnAdd', 'Add').OnEvent('Click', HClickButtonAdd)
@@ -171,7 +171,7 @@ But the following would not, because the substrings are not in the correct order
 Item := "This is an example item"
 Input := "Is this an item"
 
-Though `Display_FilterWords` doesn't make use of it, for each found substring `FilterCallback` populates an
+Though `FilterStrings` doesn't make use of it, for each found substring `FilterCallback` populates an
 array with integers representing these values:
 [ <InputSubstringStartPos>, <InputSubstringLength>, <ItemFoundPos>, ... ]
 These could be used to, for example, embolden the found substrings in a rich text control. The

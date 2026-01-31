@@ -180,8 +180,8 @@ class test_WrapText extends test_Base {
                     ;         if chr_sz.W + sz.W < _maxExtent {
                     ;             if IsAlnum(SubStr(Split[A_Index + 1], 1, 1)) {
                     ;                 hyphen := '-'
-                    ;                 if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-                    ;                     , hdc, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', lpSize := Buffer(8)) {
+                    ;                 if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr'
+                    ;                     , hdc, 'ptr', StrPtr(hyphen), 'int', 1, 'ptr', lpSize := Buffer(8)) {
                     ;                     throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
                     ;                 }
                     ;                 if NumGet(lpSize, 0, 'uint') + chr_sz.W + sz.W < _maxExtent {
@@ -195,7 +195,7 @@ class test_WrapText extends test_Base {
                     ;         }
                     ;     }
                     ; }
-                    ; if !DllCall('ReleaseDC', 'Ptr', Edt.hWnd, 'Ptr', hdc, 'Int') {
+                    ; if !DllCall('ReleaseDC', 'ptr', Edt.hWnd, 'ptr', hdc, 'int') {
                     ;     throw OSError()
                     ; }
                 ; }
@@ -285,14 +285,14 @@ class test_WrapText extends test_Base {
             local hdc, hyphen, lpSize, W
             context := SelectFontIntoDc(ctrl.hWnd)
             hyphen := '-'
-            if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-                , context.hdc, 'Ptr', StrPtr(hyphen), 'Int', 1, 'Ptr', lpSize := Buffer(8)) {
+            if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr'
+                , context.hdc, 'ptr', StrPtr(hyphen), 'int', 1, 'ptr', lpSize := Buffer(8)) {
                 throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
             }
             hyphen := NumGet(lpSize, 0, 'uint')
             W := 'W'
-            if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'Ptr'
-                , context.hdc, 'Ptr', StrPtr(W), 'Int', 1, 'Ptr', lpSize) {
+            if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr'
+                , context.hdc, 'ptr', StrPtr(W), 'int', 1, 'ptr', lpSize) {
                 throw OSError('``GetTextExtentPoint32`` failed.', , A_LastError)
             }
             context()
@@ -303,11 +303,11 @@ class test_WrapText extends test_Base {
         ;     ; Measure the text
         ;     context := SelectFontIntoDc(hdc)
         ;     if DllCall('Gdi32.dll\GetTextExtentPoint32'
-        ;         , 'Ptr', hdc
-        ;         , 'Ptr', StrPtr(Line)
-        ;         , 'Int', StrLen(Line)
-        ;         , 'Ptr', sz := Display_Size()
-        ;         , 'Int'
+        ;         , 'ptr', hdc
+        ;         , 'ptr', StrPtr(Line)
+        ;         , 'int', StrLen(Line)
+        ;         , 'ptr', sz := Display_Size()
+        ;         , 'int'
         ;     ) {
         ;         return sz
         ;     } else {

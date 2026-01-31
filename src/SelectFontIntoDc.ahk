@@ -7,7 +7,7 @@ class SelectFontIntoDc {
 
     __New(hWnd) {
         this.hWnd := hWnd
-        if !(this.hdc := DllCall('GetDC', 'Ptr', hWnd, 'ptr')) {
+        if !(this.hdc := DllCall('GetDC', 'ptr', hWnd, 'ptr')) {
             throw OSError()
         }
         OnError(this.Callback := ObjBindMethod(this, '__ReleaseOnError'), 1)

@@ -4,25 +4,31 @@
 #include Display_Rect.ahk
 #include Display_TcItemW.ahk
 
-/**
- * The display area is the area within which the tab's controls are visible.
- *
- * The window area is the window's entire area, including tabs and margins.
- */
 class dTab extends Gui.Tab {
     static __New() {
-        global Display_DefaultEncoding
         this.DeleteProp('__New')
-        if !IsSet(Display_DefaultEncoding) {
-            Display_DefaultEncoding := 'cp1200'
+        if IsSet(dGui) {
+            __Display_Warning_DuplicateFunctionality(this)
         }
     }
-
-    static Call(GuiObj, Which, Opt?, Text?) {
-        tab := GuiObj.Add(Which, Opt ?? unset, Text ?? unset)
-        tab.__Controls := Map()
-        tab.__Controls.CaseSense := false
-        ObjSetBase(tab, this.Prototype)
+    /**
+     * @description - Creates a {@link dTab} control.
+     *
+     * This class is intended to be used when {@link dGui} is not needed. If your project uses
+     * {@link dGui}, your code should create the Tab directly from the {@link dGui} object by
+     * calling {@link dGui.Prototype.AddTab}, {@link dGui.Prototype.AddTab2},
+     * {@link dGui.Prototype.AddTab3}, or {@link dGui.Prototype.Add}.
+     * @class
+     *
+     * @param {Gui} GuiObj - The {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm Gui} object.
+     * @param {String} [Options = ""] - The value to pass to the `Options` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Add Gui.Prototype.Add}.
+     * @param {String} [Text = ""] - The value to pass to the `Text` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Add Gui.Prototype.Add}.
+     * @returns {dLv}
+     */
+    static Call(GuiObj, Which, Options := '', Text := '') {
+        ObjSetBase(tab := GuiObj.Add(Which, Options, Text), this.Prototype)
         return tab
     }
 
