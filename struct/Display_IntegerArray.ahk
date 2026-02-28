@@ -26,9 +26,9 @@ class Display_IntegerArray extends Buffer {
      * ; enumerate the values
      * s := ""
      * for n in ia {
-     *     str .= n ", "
+     *     s .= n ", "
      * }
-     * MsgBox(SubStr(str, 1, -2)) ; 10, 23, 1991, 18
+     * MsgBox(SubStr(s, 1, -2)) ; 10, 23, 1991, 18
      *
      * ; If I need to add more, I must increase the capacity.
      * ia.Capacity := 5
