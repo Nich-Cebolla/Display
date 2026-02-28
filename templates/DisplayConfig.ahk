@@ -10,6 +10,7 @@
 ; Comment out any files which your project is not going to use. Internally, each file has an #include
 ; statement for its own dependencies, so a file may still end up in your project even if you
 ; comment it out here. Check the top of each individual file to review their dependencies.
+; LibraryManager.ahk is an exception; though it is required, no individual file #includes it.
 ; If using dGui - there's no need to use dLv, dTab, Lv, or Tab because dGui has the same methods
 ; just in a different package.
 ; If not using dGui - dLv and Lv offer the same functions; dLv is in written as a class whereas Lv is

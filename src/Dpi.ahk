@@ -1,6 +1,4 @@
 ﻿
-#include LibraryManager.ahk
-
 /**
  * @description - Calls {@link https://www.autohotkey.com/docs/v2/lib/OnMessage.htm OnMessage} to
  * set the `WM_DPICHANGED` message handler.

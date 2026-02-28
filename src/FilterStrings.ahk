@@ -1,6 +1,4 @@
 ﻿
-#include LibraryManager.ahk
-
 class FilterStrings {
     static __New() {
         this.DeleteProp('__New')
@@ -73,12 +71,6 @@ class FilterStrings {
      * - CallbackAdd
      * - CallbackDelete
      * - CallbackGetCriterion
-     *
-     * The following properties are optional but generally should be set:
-     * - CallbackEnd
-     * - CallbackFilter
-     * - HwndCtrl
-     * - HwndCtrlEventHandler
      *
      * For each option, a property with the same name is defined on the {@link FilterStrings} object
      * with the same value as the option value.
@@ -266,9 +258,11 @@ class FilterStrings {
     __New(Options) {
         this.List := Options.List
         this.CallbackGetCriterion := Options.CallbackGetCriterion
-        this.CallbackEnd := Options.CallbackEnd
         this.CallbackAdd := Options.CallbackAdd
         this.CallbackDelete := Options.CallbackDelete
+        if HasProp(Options, 'CallbackEnd') {
+            this.CallbackEnd := Options.CallbackEnd
+        }
         if HasProp(Options, 'CallbackFilter') {
             this.CallbackFilter := Options.CallbackFilter
         }

@@ -1,7 +1,6 @@
 ﻿
 #include __ControlGetTextExtentEx_Process.ahk
 #include ControlFitText.ahk
-#include LibraryManager.ahk
 #include ..\struct
 #include Display_IntegerArray.ahk
 #include Display_Rect.ahk
