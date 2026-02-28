@@ -651,7 +651,7 @@ FilterStrings_CallbackFilter(item, criterion, caseSense := false, ignoreChars :=
             lenSubCriterion := StrLen(subCriterion)
             leftOffsetItem := pos + lenSubCriterion
             leftOffsetCriterion += lenSubCriterion
-            if leftOffsetCriterion > lenCriterion {
+            if leftOffsetCriterion >= lenCriterion {
                 return true
             } else {
                 rightOffsetCriterion := 0
@@ -701,7 +701,7 @@ FilterStrings_CallbackFilter(item, criterion, caseSense := false, ignoreChars :=
  * @returns {Boolean} - If the number of characters that match with a substring in
  * `item` divided by the total number of non-ignored characters in `criterion` is greater than or
  * equal to `threshold`, {@link FilterStrings_CallbackFilterEx} returns nonzero.
- *
+ */
 FilterStrings_CallbackFilterEx(item, criterion, caseSense := false, ignoreChars := '\W', threshold := 1, backtracking := false) {
     leftOffsetCriterion := leftOffsetItem := 1
     rightOffsetCriterion := chars := 0
@@ -781,7 +781,7 @@ FilterStrings_CallbackFilterEx(item, criterion, caseSense := false, ignoreChars 
         }
     }
 }
-*/
+
 /**
  * @description - Returns the text of the indicated item of a combo box control or a dropdown-list
  * control. See {@link https://learn.microsoft.com/en-us/windows/win32/controls/cb-getlbtext}.
