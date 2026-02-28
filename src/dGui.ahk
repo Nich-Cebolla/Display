@@ -86,19 +86,15 @@ class dGui extends Gui {
         if IsSet(CallbackBefore) {
             if CallbackBefore {
                 proto.ToggleCallbackBefore := CallbackBefore
-            } else {
-                if proto.HasOwnProp('ToggleCallbackBefore') {
-                    proto.DeleteProp('ToggleCallbackBefore')
-                }
+            } else if proto.HasOwnProp('ToggleCallbackBefore') {
+                proto.DeleteProp('ToggleCallbackBefore')
             }
         }
         if IsSet(CallbackAfter) {
             if CallbackAfter {
                 proto.ToggleCallbackAfter := CallbackAfter
-            } else {
-                if proto.HasOwnProp('ToggleCallbackAfter') {
-                    proto.DeleteProp('ToggleCallbackAfter')
-                }
+            } else if proto.HasOwnProp('ToggleCallbackAfter') {
+                proto.DeleteProp('ToggleCallbackAfter')
             }
         }
     }
