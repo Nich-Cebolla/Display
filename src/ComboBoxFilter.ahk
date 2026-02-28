@@ -38,13 +38,13 @@ class ComboBoxFilter {
             throw Error('Failed to produce a unique id.')
         }
         this.HwndComboBox := ComboBox.Hwnd
-        this.Filter := FilterStrings(
-            List
-          , __ComboBoxFilter_GetText.Bind(ComboBox.Hwnd)
-          , __ComboBoxFilter_Add.Bind(this.Id, this.HwndComboBox)
-          , __ComboBoxFilter_Delete.Bind(this.HwndComboBox)
-          , FilterStrings_FilterCallback
-        )
+        this.Filter := FilterStrings({
+            List: List,
+            CallbackGetCriterion: __ComboBoxFilter_GetText.Bind(ComboBox.Hwnd),
+            CallbackAdd:  __ComboBoxFilter_Add.Bind(this.Id, this.HwndComboBox),
+            CallbackDelete: __ComboBoxFilter_Delete.Bind(this.HwndComboBox),
+            CallbackFilter: FilterStrings_CallbackFilter
+        })
         this.HandlerChange := ComboBoxFilter.HandlerChange(this.Id)
         ComboBox.OnEvent('Change', this.HandlerChange, 1)
         ComboBox.OnEvent('Focus', __ComboBoxFilter_HandlerFocus, 1)
