@@ -11,10 +11,6 @@ class FilterStrings {
         proto.HwndCtrl := 0
         proto.HwndCtrlEventHandler := 0
         proto.Priority := 0
-
-        global g_msvcrt_memmove
-        g_msvcrt_memmove := 0
-        this.libraryToken := LibraryManager('msvcrt', [ 'memmove' ])
     }
     /**
      * @description - Filters strings in an array of strings as a function of an input string, such

@@ -63,7 +63,7 @@ TabDisplayToWindow(TabCtrl, rc) {
  */
 TabGetClientDisplayRect(TabCtrl) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     rc.ToClient(TabCtrl.Gui.Hwnd, true)
@@ -78,7 +78,7 @@ TabGetClientDisplayRect(TabCtrl) {
  */
 TabGetClientWindowRect(TabCtrl) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     rc.ToClient(TabCtrl.Gui.Hwnd, true)
@@ -181,7 +181,7 @@ TabGetRowCount(TabCtrl) {
  */
 TabGetScreenDisplayRect(TabCtrl) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     SendMessage(4904, false, rc, TabCtrl.Hwnd, TabCtrl.Gui.Hwnd) ; TCM_ADJUSTRECT
@@ -195,7 +195,7 @@ TabGetScreenDisplayRect(TabCtrl) {
  */
 TabGetScreenWindowRect(TabCtrl) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     return rc
@@ -261,7 +261,7 @@ TabHitTest(TabCtrl, X, Y) {
  */
 TabMoveEx(TabCtrl, X?, Y?, W?, H?) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', TabCtrl.Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     rc.ToClient(TabCtrl.Gui.Hwnd, true)

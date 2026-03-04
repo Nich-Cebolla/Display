@@ -97,7 +97,7 @@ GetDpiFromDpiAwarenessContext(value) {
  * - E_ACCESSDENIED (0x80070005) - The application does not have sufficient privileges.
  */
 GetProcessDpiAwareness(hProcess := 0, &OutValue?) {
-    return DllCall('Shcore\GetProcessDpiAwareness', 'ptr', hProcess, 'int*', &OutValue := 0, 'int')
+    return DllCall(g_shcore_GetProcessDpiAwareness, 'ptr', hProcess, 'int*', &OutValue := 0, 'int')
 }
 /**
  * @description - Calls
@@ -209,22 +209,54 @@ Display_Dpi_SetConstants(force := false) {
             return
         }
     } else {
-        g_user32_AreDpiAwarenessContextsEqual :=
-        g_user32_GetAwarenessFromDpiAwarenessContext :=
-        g_user32_GetDpiAwarenessContextForProcess :=
-        g_user32_GetDpiForSystem :=
-        g_user32_GetDpiForWindow :=
-        g_user32_GetDpiFromDpiAwarenessContext :=
-        g_user32_GetSystemDpiForProcess :=
-        g_user32_GetSystemMetricsForDpi :=
-        g_user32_GetThreadDpiAwarenessContext :=
-        g_user32_GetThreadDpiHostingBehavior :=
-        g_user32_GetWindowDpiAwarenessContext :=
-        g_user32_GetWindowDpiHostingBehavior :=
-        g_user32_IsValidDpiAwarenessContext :=
-        g_user32_SetThreadDpiAwarenessContext :=
-        g_user32_SetThreadDpiHostingBehavior :=
-        g_shcore_GetProcessDpiAwareness := 0
+        if !IsSet(g_user32_AreDpiAwarenessContextsEqual) {
+            g_user32_AreDpiAwarenessContextsEqual := 0
+        }
+        if !IsSet(g_user32_GetAwarenessFromDpiAwarenessContext) {
+            g_user32_GetAwarenessFromDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_GetDpiAwarenessContextForProcess) {
+            g_user32_GetDpiAwarenessContextForProcess := 0
+        }
+        if !IsSet(g_user32_GetDpiForSystem) {
+            g_user32_GetDpiForSystem := 0
+        }
+        if !IsSet(g_user32_GetDpiForWindow) {
+            g_user32_GetDpiForWindow := 0
+        }
+        if !IsSet(g_user32_GetDpiFromDpiAwarenessContext) {
+            g_user32_GetDpiFromDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_GetSystemDpiForProcess) {
+            g_user32_GetSystemDpiForProcess := 0
+        }
+        if !IsSet(g_user32_GetSystemMetricsForDpi) {
+            g_user32_GetSystemMetricsForDpi := 0
+        }
+        if !IsSet(g_user32_GetThreadDpiAwarenessContext) {
+            g_user32_GetThreadDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_GetThreadDpiHostingBehavior) {
+            g_user32_GetThreadDpiHostingBehavior := 0
+        }
+        if !IsSet(g_user32_GetWindowDpiAwarenessContext) {
+            g_user32_GetWindowDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_GetWindowDpiHostingBehavior) {
+            g_user32_GetWindowDpiHostingBehavior := 0
+        }
+        if !IsSet(g_user32_IsValidDpiAwarenessContext) {
+            g_user32_IsValidDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_SetThreadDpiAwarenessContext) {
+            g_user32_SetThreadDpiAwarenessContext := 0
+        }
+        if !IsSet(g_user32_SetThreadDpiHostingBehavior) {
+            g_user32_SetThreadDpiHostingBehavior := 0
+        }
+        if !IsSet(g_shcore_GetProcessDpiAwareness) {
+            g_shcore_GetProcessDpiAwareness := 0
+        }
     }
     Display_Dpi_LibraryToken := LibraryManager(
         'user32', [

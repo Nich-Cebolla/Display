@@ -20,19 +20,29 @@ class dGui extends Gui {
         , g_user32_GetDpiForWindow
         , g_user32_GetWindowRect
         , g_user32_IsWindowVisible
-        , g_gdi32_GetTextExtentPoint32W
-        , g_gdi32_GetTextExtentExPointW
         , BASE_DPI
         this.DeleteProp('__New')
-        g_user32_BeginDeferWindowPos :=
-        g_user32_DeferWindowPos :=
-        g_user32_EndDeferWindowPos :=
-        g_user32_GetDpiForSystem :=
-        g_user32_GetDpiForWindow :=
-        g_user32_GetWindowRect :=
-        g_user32_IsWindowVisible :=
-        g_gdi32_GetTextExtentPoint32W :=
-        g_gdi32_GetTextExtentExPointW := 0
+        if !IsSet(g_user32_BeginDeferWindowPos) {
+            g_user32_BeginDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_DeferWindowPos) {
+            g_user32_DeferWindowPos := 0
+        }
+        if !IsSet(g_user32_EndDeferWindowPos) {
+            g_user32_EndDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_GetDpiForSystem) {
+            g_user32_GetDpiForSystem := 0
+        }
+        if !IsSet(g_user32_GetDpiForWindow) {
+            g_user32_GetDpiForWindow := 0
+        }
+        if !IsSet(g_user32_GetWindowRect) {
+            g_user32_GetWindowRect := 0
+        }
+        if !IsSet(g_user32_IsWindowVisible) {
+            g_user32_IsWindowVisible := 0
+        }
         this.libraryToken := LibraryManager(
             'user32', [
                 'BeginDeferWindowPos',
@@ -42,10 +52,6 @@ class dGui extends Gui {
                 'GetDpiForWindow',
                 'GetWindowRect',
                 'IsWindowVisible'
-            ],
-            'gdi32', [
-                'GetTextExtentPoint32W',
-                'GetTextExtentExPointW'
             ]
         )
         if !IsSet(BASE_DPI) {
@@ -857,7 +863,7 @@ class dGui extends Gui {
                 for line in StrSplit(this.Text, '`r`n') {
                     if line {
                         if DllCall(
-                            'Gdi32.dll\GetTextExtentPoint32W'
+                            g_gdi32_GetTextExtentPoint32W
                           , 'ptr', hdc
                           , 'ptr', StrPtr(line)
                           , 'int', StrLen(line)
@@ -877,7 +883,7 @@ class dGui extends Gui {
                 OutHeight -= padding.LinePadding
             } else {
                 if DllCall(
-                    'Gdi32.dll\GetTextExtentPoint32W'
+                    g_gdi32_GetTextExtentPoint32W
                   , 'ptr', context.hdc
                   , 'wstr', this.Text
                   , 'int', StrLen(this.Text)
@@ -1543,7 +1549,7 @@ class dGui extends Gui {
             Text := RegExReplace(this.Text, '<.+?"[ \t]*>(.+?)</a>', '$1')
             ; Measure the text
             if DllCall(
-                'Gdi32.dll\GetTextExtentPoint32W'
+                g_gdi32_GetTextExtentPoint32W
                 , 'ptr', context.hdc
                 , 'ptr', StrPtr(Text)
                 , 'int', StrLen(Text)
@@ -1754,7 +1760,7 @@ class dGui extends Gui {
             _Proc(r, c) {
                 ; Measure the text
                 if DllCall(
-                    'Gdi32.dll\GetTextExtentPoint32W'
+                    g_gdi32_GetTextExtentPoint32W
                     , 'ptr', context.hdc
                     , 'ptr', StrPtr(this.GetText(r, c))
                     , 'int', StrLen(this.GetText(r, c))
@@ -2456,7 +2462,7 @@ class dGui extends Gui {
             _Proc() {
                 ; Measure the text
                 if DllCall(
-                    'Gdi32.dll\GetTextExtentPoint32W'
+                    g_gdi32_GetTextExtentPoint32W
                     , 'ptr', hdc
                     , 'ptr', StrPtr(this.GetText(_id))
                     , 'int', StrLen(this.GetText(_id))

@@ -38,7 +38,7 @@ class ControlFitText {
             for line in StrSplit(Ctrl.Text, '`r`n') {
                 if line {
                     if DllCall(
-                        'Gdi32.dll\GetTextExtentPoint32'
+                        g_gdi32_GetTextExtentPoint32W
                       , 'ptr', hdc
                       , 'ptr', StrPtr(line)
                       , 'int', StrLen(line)
@@ -58,7 +58,7 @@ class ControlFitText {
             OutHeight -= padding.LinePadding
         } else {
             if DllCall(
-                'Gdi32.dll\GetTextExtentPoint32'
+                g_gdi32_GetTextExtentPoint32W
               , 'ptr', context.hdc
               , 'wstr', Ctrl.Text
               , 'int', StrLen(Ctrl.Text)
@@ -120,7 +120,7 @@ class ControlFitText {
             g.Add(Ctrl.Type, Options, 'line`r`nline').GetPos(, , , &h2)
             context := SelectFontIntoDc(Ctrl.Hwnd)
             sz := Display_Size()
-            DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr', context.hdc, 'wstr', 'line', 'int', 4, 'ptr', sz, 'int')
+            DllCall(g_gdi32_GetTextExtentPoint32W, 'ptr', context.hdc, 'wstr', 'line', 'int', 4, 'ptr', sz, 'int')
             context()
             g.Destroy()
             this.W := w1 - sz.W

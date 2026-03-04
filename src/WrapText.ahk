@@ -132,8 +132,8 @@ class WrapText {
      * @example
      * Ctrl := (G := Gui()).AddText()
      * Ctrl.Text := 'She sang supercalifradulisticexpialidocious then went on her merry way.'
-     * hdc := DllCall('GetDC', 'ptr', Ctrl.hWnd, 'ptr')
-     * sz := GetTextExtentPoint32(hdc, 'She sang supercalifradulisticexpialidoc')
+     * hdc := DllCall(g_user32_GetDC, 'ptr', Ctrl.hWnd, 'ptr')
+     * sz := Display_GetTextExtentPoint32(hdc, 'She sang supercalifradulisticexpialidoc')
      * LineCount := WrapText(Ctrl, &Str, { MaxExtent: sz.W, AdjustObject: true })
      * Split := StrSplit(Ctrl.Text, '`r`n')
      * MsgBox(Split[1]) ; She sang
@@ -214,7 +214,7 @@ class WrapText {
 
         ; Measure the width of a hyphen
         hyphen := '-'
-        if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr'
+        if !DllCall(g_gdi32_GetTextExtentPoint32W, 'ptr'
             , hdc, 'ptr', StrPtr(hyphen), 'int', 1, 'ptr', sz, 'int') {
             throw OSError()
         }
@@ -222,7 +222,7 @@ class WrapText {
 
         ; `MaxExtent` must at least be large enough such that the loops can iterate once or twice
         ; before reaching the beginning of the substring.
-        if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr'
+        if !DllCall(g_gdi32_GetTextExtentPoint32W, 'ptr'
             , hdc, 'ptr', StrPtr('W'), 'int', 1, 'ptr', sz, 'int') {
             throw OSError()
         }
@@ -317,7 +317,7 @@ class WrapText {
         loop {
             Len := StrLen(Text)
             ptr := StrPtr(Text)
-            if !DllCall('Gdi32.dll\GetTextExtentExPoint'
+            if !DllCall(g_gdi32_GetTextExtentExPointW
                 , 'ptr', hdc                ; Device context
                 , 'ptr', ptr                ; String to measure
                 , 'int', Len                ; String length in WORDs
@@ -483,14 +483,14 @@ class WrapText {
             }
         }
         _ReleaseDC(Thrown, *) {
-            DllCall('ReleaseDC', 'ptr', Context.hWnd, 'ptr', hdc, 'int')
+            DllCall(g_user32_ReleaseDC, 'ptr', Context.hWnd, 'ptr', hdc, 'int')
             OnError(_ReleaseDC, 0)
             throw Thrown
         }
         ; Measure string, add size object to array
         _Set_1(SetPos, AddHyphen := '') {
             Part := SubStr(Text, 1, SetPos) AddHyphen
-            if DllCall('Gdi32.dll\GetTextExtentPoint32'
+            if DllCall(g_gdi32_GetTextExtentPoint32W
                 , 'ptr', hdc
                 , 'ptr', StrPtr(Part)
                 , 'int', StrLen(Part)
@@ -511,7 +511,7 @@ class WrapText {
         ; Measure string, no array
         _Set_2(SetPos, AddHyphen := '') {
             Part := SubStr(Text, 1, SetPos) AddHyphen
-            if DllCall('Gdi32.dll\GetTextExtentPoint32'
+            if DllCall(g_gdi32_GetTextExtentPoint32W
                 , 'ptr', hdc
                 , 'ptr', StrPtr(Part)
                 , 'int', StrLen(Part)

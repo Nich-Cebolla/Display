@@ -5,7 +5,7 @@
 
 /**
  * @classdesc - `dMon` contains several functions for getting a monitor's handle. The `dMon`
- * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfo"
+ * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfoW"
  * and that expose methods and properties that simplify usage of that information.
  */
 class dMon {
@@ -65,10 +65,10 @@ class dMon {
      * @returns {dMon} - The {@link dMon} for the monitor that contains the mouse pointer.
      */
     static FromMouse(&OutX?, &OutY?) {
-        if Result := DllCall('GetCursorPos', 'ptr', Pt := Display_Point(), 'int') {
+        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Display_Point(), 'int') {
             OutX := Pt.X
             OutY := Pt.Y
-            return this(DllCall('MonitorFromPoint', 'ptr', Pt.Value, 'uint', 0 , 'ptr'))
+            return this(DllCall(g_user32_MonitorFromPoint, 'ptr', Pt.Value, 'uint', 0 , 'ptr'))
         }
     }
     /**
@@ -81,10 +81,10 @@ class dMon {
      * @returns {Integer} - The handle of the monitor that contains the mouse pointer.
      */
     static FromMouseH(&OutX?, &OutY?) {
-        if Result := DllCall('GetCursorPos', 'ptr', Pt := Display_Point(), 'int') {
+        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Display_Point(), 'int') {
             OutX := Pt.X
             OutY := Pt.Y
-            return DllCall('MonitorFromPoint', 'ptr', Pt.Value, 'uint', 0 , 'ptr')
+            return DllCall(g_user32_MonitorFromPoint, 'ptr', Pt.Value, 'uint', 0 , 'ptr')
         }
     }
     /**
@@ -95,7 +95,7 @@ class dMon {
      * @returns {dMon} - The {@link dMon} for the monitor that contains the point.
      */
     static FromPoint(X, Y){
-        return this(DllCall('MonitorFromPoint', 'ptr', (X & 0xFFFFFFFF) | (Y << 32), 'uint', 0 , 'ptr'))
+        return this(DllCall(g_user32_MonitorFromPoint, 'ptr', (X & 0xFFFFFFFF) | (Y << 32), 'uint', 0 , 'ptr'))
     }
     /**
      * @description - Gets monitor handle from a coordinate pair.
@@ -105,7 +105,7 @@ class dMon {
      * @returns {Integer} - The handle of the monitor that contains the point.
      */
     static FromPointH(X, Y){
-        return DllCall('MonitorFromPoint', 'ptr', (X & 0xFFFFFFFF) | (Y << 32), 'uint', 0 , 'ptr')
+        return DllCall(g_user32_MonitorFromPoint, 'ptr', (X & 0xFFFFFFFF) | (Y << 32), 'uint', 0 , 'ptr')
     }
     /**
      * @description - Returns a {@link dMon} object using a bounding rectangle.
@@ -118,7 +118,7 @@ class dMon {
      * with the rectangle.
      */
     static FromPos(L, T, R, B) {
-        return DllCall('MonitorFromRect', 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
+        return DllCall(g_user32_MonitorFromRect, 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
     }
     /**
      * @description - Gets the monitor handle using a bounding rectangle.
@@ -131,7 +131,7 @@ class dMon {
      * with the rectangle.
      */
     static FromPosH(L, T, R, B) {
-        return DllCall('MonitorFromRect', 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
+        return DllCall(g_user32_MonitorFromRect, 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
     }
     /**
      * @description - Returns a {@link dMon} object using a {@link Display_Rect} object.
@@ -141,7 +141,7 @@ class dMon {
      * with the rectangle.
      */
     static FromRect(RectObj) {
-        return this(DllCall('MonitorFromRect', 'ptr', RectObj, 'UInt', 0, 'Uptr'))
+        return this(DllCall(g_user32_MonitorFromRect, 'ptr', RectObj, 'UInt', 0, 'Uptr'))
     }
     /**
      * @description - Gets the monitor handle using a {@link Display_Rect} object.
@@ -151,7 +151,7 @@ class dMon {
      * with the rectangle.
      */
     static FromRectH(RectObj) {
-        return DllCall('MonitorFromRect', 'ptr', RectObj, 'UInt', 0, 'Uptr')
+        return DllCall(g_user32_MonitorFromRect, 'ptr', RectObj, 'UInt', 0, 'Uptr')
     }
     /**
      * @description - Returns a {@link dMon} object using a window handle.
@@ -161,7 +161,7 @@ class dMon {
      * with the window.
      */
     static FromWin(Hwnd) {
-        return this(DllCall('MonitorFromWindow', 'ptr', Hwnd, 'UInt', 0x00000000, 'Uptr'))
+        return this(DllCall(g_user32_MonitorFromWindow, 'ptr', Hwnd, 'UInt', 0x00000000, 'Uptr'))
     }
     /**
      * @description - Gets the monitor handle using a window handle.
@@ -171,7 +171,7 @@ class dMon {
      * with the window.
      */
     static FromWinH(Hwnd) {
-        return DllCall('MonitorFromWindow', 'ptr', Hwnd, 'UInt', 0x00000000, 'Uptr')
+        return DllCall(g_user32_MonitorFromWindow, 'ptr', Hwnd, 'UInt', 0x00000000, 'Uptr')
     }
     /**
      * @description - Returns a {@link dMon} object.
@@ -400,7 +400,7 @@ class dMon {
         this.Buffer := Buffer(40)
         this.Hmon := Hmon
         NumPut('Uint', 40, this.Buffer)
-        if !DllCall('GetMonitorInfo', 'ptr', Hmon, 'ptr', this.Buffer, 'int') {
+        if !DllCall(g_user32_GetMonitorInfoW, 'ptr', Hmon, 'ptr', this.Buffer, 'int') {
             throw OSError()
         }
     }
@@ -469,7 +469,7 @@ class dMon {
          * - MDT_RAW_DPI - 2
          */
         static Call(Hmon, DpiType := 0) {
-            if !DllCall('Shcore\GetDpiForMonitor', 'ptr', Hmon, 'UInt', DpiType, 'UInt*', &DpiX := 0, 'UInt*', &DpiY := 0, 'UInt') {
+            if !DllCall(g_shcore_GetDpiForMonitor, 'ptr', Hmon, 'UInt', DpiType, 'UInt*', &DpiX := 0, 'UInt*', &DpiY := 0, 'UInt') {
                 return DpiX
             }
         }
@@ -541,4 +541,45 @@ Display_OrderRects(List, Primary := 'X', LeftToRight := true, TopToBottom := tru
         }
         return 1
     }
+}
+
+Display_dMon_SetConstants(force := false) {
+    global
+    if IsSet(Display_dMon_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_shcore_GetDpiForMonitor) {
+            g_shcore_GetDpiForMonitor := 0
+        }
+        if !IsSet(g_user32_GetCursorPos) {
+            g_user32_GetCursorPos := 0
+        }
+        if !IsSet(g_user32_GetMonitorInfoW) {
+            g_user32_GetMonitorInfoW := 0
+        }
+        if !IsSet(g_user32_MonitorFromPoint) {
+            g_user32_MonitorFromPoint := 0
+        }
+        if !IsSet(g_user32_MonitorFromRect) {
+            g_user32_MonitorFromRect := 0
+        }
+        if !IsSet(g_user32_MonitorFromWindow) {
+            g_user32_MonitorFromWindow := 0
+        }
+    }
+    Display_dMon_LibraryToken := LibraryManager(
+        'shcore', [
+            'GetDpiForMonitor'
+        ],
+        'user32', [
+            'GetCursorPos',
+            'GetMonitorInfoW',
+            'MonitorFromPoint',
+            'MonitorFromRect',
+            'MonitorFromWindow'
+        ]
+    )
+    Display_dMon_constants_set := true
 }

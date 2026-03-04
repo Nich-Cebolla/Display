@@ -78,6 +78,10 @@ Display_Initialize(force := false) {
 
     ; Comment this out if not using src\Dpi.ahk.
     Display_Dpi_SetConstants()
+    ; Comment this out if not using src\dMon.ahk.
+    Display_dMon_SetConstants()
+    ; Comment this out if not using src\Window.ahk
+    Display_Window_SetConstants()
 
     /**
      * @var {String} - This is used by struct\Display_TcItemW.ahk and struct\Display_Logfont.ahk
@@ -85,6 +89,8 @@ Display_Initialize(force := false) {
      * a clear reason for doing so.
      */
     Display_DefaultEncoding := 'cp1200'
+
+    Display_SetConstants()
 
     Display_initialized := true
 }

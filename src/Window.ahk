@@ -5,13 +5,13 @@
 #include Display_Rect.ahk
 
 Display_AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
-    return DllCall('AdjustWindowRectEx', 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
+    return DllCall(g_user32_AdjustWindowRectEx, 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
 }
 Display_AdjustWindowRectExForDpi(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
-    return DllCall('AdjustWindowRectExForDpi', 'ptr', lpRect, 'int', dwStyle, 'int', bMenu, 'int', dwExStyle, 'int', dMon.Dpi.Rect(lpRect))
+    return DllCall(g_user32_AdjustWindowRectExForDpi, 'ptr', lpRect, 'int', dwStyle, 'int', bMenu, 'int', dwExStyle, 'int', dMon.Dpi.Rect(lpRect))
 }
 Display_AllowSetForegroundWindow(PID?) {
-    if !DllCall('AllowSetForegroundProcess', 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
+    if !DllCall(g_user32_AllowSetForegroundWindow, 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
         throw OSError()
     }
 }
@@ -27,16 +27,16 @@ Display_AllowSetForegroundWindow(PID?) {
  * @return {Integer} - Returns a handle to the `hWinPosInfo` structure if successful, else 0.
  */
 Display_BeginDeferWindowPos(InitialCount := 2) {
-    return DllCall('BeginDeferWindowPos', 'int', InitialCount, 'ptr')
+    return DllCall(g_user32_BeginDeferWindowPos, 'int', InitialCount, 'ptr')
 }
 Display_BringWindowToTop(Hwnd) {
-    return DllCall('BringWindowToTop', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+    return DllCall(g_user32_BringWindowToTop, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 Display_ChildWindowFromPoint(Hwnd, X, Y) {
-    return DllCall('ChildWindowFromPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall(g_user32_ChildWindowFromPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 Display_ChildWindowFromPointEx(Hwnd, X, Y, flags := 0) {
-    return DllCall('ChildWindowFromPointEx', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
+    return DllCall(g_user32_ChildWindowFromPointEx, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
 }
 /**
  * @description - Calls `DeferWindowPos`, which is used to prepare a window for being adjusted
@@ -59,11 +59,11 @@ Display_ChildWindowFromPointEx(Hwnd, X, Y, flags := 0) {
  * have changed.
  */
 Display_DeferWindowPos(hWinPosInfo, Hwnd, X, Y, W, H, uFlags := 0, HwndInsertAfter := 0) {
-    return DllCall('DeferWindowPos', 'ptr', hWinPosInfo, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', IsObject(HwndInsertAfter) ? HwndInsertAfter.Hwnd : HwndInsertAfter
+    return DllCall(g_user32_DeferWindowPos, 'ptr', hWinPosInfo, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', IsObject(HwndInsertAfter) ? HwndInsertAfter.Hwnd : HwndInsertAfter
     , 'int', X, 'int', Y, 'int', W, 'int', H, 'uint', uFlags, 'ptr')
 }
 Display_DestroyWindow(Hwnd) {
-    return DllCall('DestroyWindow', 'ptr', Hwnd, 'int')
+    return DllCall(g_user32_DestroyWindow, 'ptr', Hwnd, 'int')
 }
 /**
  * @description - Calls `EndDeferWindowPos`. Use this after setting the DWP struct.
@@ -72,34 +72,34 @@ Display_DestroyWindow(Hwnd) {
  * @return {Boolean} - 1 if successful, 0 if unsuccessful.
  */
 Display_EndDeferWindowPos(hDwp) {
-    return DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr')
+    return DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr')
 }
 Display_EnumChildWindows(HwndParent, Callback, lParam := 0) {
     cb := CallbackCreate(Callback)
-    result := DllCall('EnumChildWindows', 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', cb, 'uint', lParam, 'int')
+    result := DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', cb, 'uint', lParam, 'int')
     CallbackFree(cb)
     return result
 }
 Display_EnumThreadWindows(PID, Callback, lParam := 0) {
     cb := CallbackCreate(Callback)
-    result := DllCall('EnumThreadWindows', 'uint', PID, 'ptr', cb, 'uint', lParam, 'int')
+    result := DllCall(g_user32_EnumThreadWindows, 'uint', PID, 'ptr', cb, 'uint', lParam, 'int')
     CallbackFree(cb)
     return result
 }
 Display_EnumWindows(Callback, lParam := 0) {
     cb := CallbackCreate(Callback)
-    result := DllCall('EnumWindows', 'ptr', cb, 'uint', lParam, 'int')
+    result := DllCall(g_user32_EnumWindows, 'ptr', cb, 'uint', lParam, 'int')
     CallbackFree(cb)
     return result
 }
 Display_FromPhysicalPoint(X, Y) {
-    return DllCall('WindowFromPhysicalPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall(g_user32_WindowFromPhysicalPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 Display_FromPoint(X, Y) {
-    return DllCall('WindowFromPoint', 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall(g_user32_WindowFromPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 Display_GetActiveWindow() {
-    return DllCall('GetActiveWindow', 'ptr')
+    return DllCall(g_user32_GetActiveWindow, 'ptr')
 }
 /**
  * @param Flags -
@@ -108,7 +108,7 @@ Display_GetActiveWindow() {
  * - 3 : Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
  */
 Display_GetAncestor(Hwnd, Flags) {
-    return DllCall('GetAncestor', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Flags, 'ptr')
+    return DllCall(g_user32_GetAncestor, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Flags, 'ptr')
 }
 /**
  * @description - Gets the bounding rectangle of all child windows of a given window.
@@ -118,41 +118,33 @@ Display_GetAncestor(Hwnd, Flags) {
  */
 Display_GetChildrenBoundingRect(Hwnd) {
     rects := [Buffer(16), Buffer(16), Buffer(16)]
-    DllCall('EnumChildWindows', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+    DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
     CallbackFree(cb)
     return rects[1]
 
     _EnumChildWindowsProc(Hwnd) {
-        DllCall('GetWindowRect', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', rects[1], 'int')
-        DllCall('UnionRect', 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
+        DllCall(g_user32_GetWindowRect, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', rects[1], 'int')
+        DllCall(g_user32_UnionRect, 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
         rects.Push(rects.RemoveAt(1))
         return 1
     }
 }
 Display_GetClientRect(Hwnd, &lpRect) {
-    return DllCall('GetClientRect', 'ptr', Hwnd, 'ptr', lpRect := Display_Rect(), 'int')
+    return DllCall(g_user32_GetClientRect, 'ptr', Hwnd, 'ptr', lpRect := Display_Rect(), 'int')
 }
 Display_GetDesktopWindow() {
-    return DllCall('GetDesktopWindow', 'ptr')
+    return DllCall(g_user32_GetDesktopWindow, 'ptr')
 }
-Display_GetDpi(Hwnd) => DllCall('GetDpiForWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
-Display_GetForegroundWindow() => DllCall('GetForegroundWindow', 'ptr')
-/**
- * @param Cmd -
- * - 2 : Returns a handle to the window below the given window.
- * - 3 : Returns a handle to the window above the given window.
- */
-Display_GetNextWindow(Hwnd, Cmd) {
-    return DllCall('GetNextWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
-}
+Display_GetDpi(Hwnd) => DllCall(g_user32_GetDpiForWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+Display_GetForegroundWindow() => DllCall(g_user32_GetForegroundWindow, 'ptr')
 Display_GetParent(Hwnd) {
-    return DllCall('GetParent', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
+    return DllCall(g_user32_GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
 }
 Display_GetShellWindow() {
-    return DllCall('GetShellWindow', 'ptr')
+    return DllCall(g_user32_GetShellWindow, 'ptr')
 }
 Display_GetTopWindow(Hwnd := 0) {
-    return DllCall('GetTopWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
+    return DllCall(g_user32_GetTopWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
 }
 /**
  * @param Cmd -
@@ -189,7 +181,7 @@ Display_GetTopWindow(Hwnd := 0) {
  *  For more information, see Owned Windows.
  */
 Display_GetWindow(Hwnd, Cmd) {
-    return DllCall('GetWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
+    return DllCall(g_user32_GetWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
 }
 /**
  * @description - Retrieves the dimensions of the bounding rectangle of the specified window.
@@ -200,16 +192,16 @@ Display_GetWindow(Hwnd, Cmd) {
  */
 Display_GetWindowRect(Hwnd) {
     rc := Display_Rect()
-    if !DllCall('GetWindowRect', 'ptr', Hwnd, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetWindowRect, 'ptr', Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
     return rc
 }
 Display_IsChild(HwndParent, HwndChild) {
-    return DllCall('IsChild', 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'int')
+    return DllCall(g_user32_IsChild, 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'int')
 }
 Display_IsVisible(Hwnd) {
-    return DllCall('IsWindowVisible', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+    return DllCall(g_user32_IsWindowVisible, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 Display_LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
     AspectRatio := W1 / H1
@@ -229,7 +221,7 @@ Display_LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
  * - 2 : Enables calls to SetForegroundWindow
  */
 Display_LockSetForegroundWindow(code) {
-    return DllCall('LockSetForegroundWindow', 'uint', code, 'int')
+    return DllCall(g_user32_LockSetForegroundWindow, 'uint', code, 'int')
 }
 /**
  * @description - Calculates the optimal position to move one rectangle adjacent to another while
@@ -308,10 +300,10 @@ Display_MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer 
     } else {
         buf := Buffer(16)
         NumPut('int', tarL, 'int', tarT, 'int', tarR, 'int', tarB, buf)
-        Hmon := DllCall('MonitorFromRect', 'ptr', buf, 'uint', 0x00000002, 'ptr')
+        Hmon := DllCall(g_user32_MonitorFromRect, 'ptr', buf, 'uint', 0x00000002, 'ptr')
         mon := Buffer(40)
         NumPut('int', 40, mon)
-        if !DllCall('GetMonitorInfo', 'ptr', Hmon, 'ptr', mon, 'int') {
+        if !DllCall(g_user32_GetMonitorInfoW, 'ptr', Hmon, 'ptr', mon, 'int') {
             throw OSError()
         }
         monL := NumGet(mon, 20, 'int')
@@ -451,7 +443,7 @@ Display_MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer 
 Display_MoveByMouse(Hwnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?, CalculateOnly := false) {
     Mon := dMon(dMon.FromMouse(&X, &Y))
     WinGetPos(&wx, &wy, &ww, &wh, Hwnd)
-    if !DllCall('MoveWindow', 'ptr', Hwnd, 'int', OutX := _GetX(), 'int', OutY := _GetY(), 'int', ww, 'int', wh, 'int') {
+    if !DllCall(g_user32_MoveWindow, 'ptr', Hwnd, 'int', OutX := _GetX(), 'int', OutY := _GetY(), 'int', ww, 'int', wh, 'int') {
         throw OSError()
     }
     ; WinMove(OutX := _GetX(), OutY := _GetY(), , Hwnd)
@@ -486,7 +478,7 @@ Display_MoveByMouse(Hwnd, PaddingX := 5, PaddingY := 5, &OutX?, &OutY?, Calculat
  * @param {Integer} [H] - The new Height of the window.
  */
 Display_MoveScaled(Hwnd, X?, Y?, W?, H?) {
-    OriginalDpi := DllCall('GetDpiForWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+    OriginalDpi := DllCall(g_user32_GetDpiForWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
     NewDpi := IsSet(X) || IsSet(Y) ? dMon.Dpi.Pt(X, Y) : OriginalDpi
     if !NewDpi {
         NewDpi := dMon.Dpi.Pt(X * 96 / A_ScreenDpi, Y * 96 / A_ScreenDpi)
@@ -527,16 +519,16 @@ Display_PathFromTitle(Hwnd) {
     }
 }
 Display_PhysicalToLogicalPoint(Hwnd, X, Y) {
-    return DllCall('PhysicalToLogicalPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', Display_Point(X, Y), 'ptr')
+    return DllCall(g_user32_PhysicalToLogicalPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', Display_Point(X, Y), 'ptr')
 }
 Display_RealChildWindowFromPoint(Hwnd, X, Y) {
-    return DllCall('RealChildWindowFromPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall(g_user32_RealChildWindowFromPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 Display_SetActiveWindow(Hwnd) {
-    return DllCall('SetActiveWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+    return DllCall(g_user32_SetActiveWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 Display_SetForegroundWindow(Hwnd) {
-    return DllCall('SetForegroundWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+    return DllCall(g_user32_SetForegroundWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 /**
  * @param {Integer} Hwnd - The handle to the window that will be modified.
@@ -544,10 +536,10 @@ Display_SetForegroundWindow(Hwnd) {
  * @returns {Integer} - The handle to the previous parent window.
  */
 Display_SetParent(HwndChild, HwndNewParent := 0) {
-    return DllCall('SetParent', 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'ptr', IsObject(HwndNewParent) ? HwndNewParent.Hwnd : HwndNewParent, 'ptr')
+    return DllCall(g_user32_SetParent, 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'ptr', IsObject(HwndNewParent) ? HwndNewParent.Hwnd : HwndNewParent, 'ptr')
 }
 Display_Show(Hwnd, nCmdShow) {
-    return DllCall('ShowWindow', 'ptr', Hwnd, 'int', nCmdShow)
+    return DllCall(g_user32_ShowWindow, 'ptr', Hwnd, 'int', nCmdShow)
 }
 /**
  * @description - Compares the center axes of a window with the center axes of the display
@@ -595,4 +587,175 @@ Display_WhichQuadrant(Hwnd, &OutDiffHorizontal?, &OutDiffVertical?) {
             return 5 ; Center right
         return 6 ; Right bottom
     }
+}
+
+Display_Window_SetConstants(force := false) {
+    global
+    if IsSet(Display_Window_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_user32_AdjustWindowRectEx) {
+            g_user32_AdjustWindowRectEx := 0
+        }
+        if !IsSet(g_user32_AdjustWindowRectExForDpi) {
+            g_user32_AdjustWindowRectExForDpi := 0
+        }
+        if !IsSet(g_user32_AllowSetForegroundWindow) {
+            g_user32_AllowSetForegroundWindow := 0
+        }
+        if !IsSet(g_user32_BeginDeferWindowPos) {
+            g_user32_BeginDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_BringWindowToTop) {
+            g_user32_BringWindowToTop := 0
+        }
+        if !IsSet(g_user32_ChildWindowFromPoint) {
+            g_user32_ChildWindowFromPoint := 0
+        }
+        if !IsSet(g_user32_ChildWindowFromPointEx) {
+            g_user32_ChildWindowFromPointEx := 0
+        }
+        if !IsSet(g_user32_DeferWindowPos) {
+            g_user32_DeferWindowPos := 0
+        }
+        if !IsSet(g_user32_DestroyWindow) {
+            g_user32_DestroyWindow := 0
+        }
+        if !IsSet(g_user32_EndDeferWindowPos) {
+            g_user32_EndDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_EnumChildWindows) {
+            g_user32_EnumChildWindows := 0
+        }
+        if !IsSet(g_user32_EnumThreadWindows) {
+            g_user32_EnumThreadWindows := 0
+        }
+        if !IsSet(g_user32_EnumWindows) {
+            g_user32_EnumWindows := 0
+        }
+        if !IsSet(g_user32_GetActiveWindow) {
+            g_user32_GetActiveWindow := 0
+        }
+        if !IsSet(g_user32_GetAncestor) {
+            g_user32_GetAncestor := 0
+        }
+        if !IsSet(g_user32_GetClientRect) {
+            g_user32_GetClientRect := 0
+        }
+        if !IsSet(g_user32_GetDesktopWindow) {
+            g_user32_GetDesktopWindow := 0
+        }
+        if !IsSet(g_user32_GetDpiForWindow) {
+            g_user32_GetDpiForWindow := 0
+        }
+        if !IsSet(g_user32_GetForegroundWindow) {
+            g_user32_GetForegroundWindow := 0
+        }
+        if !IsSet(g_user32_GetMonitorInfoW) {
+            g_user32_GetMonitorInfoW := 0
+        }
+        if !IsSet(g_user32_GetParent) {
+            g_user32_GetParent := 0
+        }
+        if !IsSet(g_user32_GetShellWindow) {
+            g_user32_GetShellWindow := 0
+        }
+        if !IsSet(g_user32_GetTopWindow) {
+            g_user32_GetTopWindow := 0
+        }
+        if !IsSet(g_user32_GetWindow) {
+            g_user32_GetWindow := 0
+        }
+        if !IsSet(g_user32_GetWindowRect) {
+            g_user32_GetWindowRect := 0
+        }
+        if !IsSet(g_user32_IsChild) {
+            g_user32_IsChild := 0
+        }
+        if !IsSet(g_user32_IsWindowVisible) {
+            g_user32_IsWindowVisible := 0
+        }
+        if !IsSet(g_user32_LockSetForegroundWindow) {
+            g_user32_LockSetForegroundWindow := 0
+        }
+        if !IsSet(g_user32_MonitorFromRect) {
+            g_user32_MonitorFromRect := 0
+        }
+        if !IsSet(g_user32_MoveWindow) {
+            g_user32_MoveWindow := 0
+        }
+        if !IsSet(g_user32_PhysicalToLogicalPoint) {
+            g_user32_PhysicalToLogicalPoint := 0
+        }
+        if !IsSet(g_user32_RealChildWindowFromPoint) {
+            g_user32_RealChildWindowFromPoint := 0
+        }
+        if !IsSet(g_user32_SetActiveWindow) {
+            g_user32_SetActiveWindow := 0
+        }
+        if !IsSet(g_user32_SetForegroundWindow) {
+            g_user32_SetForegroundWindow := 0
+        }
+        if !IsSet(g_user32_SetParent) {
+            g_user32_SetParent := 0
+        }
+        if !IsSet(g_user32_ShowWindow) {
+            g_user32_ShowWindow := 0
+        }
+        if !IsSet(g_user32_UnionRect) {
+            g_user32_UnionRect := 0
+        }
+        if !IsSet(g_user32_WindowFromPhysicalPoint) {
+            g_user32_WindowFromPhysicalPoint := 0
+        }
+        if !IsSet(g_user32_WindowFromPoint) {
+            g_user32_WindowFromPoint := 0
+        }
+    }
+    Display_Window_LibraryToken := LibraryManager(
+        'user32', [
+            'AdjustWindowRectEx',
+            'AdjustWindowRectExForDpi',
+            'AllowSetForegroundWindow',
+            'BeginDeferWindowPos',
+            'BringWindowToTop',
+            'ChildWindowFromPoint',
+            'ChildWindowFromPointEx',
+            'DeferWindowPos',
+            'DestroyWindow',
+            'EndDeferWindowPos',
+            'EnumChildWindows',
+            'EnumThreadWindows',
+            'EnumWindows',
+            'GetActiveWindow',
+            'GetAncestor',
+            'GetClientRect',
+            'GetDesktopWindow',
+            'GetDpiForWindow',
+            'GetForegroundWindow',
+            'GetMonitorInfoW',
+            'GetParent',
+            'GetShellWindow',
+            'GetTopWindow',
+            'GetWindow',
+            'GetWindowRect',
+            'IsChild',
+            'IsWindowVisible',
+            'LockSetForegroundWindow',
+            'MonitorFromRect',
+            'MoveWindow',
+            'PhysicalToLogicalPoint',
+            'RealChildWindowFromPoint',
+            'SetActiveWindow',
+            'SetForegroundWindow',
+            'SetParent',
+            'ShowWindow',
+            'UnionRect',
+            'WindowFromPhysicalPoint',
+            'WindowFromPoint'
+        ]
+    )
+    Display_Window_constants_set := true
 }

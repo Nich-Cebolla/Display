@@ -4,17 +4,16 @@
  * releasing the device context and font object.
  */
 class SelectFontIntoDc {
-
     __New(hWnd) {
         this.hWnd := hWnd
-        if !(this.hdc := DllCall('GetDC', 'ptr', hWnd, 'ptr')) {
+        if !(this.hdc := DllCall(g_user32_GetDC, 'ptr', hWnd, 'ptr')) {
             throw OSError()
         }
         OnError(this.Callback := ObjBindMethod(this, '__ReleaseOnError'), 1)
         if !(this.hFont := SendMessage(0x0031, 0, 0, , hWnd)) { ; WM_GETFONT
             throw OSError()
         }
-        if !(this.oldFont := DllCall('SelectObject', 'ptr', this.hdc, 'ptr', this.hFont, 'ptr')) {
+        if !(this.oldFont := DllCall(g_gdi32_SelectObject, 'ptr', this.hdc, 'ptr', this.hFont, 'ptr')) {
             throw OSError()
         }
     }
@@ -38,13 +37,13 @@ class SelectFontIntoDc {
 
     __Release() {
         if this.oldFont {
-            if !DllCall('SelectObject', 'ptr', this.hdc, 'ptr', this.oldFont, 'int') {
+            if !DllCall(g_gdi32_SelectObject, 'ptr', this.hdc, 'ptr', this.oldFont, 'int') {
                 err := OSError()
             }
             this.DeleteProp('oldFont')
         }
         if this.hdc {
-            if !DllCall('ReleaseDC', 'ptr', this.hWnd, 'ptr', this.hdc, 'int') {
+            if !DllCall(g_user32_ReleaseDC, 'ptr', this.hWnd, 'ptr', this.hdc, 'int') {
                 if IsSet(err) {
                     err.Message .= '; Another error occurred: ' OSError().Message
                 }

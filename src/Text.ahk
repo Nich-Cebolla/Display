@@ -15,9 +15,9 @@
  * @param {String} Str - The string to measure.
  * @returns {Display_Size}
  */
-GetTextExtentPoint32(hdc, Str) {
+Display_GetTextExtentPoint32(hdc, Str) {
     ; Measure the text
-    if DllCall('Gdi32.dll\GetTextExtentPoint32'
+    if DllCall(g_gdi32_GetTextExtentPoint32W
         , 'ptr', hdc
         , 'ptr', StrPtr(Str)
         , 'int', StrLen(Str)
@@ -48,7 +48,7 @@ GetTextExtentPoint32(hdc, Str) {
  * is created.
  * @returns {Display_Size[]}
  */
-GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
+Display_GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     if ReplaceItems {
         Result := Arr
     } else {
@@ -58,7 +58,7 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
     OutWidth := OutHeight := 0
     for Str in Arr {
         if Str {
-            if DllCall('Gdi32.dll\GetTextExtentPoint32'
+            if DllCall(g_gdi32_GetTextExtentPoint32W
                 , 'ptr', hdc
                 , 'ptr', StrPtr(Str)
                 , 'int', StrLen(Str)
@@ -98,7 +98,7 @@ GetMultiExtentPoints(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false) {
  * in the array.
  * @returns {Display_Size[]}
  */
-GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, &OutGreatestHeight?) {
+Display_GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, &OutGreatestHeight?) {
     if ReplaceItems {
         Result := Arr
     } else {
@@ -108,7 +108,7 @@ GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, 
     OutWidth := OutHeight := OutGreatestHeight := 0
     for Str in Arr {
         if Str {
-            if DllCall('Gdi32.dll\GetTextExtentPoint32'
+            if DllCall(g_gdi32_GetTextExtentPoint32W
                 , 'ptr', hdc
                 , 'ptr', StrPtr(Str)
                 , 'int', StrLen(Str)
@@ -153,9 +153,9 @@ GetMultiExtentPoints2(hdc, Arr, &OutWidth?, &OutHeight?, ReplaceItems := false, 
  * for more information.
  * @returns {Display_Size}
  */
-GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
+Display_GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoints?) {
     if MaxExtent {
-        if DllCall('Gdi32.dll\GetTextExtentExPoint'
+        if DllCall(g_gdi32_GetTextExtentExPointW
             , 'ptr', hdc
             , 'ptr', StrPtr(Str)                                    ; String to measure
             , 'int', StrLen(Str)                                    ; String length in WORDs
@@ -171,7 +171,7 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
             throw OSError()
         }
     } else {
-        if DllCall('Gdi32.dll\GetTextExtentExPoint'
+        if DllCall(g_gdi32_GetTextExtentExPointW
             , 'ptr', hdc
             , 'ptr', StrPtr(Str)                                    ; String to measure
             , 'int', StrLen(Str)                                    ; String length in WORDs
@@ -215,7 +215,7 @@ GetTextExtentExPoint(hdc, Str, MaxExtent := 0, &OutCharacterFit?, &OutExtentPoin
  *
  * @returns {Object[]} - Each object in the array is an object with properties { CharacterFit, ExtentPoints, Size }.
  */
-GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
+Display_GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
     if ReplaceItems {
         Result := list
     } else {
@@ -226,7 +226,7 @@ GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
         lpnFit := Buffer(4)
         for Str in list {
             if Str {
-                if DllCall('Gdi32.dll\GetTextExtentExPoint'
+                if DllCall(g_gdi32_GetTextExtentExPointW
                     , 'ptr', hdc
                     , 'ptr', StrPtr(Str)                                    ; String to measure
                     , 'int', StrLen(Str)                                    ; String length in WORDs
@@ -247,7 +247,7 @@ GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
     } else {
         for Str in list {
             if Str {
-                if DllCall('Gdi32.dll\GetTextExtentExPoint'
+                if DllCall(g_gdi32_GetTextExtentExPointW
                     , 'ptr', hdc
                     , 'ptr', StrPtr(Str)                                    ; String to measure
                     , 'int', StrLen(Str)                                    ; String length in WORDs
@@ -274,7 +274,7 @@ GetMultiTextExtentExPoint(hdc, list, MaxExtent := 0, ReplaceItems := false) {
  * @returns {String} - The line ending. If there are no carriage return or line feed characters in
  * the string, the return value is an empty string.
  */
-GetLineEnding(Str) {
+Display_GetLineEnding(Str) {
     StrReplace(Str, '`r', , , &CountCr)
     StrReplace(Str, '`n', , , &CountLf)
     if CountCr == CountLf {
@@ -292,7 +292,7 @@ GetLineEnding(Str) {
     }
 }
 
-MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWidth?, &OutSumHeight?) {
+Display_MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWidth?, &OutSumHeight?) {
     OutLowWidth := { W: 4294967295 }
     OutHighWidth := { W: 0 }
     OutSumWidth := OutSumHeight := 0
@@ -301,7 +301,7 @@ MeasureList(List, hdc, StrAppend := '', &OutLowWidth?, &OutHighWidth?, &OutSumWi
     result.StrAppend := StrAppend
     for str in List {
         _str := str StrAppend
-        if !DllCall('Gdi32.dll\GetTextExtentPoint32'
+        if !DllCall(g_gdi32_GetTextExtentPoint32W
             , 'ptr', hdc
             , 'ptr', StrPtr(_str)
             , 'int', StrLen(_str)

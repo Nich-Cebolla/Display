@@ -1,4 +1,65 @@
 ﻿
+Display_SetConstants(force := false) {
+    global
+    if IsSet(Display_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_gdi32_GetTextExtentExPointW) {
+            g_gdi32_GetTextExtentExPointW := 0
+        }
+        if !IsSet(g_gdi32_GetTextExtentPoint32W) {
+            g_gdi32_GetTextExtentPoint32W := 0
+        }
+        if !IsSet(g_gdi32_SelectObject) {
+            g_gdi32_SelectObject := 0
+        }
+        if !IsSet(g_msvcrt_memmove) {
+            g_msvcrt_memmove := 0
+        }
+        if !IsSet(g_user32_CreateWindowExW) {
+            g_user32_CreateWindowExW := 0
+        }
+        if !IsSet(g_user32_GetClientRect) {
+            g_user32_GetClientRect := 0
+        }
+        if !IsSet(g_user32_GetDC) {
+            g_user32_GetDC := 0
+        }
+        if !IsSet(g_user32_GetWindowRect) {
+            g_user32_GetWindowRect := 0
+        }
+        if !IsSet(g_user32_ReleaseDC) {
+            g_user32_ReleaseDC := 0
+        }
+    }
+    Display_LibraryToken := LibraryManager(
+        'gdi32', [
+            'GetTextExtentExPointW',
+            'GetTextExtentPoint32W',
+            'SelectObject'
+        ],
+        'msvcrt', [ 'memmove' ],
+        'user32', [
+            'CreateWindowExW',
+            'GetClientRect',
+            'GetDC',
+            'GetWindowRect',
+            'ReleaseDC'
+        ]
+    )
+    Display_constants_set := true
+}
+
+Display_FormatText_AOrAn(text) {
+    if InStr('AEIOU', SubStr(text, 1, 1)) {
+        return 'an ' text
+    } else {
+        return 'a ' text
+    }
+}
+
 Display_CreateTestControl(
     HwndGui
     , ExStyle := 0x08000000 ; WS_EX_NOACTIVATE
@@ -11,11 +72,11 @@ Display_CreateTestControl(
     , Param := 0
 ) {
     rc := Display_Rect()
-    if !DllCall('GetClientRect', 'ptr', HwndGui, 'ptr', rc, 'int') {
+    if !DllCall(g_user32_GetClientRect, 'ptr', HwndGui, 'ptr', rc, 'int') {
         throw OSError()
     }
     return DllCall(
-        'CreateWindowExW'
+        g_user32_CreateWindowExW
       , 'uint', ExStyle
       , 'ptr', ClassName is Number ? ClassName : StrPtr(ClassName)
       , 'ptr', WindowName is Number ? WindowName : StrPtr(WindowName)
@@ -29,13 +90,6 @@ Display_CreateTestControl(
       , 'ptr', hInstance
       , 'ptr', Param
     )
-}
-Display_FormatText_AOrAn(text) {
-    if InStr('AEIOU', SubStr(text, 1, 1)) {
-        return 'an ' text
-    } else {
-        return 'a ' text
-    }
 }
 
 __Display_Warning_DuplicateFunctionality(cls) {

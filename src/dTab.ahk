@@ -82,7 +82,7 @@ class dTab extends Gui.Tab {
      */
     GetClientDisplayRect() {
         rc := Display_Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.Hwnd, 'ptr', rc, 'int') {
+        if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', rc, 'int') {
             throw OSError()
         }
         rc.ToClient(this.Gui.Hwnd, true)
@@ -95,7 +95,7 @@ class dTab extends Gui.Tab {
      */
     GetClientWindowRect() {
         rc := Display_Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.Hwnd, 'ptr', rc, 'int') {
+        if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', rc, 'int') {
             throw OSError()
         }
         rc.ToClient(this.Gui.Hwnd, true)
@@ -180,7 +180,7 @@ class dTab extends Gui.Tab {
      */
     GetScreenDisplayRect() {
         rc := Display_Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.Hwnd, 'ptr', rc, 'int') {
+        if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', rc, 'int') {
             throw OSError()
         }
         SendMessage(4904, false, rc, this.Hwnd, this.Gui.Hwnd) ; TCM_ADJUSTRECT
@@ -192,7 +192,7 @@ class dTab extends Gui.Tab {
      */
     GetScreenWindowRect() {
         rc := Display_Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.Hwnd, 'ptr', rc, 'int') {
+        if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', rc, 'int') {
             throw OSError()
         }
         return rc
@@ -250,7 +250,7 @@ class dTab extends Gui.Tab {
      */
     MoveEx(X?, Y?, W?, H?) {
         rc := Display_Rect()
-        if !DllCall('GetWindowRect', 'ptr', this.Hwnd, 'ptr', rc, 'int') {
+        if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', rc, 'int') {
             throw OSError()
         }
         rc.ToClient(this.Gui.Hwnd, true)

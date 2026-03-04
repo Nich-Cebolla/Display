@@ -19,6 +19,7 @@ class Display_Logfont {
         1 + ; BYTE  lfQuality                   26
         1 + ; BYTE  lfPitchAndFamily            27
         64  ; WCHAR lfFaceName[LF_FACESIZE]     28
+        Display_Logfont_SetConstants()
     }
     /**
      * @description - A wrapper around the LOGFONT structure.
@@ -61,10 +62,10 @@ class Display_Logfont {
          * @instance
          * @type {Integer}
          */
-        this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr')
+        this.Handle := DllCall(g_gdi32_CreateFontIndirectW, 'ptr', this, 'ptr')
         SendMessage(0x0030, this.Handle, Redraw, this.Hwnd) ; WM_SETFONT
         if Flag {
-            DllCall('DeleteObject', 'ptr', hFontOld, 'int')
+            DllCall(g_gdi32_DeleteObject, 'ptr', hFontOld, 'int')
         }
     }
     /**
@@ -75,9 +76,9 @@ class Display_Logfont {
      */
     Call(*) {
         hFont := SendMessage(0x0031,,, this.Hwnd)
-        if (objectType := DllCall('Gdi32.dll\GetObjectType', 'ptr', hFont, 'int')) = 6 {
+        if (objectType := DllCall(g_gdi32_GetObjectType, 'ptr', hFont, 'int')) = 6 {
             if !DllCall(
-                'Gdi32.dll\GetObject',
+                g_gdi32_GetObjectW,
                 'ptr', hFont, ; WM_GETFONT
                 'int', this.Size,
                 'ptr', this,
@@ -114,7 +115,7 @@ class Display_Logfont {
      * @memberof Logfont
      * @instance
      */
-    Dpi => this.Hwnd ? DllCall('GetDpiForWindow', 'ptr', this.Hwnd, 'UInt') : ''
+    Dpi => this.Hwnd ? DllCall(g_user32_GetDpiForWindow, 'ptr', this.Hwnd, 'UInt') : ''
     /**
      * Gets or sets the escapement measured in tenths of a degree.
      * @memberof Logfont
@@ -254,4 +255,41 @@ class Display_Logfont {
         Get => NumGet(this, 4, 'int')
         Set => NumPut('int', Value, this, 4)
     }
+}
+
+Display_Logfont_SetConstants(force := false) {
+    global
+    if IsSet(Display_Logfont_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_gdi32_CreateFontIndirectW) {
+            g_gdi32_CreateFontIndirectW := 0
+        }
+        if !IsSet(g_gdi32_GetObjectW) {
+            g_gdi32_GetObjectW := 0
+        }
+        if !IsSet(g_gdi32_GetObjectType) {
+            g_gdi32_GetObjectType := 0
+        }
+        if !IsSet(g_gdi32_DeleteObject) {
+            g_gdi32_DeleteObject := 0
+        }
+        if !IsSet(g_user32_GetDpiForWindow) {
+            g_user32_GetDpiForWindow := 0
+        }
+    }
+    Display_Logfont_LibraryToken := LibraryManager(
+        'gdi32', [
+            'CreateFontIndirectW',
+            'DeleteObject',
+            'GetObjectW',
+            'GetObjectType'
+        ],
+        'user32', [
+            'GetDpiForWindow'
+        ]
+    )
+    Display_Logfont_constants_set := true
 }

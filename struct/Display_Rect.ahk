@@ -7,6 +7,7 @@ class Display_Rect extends Buffer {
         proto.offset_t := 4
         proto.offset_r := 8
         proto.offset_b := 12
+        Display_Rect_SetConstants()
     }
     __New(L?, T?, R?, B?) {
         this.Size := 16
@@ -24,18 +25,18 @@ class Display_Rect extends Buffer {
         }
     }
     ToClient(hwndParent) {
-        if !DllCall('ScreenToClient', 'ptr', hwndParent, 'ptr', this, 'int') {
+        if !DllCall(g_user32_ScreenToClient, 'ptr', hwndParent, 'ptr', this, 'int') {
             throw OSError()
         }
-        if !DllCall('ScreenToClient', 'ptr', hwndParent, 'ptr', this.Ptr + 8, 'int') {
+        if !DllCall(g_user32_ScreenToClient, 'ptr', hwndParent, 'ptr', this.Ptr + 8, 'int') {
             throw OSError()
         }
     }
     ToScreen(hwndParent) {
-        if !DllCall('ClientToScreen', 'ptr', hwndParent, 'ptr', this, 'int') {
+        if !DllCall(g_user32_ClientToScreen, 'ptr', hwndParent, 'ptr', this, 'int') {
             throw OSError()
         }
-        if !DllCall('ClientToScreen', 'ptr', hwndParent, 'ptr', this.Ptr + 8, 'int') {
+        if !DllCall(g_user32_ClientToScreen, 'ptr', hwndParent, 'ptr', this.Ptr + 8, 'int') {
             throw OSError()
         }
     }
@@ -71,4 +72,27 @@ class Display_Rect extends Buffer {
         Get => NumGet(this, 12, 'int') - NumGet(this, 4, 'int')
         Set => NumPut('int', NumGet(this, this.offset_t, 'int') + Value, this, this.offset_b)
     }
+}
+
+Display_Rect_SetConstants(force := false) {
+    global
+    if IsSet(Display_Rect_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_user32_ClientToScreen) {
+            g_user32_ClientToScreen := 0
+        }
+        if !IsSet(g_user32_ScreenToClient) {
+            g_user32_ScreenToClient := 0
+        }
+    }
+    Display_Rect_LibraryToken := LibraryManager(
+        'user32', [
+            'ClientToScreen',
+            'ScreenToClient'
+        ]
+    )
+    Display_Rect_constants_set := true
 }

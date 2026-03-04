@@ -27,7 +27,7 @@ ControlGetTextExtent(Ctrl, &OutWidth?, &OutHeight?) {
         for line in StrSplit(Ctrl.Text, '`r`n') {
             if line {
                 if DllCall(
-                    'Gdi32.dll\GetTextExtentPoint32'
+                    g_gdi32_GetTextExtentPoint32W
                   , 'ptr', hdc
                   , 'ptr', StrPtr(line)
                   , 'int', StrLen(line)
@@ -47,7 +47,7 @@ ControlGetTextExtent(Ctrl, &OutWidth?, &OutHeight?) {
         OutHeight -= padding.LinePadding
     } else {
         if DllCall(
-            'Gdi32.dll\GetTextExtentPoint32'
+            g_gdi32_GetTextExtentPoint32W
           , 'ptr', context.hdc
           , 'wstr', Ctrl.Text
           , 'int', StrLen(Ctrl.Text)
@@ -94,7 +94,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
         }
     } else {
         ; Measure the text
-        if DllCall('Gdi32.dll\GetTextExtentPoint32'
+        if DllCall(g_gdi32_GetTextExtentPoint32W
             , 'ptr', context.hdc
             , 'ptr', StrPtr(Ctrl.Text)
             , 'int', StrLen(Ctrl.Text)
@@ -112,7 +112,7 @@ ControlGetTextExtent_LB(Ctrl, Index?) {
 
     _Proc() {
         ; Measure the text
-        if DllCall('Gdi32.dll\GetTextExtentPoint32'
+        if DllCall(g_gdi32_GetTextExtentPoint32W
             , 'ptr', context.hdc
             , 'ptr', StrPtr(Ctrl.Text[Index])
             , 'int', StrLen(Ctrl.Text[Index])
@@ -144,7 +144,7 @@ ControlGetTextExtent_Link(Ctrl) {
     ; Remove the html anchor tags
     Text := RegExReplace(Ctrl.Text, '<.+?"[ \t]*>(.+?)</a>', '$1')
     ; Measure the text
-    if DllCall('Gdi32.dll\GetTextExtentPoint32'
+    if DllCall(g_gdi32_GetTextExtentPoint32W
         , 'ptr', context.hdc
         , 'ptr', StrPtr(Text)
         , 'int', StrLen(Text)
@@ -221,7 +221,7 @@ ControlGetTextExtent_LV(Ctrl, RowNumber?, ColumnNumber?) {
 
     _Proc(r, c) {
         ; Measure the text
-        if DllCall('Gdi32.dll\GetTextExtentPoint32'
+        if DllCall(g_gdi32_GetTextExtentPoint32W
             , 'ptr', context.hdc
             , 'ptr', StrPtr(Ctrl.GetText(r, c))
             , 'int', StrLen(Ctrl.GetText(r, c))
@@ -279,7 +279,7 @@ ControlGetTextExtent_TV(Ctrl, Id := 0, Count?) {
 
     _Proc() {
         ; Measure the text
-        if DllCall('Gdi32.dll\GetTextExtentPoint32'
+        if DllCall(g_gdi32_GetTextExtentPoint32W
             , 'ptr', hdc
             , 'ptr', StrPtr(Ctrl.GetText(_id))
             , 'int', StrLen(Ctrl.GetText(_id))
@@ -431,7 +431,7 @@ ControlSetTextEx(Ctrl, Text?, PaddingX := 0, PaddingY := 0) {
     } else if IsObject(Text) {
         throw TypeError('Expected a string but received an object.')
     }
-    if !DllCall('Gdi32.dll\GetTextExtentPoint32', 'ptr', context.hdc, 'ptr', StrPtr(Text), 'int', StrLen(Text), 'ptr', sz, 'int') {
+    if !DllCall(g_gdi32_GetTextExtentPoint32W, 'ptr', context.hdc, 'ptr', StrPtr(Text), 'int', StrLen(Text), 'ptr', sz, 'int') {
         context()
         throw OSError()
     }
