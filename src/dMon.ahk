@@ -11,9 +11,7 @@
 class dMon {
     static __New() {
         this.DeleteProp('__New')
-        if !this.HasOwnProp('__UseOrderedMonitors') {
-            this.UseOrderedMonitors := true
-        }
+        this.UseOrderedMonitors := true
     }
     /**
      * @description - Returns a {@link dMon} object using the dimensions of a rectangle.

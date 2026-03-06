@@ -52,18 +52,6 @@ Display_Initialize(force := false) {
     BASE_DPI := DllCall('GetDpiForSystem', 'uint')
 
     /**
-     * @description - Defines the initial font size used when creating a {@link dGui} object.
-     *
-     * Comment this out if not using src\dGui.ahk.
-     *
-     * Default = 10
-     *
-     * @memberof dGui
-     * @type {Integer}
-     */
-    dGui.InitialFontSize := 10
-
-    /**
      * @description - When true, the monitors are ordered by their relative position. See the
      * parameter hint above {@link dMon.GetOrder} for more information.
      *
@@ -78,6 +66,8 @@ Display_Initialize(force := false) {
 
     ; Comment this out if not using src\Dpi.ahk.
     Display_Dpi_SetConstants()
+    ; Comment this out if not using src\dGui.ahk.
+    Display_dGui_SetConstants()
     ; Comment this out if not using src\dMon.ahk.
     Display_dMon_SetConstants()
     ; Comment this out if not using src\Window.ahk
@@ -86,7 +76,7 @@ Display_Initialize(force := false) {
     /**
      * @var {String} - This is used by struct\Display_TcItemW.ahk and struct\Display_Logfont.ahk
      * when getting / setting struct members that are strings. Don't change this unless you have
-     * a clear reason for doing so.
+     * a reason for doing so.
      */
     Display_DefaultEncoding := 'cp1200'
 

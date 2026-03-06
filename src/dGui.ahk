@@ -9,62 +9,14 @@
 
 class dGui extends Gui {
     static __New() {
-        global GuiControlSetFont := Gui.Control.Prototype.SetFont
-        , GuiSetFont := Gui.Prototype.SetFont
-        , GuiControlMove := Gui.Control.Prototype.Move
-        , GuiMove := Gui.Prototype.Move
-        global g_user32_BeginDeferWindowPos
-        , g_user32_DeferWindowPos
-        , g_user32_EndDeferWindowPos
-        , g_user32_GetDpiForSystem
-        , g_user32_GetDpiForWindow
-        , g_user32_GetWindowRect
-        , g_user32_IsWindowVisible
-        , BASE_DPI
         this.DeleteProp('__New')
-        if !IsSet(g_user32_BeginDeferWindowPos) {
-            g_user32_BeginDeferWindowPos := 0
-        }
-        if !IsSet(g_user32_DeferWindowPos) {
-            g_user32_DeferWindowPos := 0
-        }
-        if !IsSet(g_user32_EndDeferWindowPos) {
-            g_user32_EndDeferWindowPos := 0
-        }
-        if !IsSet(g_user32_GetDpiForSystem) {
-            g_user32_GetDpiForSystem := 0
-        }
-        if !IsSet(g_user32_GetDpiForWindow) {
-            g_user32_GetDpiForWindow := 0
-        }
-        if !IsSet(g_user32_GetWindowRect) {
-            g_user32_GetWindowRect := 0
-        }
-        if !IsSet(g_user32_IsWindowVisible) {
-            g_user32_IsWindowVisible := 0
-        }
-        this.libraryToken := LibraryManager(
-            'user32', [
-                'BeginDeferWindowPos',
-                'DeferWindowPos',
-                'EndDeferWindowPos',
-                'GetDpiForSystem',
-                'GetDpiForWindow',
-                'GetWindowRect',
-                'IsWindowVisible'
-            ]
-        )
-        if !IsSet(BASE_DPI) {
-            BASE_DPI := DllCall(g_user32_GetDpiForSystem, 'uint')
-        }
-        this.InitialFontSize := 10
         proto := this.Prototype
         proto.ToggleCallbackBefore :=
         proto.ToggleCallbackAfter :=
         proto.EventHandler :=
+        proto.CachedDpi :=
         ''
         proto.Count := 0
-        proto.CachedDpi := BASE_DPI
     }
     /**
      * @description - Defines a function to call before and/or after {@link dGui.Prototype.Toggle}.
@@ -105,44 +57,20 @@ class dGui extends Gui {
     }
     /**
      * @description - Creates the {@link dGui} window.
+     *
      * @param {String} [Opt] - The first parameter of
      * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     *
      * @param {String} [Title] - The second parameter of
      * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     *
      * @param {String} [EventHandler] - The third parameter of
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}. If `EventHandler` is
-     * set, a reference to `EventHandler` is cached on property {@link dGui#EventHandler}.
-     * @param {Object} [ExtendedOptions] - An object that defines additional options. The object can
-     * have zero or more of { BackColor, FontName, MarginX, MarginY, MenuBar, Name, OptFont }.
-     * If `ExtendedOptions.OptFont` is not set, or if it does not contain a size value, the font size
-     * is set to {@link dGui.InitialFontSize}, which is typically defined in the DisplayConfig.ahk.
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     *
      * @returns {dGui} - The new {@link dGui} object.
      */
-    __New(Opt?, Title?, EventHandler?, ExtendedOptions?) {
+    __New(Opt?, Title?, EventHandler?) {
         super.__New(Opt ?? unset, Title ?? unset, EventHandler ?? unset)
-        if IsSet(ExtendedOptions) {
-            for Prop in ['MarginX', 'MarginY', 'BackColor', 'MenuBar', 'Name'] {
-                if HasProp(ExtendedOptions, Prop) {
-                    this.%Prop% := ExtendedOptions.%Prop%
-                }
-            }
-            if HasProp(ExtendedOptions, 'OptFont') {
-                if InStr(ExtendedOptions.OptFont, 's') {
-                    this.SetFont(ExtendedOptions.OptFont, HasProp(ExtendedOptions, 'FontName') ? ExtendedOptions.FontName : '')
-                } else {
-                    this.SetFont(ExtendedOptions.OptFont ' s' this.BaseFontSize, HasProp(ExtendedOptions, 'FontName') ? ExtendedOptions.FontName : '')
-                }
-            } else if HasProp(ExtendedOptions, 'FontName') {
-                this.SetFont('s' this.BaseFontSize, ExtendedOptions.FontName)
-            } else {
-                this.SetFontSize(this.BaseFontSize)
-            }
-        } else {
-            this.SetFontSize(this.BaseFontSize)
-        }
-        if IsSet(EventHandler) {
-            this.EventHandler := EventHandler
-        }
         this.Count := 0
         this.CachedDpi := this.Dpi
     }
@@ -156,7 +84,7 @@ class dGui extends Gui {
      */
     Add(CtrlType, Options := '', Text := '') {
         this.Count++
-        result := dGui.Control.Prototype.__New.Call(super.Add(CtrlType, Options, Text), Options, Text)
+        result := dGui.Control.Prototype.__New.Call(super.Add(CtrlType, Options, Text))
         return result
     }
 
@@ -393,353 +321,6 @@ class dGui extends Gui {
         this.Show('w' OutWidth ' h' OutHeight (this.Visible ? '' : ' Hide'))
     }
     /**
-     * @description - Sets {@link dGui#BaseFontSize} without changing the gui's current font size.
-     * @param {Integer} FontSize - The new value.
-     */
-    SetBaseFontSize(FontSize) {
-        this.DefineProp('BaseFontSize', { Value: FontSize })
-    }
-    /**
-     * @description - Sets the font options for subsequently created controls. There are three
-     * related methods which have different behavior with respect to the font size option, if included:
-     * - {@link dGui.Prototype.SetFont} (this method) - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontScaled} - Caches the unmodified input font size
-     *   and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontScaled2} - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {String} [Options] - The value to pass to the `Options` parameter of
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     *
-     * Each option is either a single letter immediately followed by a value,
-     * or a single word. To specify more than one option, include a space between each. For example:
-     * cBlue s12 bold.
-     *
-     * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-     * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-     * the existing color and size). It is possible to use norm to turn off all attributes and then
-     * selectively turn on others. For example, specifying norm italic would set the font to normal
-     * then to italic.
-     *
-     * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-     * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-     * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-     * created with a font color other than the current one by including the C option. For example:
-     * MyGui.Add("Text", "cRed", "My Text").
-     *
-     * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-     *
-     * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-     * For example: w600 (specify decimal, not hexadecimal)
-     *
-     * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-     *
-     * |Number|   Windows Constant     | Description                                                |
-     * |------|------------------------|------------------------------------------------------------|
-     * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-     * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-     * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-     * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-     * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-     * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-     *
-     * @param {String|String[]} [FontName] - In contrast with
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}, the
-     * `FontName` parameter of {@link dGui.Prototype.SetFont} allows multiple font names to be defined
-     * in one function call. `FontName` here can be a single name, a comma-delimited list of names,
-     * or an array of names.
-     *
-     * The following is copied from the AHK documentation:
-     *
-     * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-     * or does not exist on the system, the previous font's typeface will be used (or if none, the
-     * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-     * font on multiple systems, even if some of those systems lack the preferred font. For example,
-     * by using the following methods in order, Verdana will be given preference over Arial, which
-     * in turn is given preference over MS Sans Serif:
-     * @example
-     * MyGui.SetFont(, "MS Sans Serif")
-     * MyGui.SetFont(, "Arial")
-     * MyGui.SetFont(, "Verdana")  ; Preferred font.
-     * @
-     */
-    SetFont(Options?, FontName?) {
-        if IsSet(Options) {
-            if RegExMatch(Options, '(?<=[sS])[\d.]+', &match) {
-                this.DefineProp('BaseFontSize', { Value: match[0] })
-            }
-            super.SetFont(Options)
-        }
-        if IsSet(FontName) {
-            if IsObject(FontName) {
-                for name in FontName {
-                    super.SetFont(, name)
-                }
-            } else {
-                for name in StrSplit(FontName, ',') {
-                    if name {
-                        super.SetFont(, name)
-                    }
-                }
-            }
-        }
-    }
-    /**
-     * @description - Sets the font options for subsequently created controls. There are three
-     * related methods which have different behavior with respect to the font size option, if included:
-     * - {@link dGui.Prototype.SetFont} - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontScaled} (this method) - Caches the unmodified input font size
-     *   and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontScaled2} - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {String} [Options] - The value to pass to the `Options` parameter of
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     *
-     * Each option is either a single letter immediately followed by a value,
-     * or a single word. To specify more than one option, include a space between each. For example:
-     * cBlue s12 bold.
-     *
-     * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-     * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-     * the existing color and size). It is possible to use norm to turn off all attributes and then
-     * selectively turn on others. For example, specifying norm italic would set the font to normal
-     * then to italic.
-     *
-     * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-     * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-     * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-     * created with a font color other than the current one by including the C option. For example:
-     * MyGui.Add("Text", "cRed", "My Text").
-     *
-     * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-     *
-     * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-     * For example: w600 (specify decimal, not hexadecimal)
-     *
-     * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-     *
-     * |Number|   Windows Constant     | Description                                                |
-     * |------|------------------------|------------------------------------------------------------|
-     * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-     * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-     * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-     * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-     * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-     * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-     *
-     * @param {String|String[]} [FontName] - In contrast with
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}, the
-     * `FontName` parameter of {@link dGui.Prototype.SetFont} allows multiple font names to be defined
-     * in one function call. `FontName` here can be a single name, a comma-delimited list of names,
-     * or an array of names.
-     *
-     * The following is copied from the AHK documentation:
-     *
-     * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-     * or does not exist on the system, the previous font's typeface will be used (or if none, the
-     * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-     * font on multiple systems, even if some of those systems lack the preferred font. For example,
-     * by using the following methods in order, Verdana will be given preference over Arial, which
-     * in turn is given preference over MS Sans Serif:
-     * @example
-     * MyGui.SetFont(, "MS Sans Serif")
-     * MyGui.SetFont(, "Arial")
-     * MyGui.SetFont(, "Verdana")  ; Preferred font.
-     * @
-     */
-    SetFontScaled(Options?, FontName?) {
-        if IsSet(Options) {
-            if RegExMatch(Options, '([^sS]*)[sS]([\d.]+)(.*)', &match) {
-                this.DefineProp('BaseFontSize', { Value: match[2] })
-                super.SetFont(match[1] 's' this.BaseFontSizeScaled match[3])
-            } else {
-                super.SetFont(Options)
-            }
-        }
-        if IsSet(FontName) {
-            if IsObject(FontName) {
-                for name in FontName {
-                    super.SetFont(, name)
-                }
-            } else {
-                for name in StrSplit(FontName, ',') {
-                    if name {
-                        super.SetFont(, name)
-                    }
-                }
-            }
-        }
-    }
-    /**
-     * @description - Sets the font options for subsequently created controls. There are three
-     * related methods which have different behavior with respect to the font size option, if included:
-     * - {@link dGui.Prototype.SetFont} - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontScaled} - Caches the unmodified input font size
-     *   and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontScaled2} (this method) - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {String} [Options] - The value to pass to the `Options` parameter of
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     *
-     * Each option is either a single letter immediately followed by a value,
-     * or a single word. To specify more than one option, include a space between each. For example:
-     * cBlue s12 bold.
-     *
-     * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-     * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-     * the existing color and size). It is possible to use norm to turn off all attributes and then
-     * selectively turn on others. For example, specifying norm italic would set the font to normal
-     * then to italic.
-     *
-     * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-     * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-     * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-     * created with a font color other than the current one by including the C option. For example:
-     * MyGui.Add("Text", "cRed", "My Text").
-     *
-     * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-     *
-     * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-     * For example: w600 (specify decimal, not hexadecimal)
-     *
-     * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-     *
-     * |Number|   Windows Constant     | Description                                                |
-     * |------|------------------------|------------------------------------------------------------|
-     * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-     * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-     * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-     * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-     * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-     * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-     *
-     * @param {String|String[]} [FontName] - In contrast with
-     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}, the
-     * `FontName` parameter of {@link dGui.Prototype.SetFont} allows multiple font names to be defined
-     * in one function call. `FontName` here can be a single name, a comma-delimited list of names,
-     * or an array of names.
-     *
-     * The following is copied from the AHK documentation:
-     *
-     * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-     * or does not exist on the system, the previous font's typeface will be used (or if none, the
-     * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-     * font on multiple systems, even if some of those systems lack the preferred font. For example,
-     * by using the following methods in order, Verdana will be given preference over Arial, which
-     * in turn is given preference over MS Sans Serif:
-     * @example
-     * MyGui.SetFont(, "MS Sans Serif")
-     * MyGui.SetFont(, "Arial")
-     * MyGui.SetFont(, "Verdana")  ; Preferred font.
-     * @
-     */
-    SetFontScaled2(Options?, FontName?) {
-        if IsSet(Options) {
-            if RegExMatch(Options, '([^sS]*)[sS]([\d.]+)(.*)', &match) {
-                this.DefineProp('BaseFontSize', { Value: match[2] * BASE_DPI / this.Dpi })
-                super.SetFont(match[1] 's' this.BaseFontSizeScaled match[3])
-            } else {
-                super.SetFont(Options)
-            }
-        }
-        if IsSet(FontName) {
-            if IsObject(FontName) {
-                for name in FontName {
-                    super.SetFont(, name)
-                }
-            } else {
-                for name in StrSplit(FontName, ',') {
-                    if name {
-                        super.SetFont(, name)
-                    }
-                }
-            }
-        }
-    }
-    /**
-     * @description - Sets the font size for subsequently created controls. There are three
-     * related methods which have different behavior:
-     * - {@link dGui.Prototype.SetFontSize} (this method) - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontSizeScaled} - Caches the unmodified input font
-     *   size and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontSizeScaled2} - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {Integer} FontSize - The new font size.
-     */
-    SetFontSize(FontSize) {
-        this.DefineProp('BaseFontSize', { Value: FontSize })
-        super.SetFont('s' FontSize)
-    }
-    /**
-     * @description - Sets the font size for subsequently created controls. There are three
-     * related methods which have different behavior:
-     * - {@link dGui.Prototype.SetFontSize} - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontSizeScaled} (this method) - Caches the unmodified input font
-     *   size and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontSizeScaled2} - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {Integer} FontSize - The new font size.
-     */
-    SetFontSizeScaled(FontSize) {
-        this.DefineProp('BaseFontSize', { Value: FontSize })
-        super.SetFont('s' this.BaseFontSizeScaled)
-    }
-    /**
-     * @description - Sets the font size for subsequently created controls. There are three
-     * related methods which have different behavior:
-     * - {@link dGui.Prototype.SetFontSize} - Caches the unmodified input font size
-     *   and passes the unmodified input font size to
-     *   {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
-     * - {@link dGui.Prototype.SetFontSizeScaled} - Caches the unmodified input font
-     *   size and passes the scaled font size to `Gui.Prototype.SetFont` as
-     *   `<value> * <window's dpi> / BASE_DPI`.
-     * - {@link dGui.Prototype.SetFontSizeScaled2} (this method) - Caches the scaled font size as
-     *   `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-     *   `Gui.Prototype.SetFont`.
-     *
-     * This caches the font size as {@link dGui#BaseFontSize}.
-     *
-     * @param {Integer} FontSize - The new font size.
-     */
-    SetFontSizeScaled2(FontSize) {
-        this.DefineProp('BaseFontSize', { Value: FontSize * BASE_DPI / this.Dpi })
-        super.SetFont('s' this.BaseFontSizeScaled)
-    }
-    /**
      * @description - Defines a function to call before and/or after {@link dGui.Prototype.Toggle}.
      * Also see {@link dGui.SetToggleCallback}.
      *
@@ -795,11 +376,6 @@ class dGui extends Gui {
         }
     }
 
-    BaseFontSize {
-        Get => dGui.InitialFontSize
-        Set => this.DefineProp('BaseFontSize', { Value: Value })
-    }
-    BaseFontSizeScaled => this.BaseFontSize * this.Dpi / BASE_DPI
     Dpi => DllCall(g_user32_GetDpiForWindow, 'ptr', this.Hwnd, 'int')
     Visible {
         Get => DllCall(g_user32_IsWindowVisible, 'ptr', this.Hwnd, 'int')
@@ -807,21 +383,14 @@ class dGui extends Gui {
     }
 
     class Control extends Gui.Control {
-        static __New() {
-            this.DeleteProp('__New')
-            proto := this.Prototype
-            proto.BaseX := proto.BaseY := proto.BaseW := proto.BaseH := 0
-        }
         /**
          * @description - Instantiates the {@link dGui.Control} object. This is expected to be called
          * from {@link dGui.Prototype.Add}.
          * @param {String} Options - The value passed to the parameter `Options` of {@link dGui.Prototype.Add}.
          * @param {String|String[]} Text - The value passed to the parameter `Text` of {@link dGui.Prototype.Add}.
          */
-        __New(Options, Text) {
+        __New() {
             ObjSetBase(this, dGui.%this.Type%.Prototype)
-            super.SetFont('s' this.BaseFontSizeScaled)
-            this.UpdateBaseRect()
             return this
         }
         /**
@@ -831,16 +400,11 @@ class dGui extends Gui {
          * Radio, Text.
          * @param {Integer} [PaddingX = 0] - A number of pixels to add to the width.
          * @param {Integer} [PaddingY = 0] - A number of pixels to add to the height.
-         * @param {Boolean} [UpdateBaseRect = true] - If true, calls
-         * {@link dGui.Control.Prototype.UpdateBaseRect}.
          * @param {VarRef} [OutWidth] - A variable that will receive the width as integer.
          * @param {VarRef} [OutHeight] - A variable that will receive the height as integer.
          */
-        FitText(PaddingX := 0, PaddingY := 0, UpdateBaseRect := true, &OutWidth?, &OutHeight?) {
+        FitText(PaddingX := 0, PaddingY := 0, &OutWidth?, &OutHeight?) {
             ControlFitText(this, PaddingX, PaddingY, , &OutWidth, &OutHeight)
-            if UpdateBaseRect {
-                this.UpdateBaseRect()
-            }
         }
         /**
          * @description - Calls
@@ -930,472 +494,15 @@ class dGui extends Gui {
             return __ControlGetTextExtentEx_Process(this.Hwnd, StrPtr(this.Text), StrLen(this.Text), MaxExtent, &OutCharacterFit, &OutExtentPoints)
         }
         /**
-         * @description - Moves the control and sets {@link dGui.Control#BaseX}, {@link dGui.Control#BaseY},
-         * {@link dGui.Control#BaseW}, and/or {@link dGui.Control#BaseH} with the values. There are
-         * three related methods which have different behavior:
-         * - {@link dGui.Control.Prototype.MoveEx} (this method) - Caches the unmodified input
-         *   values and passes the unmodified input values to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#Move Gui.Control.Prototype.Move}.
-         * - {@link dGui.Control.Prototype.MoveExScaled} - Caches the unmodified
-         *   input values and passes the scaled values to `Gui.Control.Prototype.Move` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.MoveExScaled2} - Caches the scaled values
-         *   as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified values to
-         *   `Gui.Control.Prototype.Move`.
-         *
-         * @param {Integer} [X] - The X coordinate.
-         * @param {Integer} [Y] - The Y coordinate.
-         * @param {Integer} [W] - The width.
-         * @param {Integer} [H] - The height.
-         */
-        MoveEx(X?, Y?, W?, H?) {
-            this.Move(
-                IsSet(X) ? (this.BaseX := X) : unset
-              , IsSet(Y) ? (this.BaseY := Y) : unset
-              , IsSet(W) ? (this.BaseW := W) : unset
-              , IsSet(H) ? (this.BaseH := H) : unset
-            )
-        }
-        /**
-         * @description - Moves the control and sets {@link dGui.Control#BaseX}, {@link dGui.Control#BaseY},
-         * {@link dGui.Control#BaseW}, and/or {@link dGui.Control#BaseH} with the values. There are
-         * three related methods which have different behavior:
-         * - {@link dGui.Control.Prototype.MoveEx} - Caches the unmodified input
-         *   values and passes the unmodified input values to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#Move Gui.Control.Prototype.Move}.
-         * - {@link dGui.Control.Prototype.MoveExScaled} (this method) - Caches the unmodified
-         *   input values and passes the scaled values to `Gui.Control.Prototype.Move` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.MoveExScaled2} - Caches the scaled values
-         *   as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified values to
-         *   `Gui.Control.Prototype.Move`.
-         *
-         * @param {Integer} [X] - The X coordinate.
-         * @param {Integer} [Y] - The Y coordinate.
-         * @param {Integer} [W] - The width.
-         * @param {Integer} [H] - The height.
-         */
-        MoveExScaled(X?, Y?, W?, H?) {
-            ratio := this.Dpi / BASE_DPI
-            this.Move(
-                IsSet(X) ? (this.BaseX := X) * ratio : unset
-              , IsSet(Y) ? (this.BaseY := Y) * ratio : unset
-              , IsSet(W) ? (this.BaseW := W) * ratio : unset
-              , IsSet(H) ? (this.BaseH := H) * ratio : unset
-            )
-        }
-        /**
-         * @description - Moves the control and sets {@link dGui.Control#BaseX}, {@link dGui.Control#BaseY},
-         * {@link dGui.Control#BaseW}, and/or {@link dGui.Control#BaseH} with the values. There are
-         * three related methods which have different behavior:
-         * - {@link dGui.Control.Prototype.MoveEx} - Caches the unmodified input
-         *   values and passes the unmodified input values to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#Move Gui.Control.Prototype.Move}.
-         * - {@link dGui.Control.Prototype.MoveExScaled} - Caches the unmodified
-         *   input values and passes the scaled values to `Gui.Control.Prototype.Move` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.MoveExScaled2} (this method) - Caches the scaled values
-         *   as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified values to
-         *   `Gui.Control.Prototype.Move`.
-         *
-         * @param {Integer} [X] - The X coordinate.
-         * @param {Integer} [Y] - The Y coordinate.
-         * @param {Integer} [W] - The width.
-         * @param {Integer} [H] - The height.
-         */
-        MoveExScaled2(X?, Y?, W?, H?) {
-            ratio := BASE_DPI / this.Dpi
-            if IsSet(X) {
-                this.BaseX := X * ratio
-            }
-            if IsSet(Y) {
-                this.BaseY := Y * ratio
-            }
-            if IsSet(W) {
-                this.BaseW := W * ratio
-            }
-            if IsSet(H) {
-                this.BaseH := H * ratio
-            }
-            this.Move(X ?? unset, Y ?? unset, W ?? unset, H ?? unset)
-        }
-        /**
-         * @description - Sets {@link dGui.Control#BaseFontSize} without changing the control's
-         * current font size.
-         * @param {Integer} FontSize - The new value.
-         */
-        SetBaseFontSize(FontSize) {
-            this.DefineProp('BaseFontSize', { Value: FontSize })
-        }
-        /**
-         * @description - Sets {@link dGui.Control#BaseX}, {@link dGui.Control#BaseY},
-         * {@link dGui.Control#BaseW}, and/or {@link dGui.Control#BaseH} without changing the
-         * control's current dimensions.
-         * @param {Integer} [BaseX] - The X coordinate.
-         * @param {Integer} [BaseY] - The Y coordinate.
-         * @param {Integer} [BaseW] - The width.
-         * @param {Integer} [BaseH] - The height.
-         */
-        SetBaseRect(BaseX?, BaseY?, BaseW?, BaseH?) {
-            if IsSet(BaseX) {
-                this.BaseX := BaseX
-            }
-            if IsSet(BaseY) {
-                this.BaseY := BaseY
-            }
-            if IsSet(BaseW) {
-                this.BaseW := BaseW
-            }
-            if IsSet(BaseH) {
-                this.BaseH := BaseH
-            }
-        }
-        /**
-         * @description - Sets the font options for the control. There are three related methods
-         * which have different behavior with respect to the font size option, if included:
-         * - {@link dGui.Control.Prototype.SetFont} (this method) - Caches the unmodified input font
-         *   size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontScaled} - Caches the unmodified input
-         *   font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontScaled2} - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {String} [Options] - The value to pass to the `Options` parameter of
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         *
-         * Each option is either a single letter immediately followed by a value,
-         * or a single word. To specify more than one option, include a space between each. For example:
-         * cBlue s12 bold.
-         *
-         * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-         * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-         * the existing color and size). It is possible to use norm to turn off all attributes and then
-         * selectively turn on others. For example, specifying norm italic would set the font to normal
-         * then to italic.
-         *
-         * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-         * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-         * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-         * created with a font color other than the current one by including the C option. For example:
-         * MyGui.Add("Text", "cRed", "My Text").
-         *
-         * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-         *
-         * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-         * For example: w600 (specify decimal, not hexadecimal)
-         *
-         * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-         *
-         * |Number|   Windows Constant     | Description                                                |
-         * |------|------------------------|------------------------------------------------------------|
-         * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-         * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-         * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-         * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-         * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-         * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-         *
-         * @param {String|String[]} [FontName] - In contrast with
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont},
-         * the `FontName` parameter of {@link dGui.Control.Prototype.SetFont} allows multiple font
-         * names to be defined in one function call. `FontName` here can be a single name, a
-         * comma-delimited list of names, or an array of names.
-         *
-         * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-         * or does not exist on the system, the previous font's typeface will be used (or if none, the
-         * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-         * font on multiple systems, even if some of those systems lack the preferred font. For example,
-         * by using the following methods in order, Verdana will be given preference over Arial, which
-         * in turn is given preference over MS Sans Serif:
-         * @example
-         * MyGui.SetFont(, "MS Sans Serif")
-         * MyGui.SetFont(, "Arial")
-         * MyGui.SetFont(, "Verdana")  ; Preferred font.
-         * @
-         */
-        SetFont(Options?, FontName?) {
-            if IsSet(Options) {
-                if RegExMatch(Options, '(?<=[sS])[\d.]+', &match) {
-                    this.DefineProp('BaseFontSize', { Value: match[0] })
-                }
-                super.SetFont(Options)
-            }
-            if IsSet(FontName) {
-                if IsObject(FontName) {
-                    for name in FontName {
-                        super.SetFont(, name)
-                    }
-                } else {
-                    for name in StrSplit(FontName, ',') {
-                        if name {
-                            super.SetFont(, name)
-                        }
-                    }
-                }
-            }
-        }
-        /**
-         * @description - Sets the font options for the control. There are three related methods
-         * which have different behavior with respect to the font size option, if included:
-         * - {@link dGui.Control.Prototype.SetFont} - Caches the unmodified input font
-         *   size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontScaled} (this method) - Caches the unmodified input
-         *   font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontScaled2} - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {String} [Options] - The value to pass to the `Options` parameter of
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         *
-         * Each option is either a single letter immediately followed by a value,
-         * or a single word. To specify more than one option, include a space between each. For example:
-         * cBlue s12 bold.
-         *
-         * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-         * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-         * the existing color and size). It is possible to use norm to turn off all attributes and then
-         * selectively turn on others. For example, specifying norm italic would set the font to normal
-         * then to italic.
-         *
-         * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-         * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-         * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-         * created with a font color other than the current one by including the C option. For example:
-         * MyGui.Add("Text", "cRed", "My Text").
-         *
-         * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-         *
-         * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-         * For example: w600 (specify decimal, not hexadecimal)
-         *
-         * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-         *
-         * |Number|   Windows Constant     | Description                                                |
-         * |------|------------------------|------------------------------------------------------------|
-         * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-         * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-         * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-         * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-         * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-         * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-         *
-         * @param {String|String[]} [FontName] - In contrast with
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont},
-         * the `FontName` parameter of {@link dGui.Control.Prototype.SetFont} allows multiple font
-         * names to be defined in one function call. `FontName` here can be a single name, a
-         * comma-delimited list of names, or an array of names.
-         *
-         * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-         * or does not exist on the system, the previous font's typeface will be used (or if none, the
-         * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-         * font on multiple systems, even if some of those systems lack the preferred font. For example,
-         * by using the following methods in order, Verdana will be given preference over Arial, which
-         * in turn is given preference over MS Sans Serif:
-         * @example
-         * MyGui.SetFont(, "MS Sans Serif")
-         * MyGui.SetFont(, "Arial")
-         * MyGui.SetFont(, "Verdana")  ; Preferred font.
-         * @
-         */
-        SetFontScaled(Options?, FontName?) {
-            if IsSet(Options) {
-                if RegExMatch(Options, '([^sS]*)[sS]([\d.]+)(.*)', &match) {
-                    this.DefineProp('BaseFontSize', { Value: match[2] })
-                    super.SetFont(match[1] 's' this.BaseFontSizeScaled match[3])
-                } else {
-                    super.SetFont(Options)
-                }
-            }
-            if IsSet(FontName) {
-                if IsObject(FontName) {
-                    for name in FontName {
-                        super.SetFont(, name)
-                    }
-                } else {
-                    for name in StrSplit(FontName, ',') {
-                        if name {
-                            super.SetFont(, name)
-                        }
-                    }
-                }
-            }
-        }
-        /**
-         * @description - Sets the font options for the control. There are three related methods
-         * which have different behavior with respect to the font size option, if included:
-         * - {@link dGui.Control.Prototype.SetFont} - Caches the unmodified input font
-         *   size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontScaled} - Caches the unmodified input
-         *   font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontScaled2} (this method) - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {String} [Options] - The value to pass to the `Options` parameter of
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         *
-         * Each option is either a single letter immediately followed by a value,
-         * or a single word. To specify more than one option, include a space between each. For example:
-         * cBlue s12 bold.
-         *
-         * The following words are supported: bold, italic, strike, underline, and norm. Norm returns
-         * the font to normal weight/boldness and turns off italic, strike, and underline (but it retains
-         * the existing color and size). It is possible to use norm to turn off all attributes and then
-         * selectively turn on others. For example, specifying norm italic would set the font to normal
-         * then to italic.
-         *
-         * C: Color name (see color chart) or RGB value -- or specify the word Default to return to the
-         * system's default color (black on most systems). Example values: cRed, cFFFFAA, cDefault.
-         * Note: Buttons and status bars do not obey custom colors. Also, an individual control can be
-         * created with a font color other than the current one by including the C option. For example:
-         * MyGui.Add("Text", "cRed", "My Text").
-         *
-         * S: Size (in points). For example: s12 (specify decimal, not hexadecimal)
-         *
-         * W: Weight (boldness), which is a number between 1 and 1000 (400 is normal and 700 is bold).
-         * For example: w600 (specify decimal, not hexadecimal)
-         *
-         * Q: Text rendering quality. For example: q3. Q should be followed by a number from the following table:
-         *
-         * |Number|   Windows Constant     | Description                                                |
-         * |------|------------------------|------------------------------------------------------------|
-         * | 0    | DEFAULT_QUALITY	       | Appearance of the font does not matter.|
-         * | 1    | DRAFT_QUALITY	       | Appearance of the font is less important than when the PROOF_QUALITY value is used.|
-         * | 2	  | PROOF_QUALITY	       | Character quality of the font is more important than exact matching of the logical-font attributes.|
-         * | 3	  | NONANTIALIASED_QUALITY | Font is never antialiased, that is, font smoothing is not done.|
-         * | 4	  | ANTIALIASED_QUALITY	   | Font is antialiased, or smoothed, if the font supports it and the size of the font is not too small or too large.|
-         * | 5    | CLEARTYPE_QUALITY	   | If set, text is rendered (when possible) using ClearType antialiasing method.|
-         *
-         * @param {String|String[]} [FontName] - In contrast with
-         * {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont},
-         * the `FontName` parameter of {@link dGui.Control.Prototype.SetFont} allows multiple font
-         * names to be defined in one function call. `FontName` here can be a single name, a
-         * comma-delimited list of names, or an array of names.
-         *
-         * FontName may be the name of any font, such as one from the font table. If FontName is omitted
-         * or does not exist on the system, the previous font's typeface will be used (or if none, the
-         * system's default GUI typeface). This behavior is useful to make a GUI window have a similar
-         * font on multiple systems, even if some of those systems lack the preferred font. For example,
-         * by using the following methods in order, Verdana will be given preference over Arial, which
-         * in turn is given preference over MS Sans Serif:
-         * @example
-         * MyGui.SetFont(, "MS Sans Serif")
-         * MyGui.SetFont(, "Arial")
-         * MyGui.SetFont(, "Verdana")  ; Preferred font.
-         * @
-         */
-        SetFontScaled2(Options?, FontName?) {
-            if IsSet(Options) {
-                if RegExMatch(Options, '([^sS]*)[sS]([\d.]+)(.*)', &match) {
-                    this.DefineProp('BaseFontSize', { Value: match[2] * BASE_DPI / this.Dpi })
-                    super.SetFont(match[1] 's' this.BaseFontSizeScaled match[3])
-                } else {
-                    super.SetFont(Options)
-                }
-            }
-            if IsSet(FontName) {
-                if IsObject(FontName) {
-                    for name in FontName {
-                        super.SetFont(, name)
-                    }
-                } else {
-                    for name in StrSplit(FontName, ',') {
-                        if name {
-                            super.SetFont(, name)
-                        }
-                    }
-                }
-            }
-        }
-        /**
-         * @description - Sets the font size for the control. There are three related methods which
-         * have different behavior:
-         * - {@link dGui.Control.Prototype.SetFontSize} (this method) - Caches the unmodified input
-         *   font size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled} - Caches the unmodified
-         *   input font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled2} - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Control.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {Integer} FontSize - The new font size.
-         */
-        SetFontSize(FontSize) {
-            this.DefineProp('BaseFontSize', { Value: FontSize })
-            super.SetFont('s' FontSize)
-        }
-        /**
-         * @description - Sets the font size for the control. There are three related methods which
-         * have different behavior:
-         * - {@link dGui.Control.Prototype.SetFontSize} - Caches the unmodified input
-         *   font size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled} (this method) - Caches the unmodified
-         *   input font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled2} - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Control.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {Integer} FontSize - The new font size.
-         */
-        SetFontSizeScaled(FontSize) {
-            this.DefineProp('BaseFontSize', { Value: FontSize })
-            super.SetFont('s' this.BaseFontSizeScaled)
-        }
-        /**
-         * @description - Sets the font size for the control. There are three related methods which
-         * have different behavior:
-         * - {@link dGui.Control.Prototype.SetFontSize} - Caches the unmodified input
-         *   font size and passes the unmodified input font size to
-         *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#SetFont Gui.Control.Prototype.SetFont}.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled} - Caches the unmodified
-         *   input font size and passes the scaled font size to `Gui.Control.Prototype.SetFont` as
-         *   `<value> * <window's dpi> / BASE_DPI`.
-         * - {@link dGui.Control.Prototype.SetFontSizeScaled2} (this method) - Caches the scaled font
-         *   size as `<value> * BASE_DPI / <window's dpi>` and passes the unmodified font size to
-         *   `Gui.Control.Prototype.SetFont`.
-         *
-         * This caches the font size as {@link dGui.Control#BaseFontSize}.
-         *
-         * @param {Integer} FontSize - The new font size.
-         */
-        SetFontSizeScaled2(FontSize) {
-            this.DefineProp('BaseFontSize', { Value: FontSize * BASE_DPI / this.Dpi })
-            super.SetFont('s' this.BaseFontSizeScaled)
-        }
-        /**
          * @description - Changes the control's text and adjusts the control's dimensions to fit
          * the text content.
          * @param {String} Str - The string.
          * @param {Integer} [PaddingX = 0] - Additional pixels added to the control's width.
          * @param {Integer} [PaddingY = 0] - Additional pixels added to the control's height.
-         * @param {Boolean} [UpdateBaseRect = true] - If true, calls
-         * {@link dGui.Control.Prototype.UpdateBaseRect}.
          * @param {VarRef} [OutWidth] - A variable that will receive the width as integer.
          * @param {VarRef} [OutHeight] - A variable that will receive the height as integer.
          */
-        SetTextEx(Str, PaddingX := 0, PaddingY := 0, UpdateBaseRect := true, &OutWidth?, &OutHeight?) {
+        SetTextEx(Str, PaddingX := 0, PaddingY := 0, &OutWidth?, &OutHeight?) {
             switch Type(Str), 0 {
                 case 'String': ; do nothing
                 default:
@@ -1417,9 +524,6 @@ class dGui extends Gui {
                 }
                 context()
                 this.Move(, , OutWidth := sz.W + PaddingX, H ?? unset)
-            }
-            if UpdateBaseRect {
-                this.UpdateBaseRect()
             }
         }
         /**
@@ -1428,12 +532,10 @@ class dGui extends Gui {
          * @param {VarRef} Str - A variable containing the string.
          * @param {Integer} [PaddingX = 0] - Additional pixels added to the control's width.
          * @param {Integer} [PaddingY = 0] - Additional pixels added to the control's height.
-         * @param {Boolean} [UpdateBaseRect = true] - If true, calls
-         * {@link dGui.Control.Prototype.UpdateBaseRect}.
          * @param {VarRef} [OutWidth] - A variable that will receive the width as integer.
          * @param {VarRef} [OutHeight] - A variable that will receive the height as integer.
          */
-        SetTextEx2(&Str, PaddingX := 0, PaddingY := 0, UpdateBaseRect := true, &OutWidth?, &OutHeight?) {
+        SetTextEx2(&Str, PaddingX := 0, PaddingY := 0, &OutWidth?, &OutHeight?) {
             switch Type(Str), 0 {
                 case 'String': ; do nothing
                 default:
@@ -1456,40 +558,8 @@ class dGui extends Gui {
                 context()
                 this.Move(, , OutWidth := sz.W + PaddingX, H ?? unset)
             }
-            if UpdateBaseRect {
-                this.UpdateBaseRect()
-            }
         }
-        /**
-         * @description - Sets {@link dGui.Control#BaseFontSize} as
-         * `<current font size> * BASE_DPI / <window's dpi>`.
-         */
-        UpdateBaseFontSize() {
-            this.DefineProp('BaseFontSize', { Value: Display_Logfont(this.Hwnd).FontSize * BASE_DPI / this.Dpi })
-        }
-        /**
-         * @description - Sets {@link dGui.Control#BaseX}, {@link dGui.Control#BaseY},
-         * {@link dGui.Control#BaseW}, and/or {@link dGui.Control#BaseH} with the control's
-         * current dimensions scaled as `<value> * BASE_DPI / <window's dpi>`.
-         */
-        UpdateBaseRect() {
-            this.GetPos(&x, &y, &w, &h)
-            ratio := BASE_DPI / this.Dpi
-            this.BaseX := x * ratio
-            this.BaseY := y * ratio
-            this.BaseW := w * ratio
-            this.BaseH := h * ratio
-        }
-        BaseFontSize {
-            Get => this.Gui.BaseFontSize
-            Set => this.DefineProp('BaseFontSize', { Value: Value })
-        }
-        BaseFontSizeScaled => this.BaseFontSize * this.Dpi / BASE_DPI
         Dpi => DllCall(g_user32_GetDpiForWindow, 'ptr', this.Hwnd, 'int')
-        TextEx {
-            Get => this.Text
-            Set => this.SetTextEx2(&value)
-        }
     }
 
     ;@region CtrlTypes
@@ -2503,4 +1573,50 @@ class dGui extends Gui {
     class UpDown extends dGui.Control {
     }
     ;@endregion
+}
+
+Display_dGui_SetConstants(force := false) {
+    global
+    if IsSet(Display_dGui_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_user32_BeginDeferWindowPos) {
+            g_user32_BeginDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_DeferWindowPos) {
+            g_user32_DeferWindowPos := 0
+        }
+        if !IsSet(g_user32_EndDeferWindowPos) {
+            g_user32_EndDeferWindowPos := 0
+        }
+        if !IsSet(g_user32_GetDpiForSystem) {
+            g_user32_GetDpiForSystem := 0
+        }
+        if !IsSet(g_user32_GetDpiForWindow) {
+            g_user32_GetDpiForWindow := 0
+        }
+        if !IsSet(g_user32_GetWindowRect) {
+            g_user32_GetWindowRect := 0
+        }
+        if !IsSet(g_user32_IsWindowVisible) {
+            g_user32_IsWindowVisible := 0
+        }
+        if !IsSet(BASE_DPI) {
+            BASE_DPI := DllCall(g_user32_GetDpiForSystem, 'uint')
+        }
+    }
+    Display_dGui_LibraryToken := LibraryManager(
+        'user32', [
+            'BeginDeferWindowPos',
+            'DeferWindowPos',
+            'EndDeferWindowPos',
+            'GetDpiForSystem',
+            'GetDpiForWindow',
+            'GetWindowRect',
+            'IsWindowVisible'
+        ]
+    )
+    Display_dGui_constants_set := true
 }
