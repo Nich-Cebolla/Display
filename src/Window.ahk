@@ -3,6 +3,7 @@
 #include ..\struct
 #include Display_Point.ahk
 #include Display_Rect.ahk
+#include Display_WinRect.ahk
 
 Display_AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
     return DllCall(g_user32_AdjustWindowRectEx, 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
@@ -116,14 +117,17 @@ Display_GetAncestor(Hwnd, Flags) {
  * @returns {Display_Rect} - The bounding rectangle of all child windows, specifically the smallest
  * rectangle that contains all child windows.
  */
-Display_GetChildrenBoundingRect(Hwnd) {
-    rects := [Buffer(16), Buffer(16), Buffer(16)]
-    DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'ptr', 0, 'int')
+Display_GetChildBoundingRect(hwnd) {
+    rects := [Display_WinRect(, 3), Display_WinRect(, 3), Display_WinRect(, 3)]
+    cb := CallbackCreate(_EnumChildWindowsProc, 'fast')
+    DllCall(g_user32_EnumChildWindows, 'ptr', hwnd, 'ptr', cb, 'ptr', ObjPtr(rects), 'int')
     CallbackFree(cb)
     return rects[1]
 
-    _EnumChildWindowsProc(Hwnd) {
-        DllCall(g_user32_GetWindowRect, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', rects[1], 'int')
+    _EnumChildWindowsProc(hwnd, lparam) {
+        rects := ObjFromPtrAddRef(lparam)
+        rects[3].hwnd := hwnd
+        rects[3]()
         DllCall(g_user32_UnionRect, 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
         rects.Push(rects.RemoveAt(1))
         return 1
