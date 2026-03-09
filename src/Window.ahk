@@ -76,7 +76,7 @@ Display_EndDeferWindowPos(hDwp) {
 }
 Display_EnumChildWindows(HwndParent, Callback, lParam := 0) {
     cb := CallbackCreate(Callback)
-    result := DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', cb, 'uint', lParam, 'int')
+    result := DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', cb, 'ptr', lParam, 'int')
     CallbackFree(cb)
     return result
 }
@@ -118,7 +118,7 @@ Display_GetAncestor(Hwnd, Flags) {
  */
 Display_GetChildrenBoundingRect(Hwnd) {
     rects := [Buffer(16), Buffer(16), Buffer(16)]
-    DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+    DllCall(g_user32_EnumChildWindows, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'ptr', 0, 'int')
     CallbackFree(cb)
     return rects[1]
 
