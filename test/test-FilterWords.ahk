@@ -1,13 +1,13 @@
-﻿#include ..\src\FilterStrings.ahk
+﻿#include ..\templates\DisplayConfig.ahk
 
-; There are seven components to using `FilterStrings`
+; There are several components to using `FilterStrings`
 
-; 1. A list of words
+; A list of words
 words := ['numerically','swathe','viverrine','debility','numb','sameness','parablast','disbud'
 ,'insoluble','indubitable','proposer','niccolite','immesh','seaboard','epicycle','petrify','boss'
 ,'mignonette','deference','beauxite','dimera','pintado','suzerain','synalepha','silken']
 
-; 2. An object that uses the words for something. In this example, we display them using a ListView.
+; An object that uses the words for something. In this example, we display them using a ListView.
 g := gui('+Resize')
 lv := g.Add('ListView', 'w300 r11 vcb', ['Word'])
 ; Add the words to the listview
@@ -15,28 +15,35 @@ for w in words {
     lv.Add(, w)
 }
 
-; 3. A function that returns the text used for filtering. Typically this would be some input from
+; A function that returns the text used for filtering. Typically this would be some input from
 ; the user, so in this case we will accomplish this by using an Edit control and defining the function
 ; to return its text value.
 edt := g.Add('Edit', 'w300 r1 Section vEdtInput')
-GetTextCallback := (*) => edt.Text
+GetTextCallback(*) {
+    global edt
+    return edt.Text
+}
 
-; 4. A function that adds items to the object. The function should have one to two parameters.
+; A function that adds items to the object. The function should have one to two parameters.
 ;   1. The index of the string in the array.
 ;   2. The filtered index, which is the index of the index in the "Indices" array. I can't think
 ;      of a good way to describe this in a way that would make more sense than simply looking at the
 ;      class definition to see what the "Indices" array is used for.
 ; In this case, we need to add the string to the ListView control. We exclude the second parameter
 ; because we don't need it here.
-AddCallback := (Index, *) => lv.Add( , Words[Index])
+AddCallback(Index, *) {
+    global lv
+    lv.Add( , Words[Index])
+}
 
-; 5. A function that deletes items from the object. The function should have one to two parameters.
+; A function that deletes items from the object. The function should have one to two parameters.
 ;   1. The index of the string in the array.
 ;   2. The filtered index, which is the index of the index in the "Indices" array. As long as the
 ;      listview's contents has not been sorted or changed by he user, the `FilteredIndex` should be
 ;      the correct index to delete the string. However, if one's code cannot guarantee that this is
 ;      true, then it would be better to iterate the ListView's contents and find the string.
 DeleteCallback(Index, *) {
+    global lv
     loop lv.GetCount() {
         if lv.GetText(A_Index, 1) = words[index] {
             lv.Delete(A_Index)
@@ -45,56 +52,21 @@ DeleteCallback(Index, *) {
     }
 }
 
-; 6. A function that compares the strings. The function should have two parameters.
-;   1. The array item (string) being evaluated.
-;   2. The input string returned from #3 above.
-; The function should return:
-; - Nonzero if the array item (parameter 1) is to be kept in the active list and, if appropriate,
-;   `AddCallback` will be called.
-; - Zero or an empty string if the array item is to be filtered out of the list and, if appropriate,
-;   `DeleteCallback` will be called.
-; You could use a simple function like `InStr`, but let's use something more complex. Details about
-; `FilterCallback` here are at the bottom of this page.
-FilterCallback(Item, Input) {
-    LeftOffsetInput := LeftOffsetItem := 1
-    RightOffsetInput := 0
-    _Input := RegExReplace(Input, '\s', '')
-    _Item := RegExReplace(Item, '\s', '')
-    LenInput := SubLen := StrLen(_Input)
-    LenItem := StrLen(_Item)
-    found := []
-    found.Capacity := LenInput
-
-    loop {
-        ssInput := SubStr(_Input, LeftOffsetInput, LenInput - LeftOffsetInput - RightOffsetInput + 1)
-        if pos := InStr(_Item, ssInput, , LeftOffsetItem) {
-            LenSsInput := StrLen(ssInput)
-            LeftOffsetItem := pos + LenSsInput
-            LeftOffsetInput += LenSsInput
-            found.Push(LeftOffsetInput, LenInput - LeftOffsetInput - RightOffsetInput + 1, pos)
-            if LeftOffsetInput > LenInput {
-                return found
-            } else {
-                RightOffsetInput := 0
-            }
-        } else {
-            RightOffsetInput++
-            if RightOffsetInput + LeftOffsetInput > LenInput {
-                return 0
-            }
-        }
-    }
-}
-
-; 7. An event that calls the filter.
-HChangeEdit(Ctrl, *) {
+; An event that calls the filter.
+HChangeEdit(*) {
+    global edt
     ; Our event handler must disable the event handler, call the filter, then re-enable the event
     ; handler before returning.
-    Ctrl.OnEvent('Change', HChangeEdit, 0)
-    Ctrl.Gui.Filter.Call()
-    Ctrl.OnEvent('Change', HChangeEdit, 1)
+    edt.OnEvent('Change', HChangeEdit, 0)
+    edt.Gui.Filter.Call()
 }
 edt.OnEvent('Change', HChangeEdit)
+
+; A function that re-enables the event handler
+EndCallback(*) {
+    global edt
+    edt.OnEvent('Change', HChangeEdit, 1)
+}
 
 ; In this example I assign the `FilterStrings` instance to a property on the gui object. This is usually
 ; a convenient choice, but isn't strictly necessary. The reference must be accessible from the event
@@ -102,7 +74,13 @@ edt.OnEvent('Change', HChangeEdit)
 ; deleting items from the array. While the `FilterStrings` function is active, to add items to the array
 ; you must call `FilterStrings.Prototype.Add`, and to delete items you must call `FilterStrings.Prototype.Delete`.
 ; If you don't do this, the filter and the list of words will be out of sync.
-g.Filter := FilterStrings(words, GetTextCallback, AddCallback, DeleteCallback, FilterCallback)
+g.Filter := FilterStrings({
+    list: words,
+    callbackGetCriterion: GetTextCallback,
+    callbackAdd: AddCallback,
+    callbackDelete: DeleteCallback,
+    callbackEnd: EndCallback
+})
 
 ; Let's also add a couple buttons and another edit control to demonstrate adding and deleting items.
 g.Add('Button', 'w93 xs ys+40 Section vBtnAdd', 'Add').OnEvent('Click', HClickButtonAdd)
@@ -142,6 +120,7 @@ Helper(g, msg) {
     }
 }
 g.show()
+g.OnEvent('Close', (*) => ExitApp())
 
 
 /* Description of `FilterCallback`:
