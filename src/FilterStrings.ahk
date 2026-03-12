@@ -498,6 +498,23 @@ class FilterStrings {
         }
         this.PreviousCriterion := ''
     }
+    /**
+     * @desc - Replaces the current list of strings with a new list. This method does **not** call
+     * `Options.CallbackAdd` while processing the new list. It is assumed that the caller will handle
+     * adding the items to the control.
+     *
+     * @param {String[]} list - The new list.
+     */
+    SetList(list) {
+        originalCritical := Critical('On')
+        this.list := list
+        this.filtered.Size := list.length
+        ptr := this.filtered.ptr - 1
+        loop list.length {
+            NumPut('char', 0, ptr, A_Index)
+        }
+        Critical(originalCritical)
+    }
 
     Ctrl => GuiCtrlFromHwnd(this.HwndCtrl)
     CtrlEventHandler => GuiCtrlFromHwnd(this.HwndCtrlEventHandler)
