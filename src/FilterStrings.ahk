@@ -495,12 +495,11 @@ class FilterStrings {
     Delete(Index, Length := 1) {
         originalCritical := Critical(-1)
         callbackDelete := this.CallbackDelete
-        callbackFilter := this.CallbackFilter
         filtered := this.Filtered
         list := this.List
         ptr := filtered.Ptr - 1
         k := Index - 1
-        if criterion := this.CallbackGetCriterion.Call() {
+        if this.CallbackGetCriterion.Call() {
             i := 0
             loop k {
                 if !NumGet(ptr, A_Index, 'char') {
