@@ -1,4 +1,4 @@
-﻿count := 0
+﻿
 class FilterStrings {
     static __New() {
         this.DeleteProp('__New')
@@ -288,8 +288,6 @@ class FilterStrings {
         this.Time := 0
     }
     Call() {
-        global count
-        count++
         Critical('On')
         criterion := this.CallbackGetCriterion.Call()
         if this.PreviousCriterion == criterion {
