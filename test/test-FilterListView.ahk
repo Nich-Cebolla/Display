@@ -16,6 +16,7 @@ class test {
         for w in words {
             lv.Add(, w)
         }
+        lv.ModifyCol(1, 'AutoHdr')
 
         ; We'll use an edit control to input the filter criterion
         edt := this.edt := g.Add('Edit', 'w300 Section')
