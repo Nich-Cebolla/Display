@@ -1,9 +1,34 @@
 ﻿
-/**
- * @classdesc - Use this as a safe way to access a window's font object. This handles accessing and
- * releasing the device context and font object.
- */
 class SelectFontIntoDc {
+    static __New() {
+        this.DeleteProp('__New')
+        Display_SelectFontIntoDc_SetConstants()
+        proto := this.Prototype
+        proto.hdc :=
+        proto.hFont :=
+        proto.oldFont := ''
+    }
+    /**
+     * @desc - Use this as a safe way to access a window's font object. This handles accessing and
+     * releasing the device context and font object.
+     *
+     * Usage:
+     *
+     * @example
+     * g := Gui()
+     * txt := g.Add("Text", , "Hello, world!")
+     * context := SelectFontIntoDc(txt.hwnd)
+     * hdc := context.hdc
+     * ; do work ...
+     * ; when no longer needed
+     * context() ; release the device context and delete the font object
+     * @
+     *
+     * @class
+     *
+     * @param {Integer} hwnd - The handle to the window that will have its font object selected into
+     * the device context.
+     */
     __New(hWnd) {
         this.hWnd := hWnd
         if !(this.hdc := DllCall(g_user32_GetDC, 'ptr', hWnd, 'ptr')) {
@@ -54,12 +79,33 @@ class SelectFontIntoDc {
         this.DeleteProp('Callback')
         return err ?? ''
     }
-
-    static __New() {
-        this.DeleteProp('__New')
-        proto := this.Prototype
-        proto.DefineProp('hdc', { Value: '' })
-        proto.DefineProp('hFont', { Value: '' })
-        proto.DefineProp('oldFont', { Value: '' })
+}
+Display_SelectFontIntoDc_SetConstants(force := false) {
+    global
+    if IsSet(Display_SelectFontIntoDc_constants_set) {
+        if !force {
+            return
+        }
+    } else {
+        if !IsSet(g_gdi32_SelectObject) {
+            g_gdi32_SelectObject := 0
+        }
+        if !IsSet(g_user32_GetDC) {
+            g_user32_GetDC := 0
+        }
+        if !IsSet(g_user32_ReleaseDC) {
+            g_user32_ReleaseDC := 0
+        }
     }
+    Display_SelectFontIntoDc_LibraryToken := LibraryManager(
+        'gdi32', [
+            'SelectObject'
+        ],
+        'user32', [
+            'GetDC',
+            'ReleaseDC'
+        ]
+    )
+
+    Display_SelectFontIntoDc_constants_set := true
 }
