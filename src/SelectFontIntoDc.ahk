@@ -34,7 +34,7 @@ class SelectFontIntoDc {
         if !(this.hdc := DllCall(g_user32_GetDC, 'ptr', hWnd, 'ptr')) {
             throw OSError()
         }
-        OnError(this.Callback := ObjBindMethod(this, '__ReleaseOnError'), 1)
+        OnError(this, 1)
         if !(this.hFont := SendMessage(0x0031, 0, 0, , hWnd)) { ; WM_GETFONT
             throw OSError()
         }
@@ -46,18 +46,15 @@ class SelectFontIntoDc {
     /**
      * @description - Selects the old font back into the device context, then releases the
      * device context.
+     * @param {Error} [thrown] - Leave unset.
      */
-    Call() {
-        if err := this.__Release() {
+    Call(thrown?, *) {
+        if IsSet(thrown) {
+            this.__Release()
+            throw thrown
+        } else if err := this.__Release() {
             throw err
         }
-    }
-
-    __ReleaseOnError(thrown, mode) {
-        if err := this.__Release() {
-            thrown.Message .= '; ' err.Message
-        }
-        throw thrown
     }
 
     __Release() {
@@ -71,12 +68,13 @@ class SelectFontIntoDc {
             if !DllCall(g_user32_ReleaseDC, 'ptr', this.hWnd, 'ptr', this.hdc, 'int') {
                 if IsSet(err) {
                     err.Message .= '; Another error occurred: ' OSError().Message
+                } else {
+                    err := OSError()
                 }
             }
             this.DeleteProp('hdc')
         }
-        OnError(this.Callback, 0)
-        this.DeleteProp('Callback')
+        OnError(this, 0)
         return err ?? ''
     }
 }
