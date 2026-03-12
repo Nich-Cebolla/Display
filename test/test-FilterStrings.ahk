@@ -1,6 +1,5 @@
 ﻿
-#include ..\src
-#include FilterStrings.ahk
+#include ..\templates\DisplayConfig.ahk
 
 if !A_IsCompiled && A_LineFile == A_ScriptFullPath {
     test_FilterStrings()
@@ -44,7 +43,7 @@ class test_FilterStrings {
         this.cb := g.Add('ComboBox', 'xs w400 r25', words)
         this.cb.OnEvent('Change', 'HChangeComboBox')
         this.cb.OnEvent('Focus', 'HFocusComboBox')
-        this.cb.OnEvent('LoseFocus', 'HLoseFocusComboBox')
+        ; this.cb.OnEvent('LoseFocus', 'HLoseFocusComboBox')
         options := {
             List: words,
             CallbackAdd: FilterStrings_CallbackAddComboBox,

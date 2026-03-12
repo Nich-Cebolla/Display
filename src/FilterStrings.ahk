@@ -1,4 +1,4 @@
-﻿
+﻿count := 0
 class FilterStrings {
     static __New() {
         this.DeleteProp('__New')
@@ -6,7 +6,7 @@ class FilterStrings {
         proto.CallbackFilter := FilterStrings_CallbackFilter
         proto.CallbackReset := ''
         proto.CaseSense := false
-        proto.__timerPeriod := -50
+        proto.Delay := -50
         proto.EndThreshold := 500
         proto.HwndCtrl := 0
         proto.HwndCtrlEventHandler := 0
@@ -288,63 +288,38 @@ class FilterStrings {
         this.Time := 0
     }
     Call() {
-        if criterion := this.CallbackGetCriterion.Call() {
-            if this.PreviousCriterion == criterion {
-                if this.Time {
-                    if A_TickCount - this.Time > this.EndThreshold {
-                        if this.CallbackEnd {
-                            this.CallbackEnd.Call(this)
-                        }
-                        this.Time := 0
-                        return
+        global count
+        count++
+        Critical('On')
+        criterion := this.CallbackGetCriterion.Call()
+        if this.PreviousCriterion == criterion {
+            if this.Time {
+                if A_TickCount - this.Time > this.EndThreshold {
+                    if this.CallbackEnd {
+                        this.CallbackEnd.Call(this)
                     }
+                    this.Time := 0
+                    return
                 } else {
-                    this.Time := A_TickCount
+                    SetTimer(this, -Abs(this.Delay), this.Priority)
+                    return
                 }
-            } else {
-                originalCritical := Critical(-1)
-                callbackAdd := this.CallbackAdd
-                callbackDelete := this.CallbackDelete
-                callbackFilter := this.CallbackFilter
-                list := this.List
-                ptr := this.Filtered.Ptr - 1
-                i := 1
-                if !this.PreviousCriterion || InStr(criterion, this.PreviousCriterion, this.CaseSense) == 1 {
-                    loop list.Length {
-                        if !NumGet(ptr, A_Index, 'char') {
-                            if callbackFilter(list[A_Index], criterion) {
-                                ++i
-                            } else {
-                                NumPut('char', 1, ptr, A_Index)
-                                if callbackDelete(A_Index, i, this) {
-                                    break
-                                }
-                            }
-                        }
+            }
+        }
+        callbackAdd := this.CallbackAdd
+        callbackDelete := this.CallbackDelete
+        callbackFilter := this.CallbackFilter
+        list := this.List
+        ptr := this.Filtered.Ptr - 1
+        i := 1
+        if criterion {
+            if !this.PreviousCriterion || InStr(criterion, this.PreviousCriterion, this.CaseSense) == 1 {
+                loop list.Length {
+                    if A_Index = 26 {
+                        sleep 1
                     }
-                } else if InStr(this.PreviousCriterion, criterion, this.CaseSense) == 1 {
-                    loop list.Length {
-                        if NumGet(ptr, A_Index, 'char') {
-                            if callbackFilter(list[A_Index], criterion) {
-                                NumPut('char', 0, ptr, A_Index)
-                                if callbackAdd(A_Index, i++, this) {
-                                    break
-                                }
-                            }
-                        } else {
-                            ++i
-                        }
-                    }
-                } else {
-                    loop list.Length {
-                        if NumGet(ptr, A_Index, 'char') {
-                            if callbackFilter(list[A_Index], criterion) {
-                                NumPut('char', 0, ptr, A_Index)
-                                if callbackAdd(A_Index, i++, this) {
-                                    break
-                                }
-                            }
-                        } else if callbackFilter(list[A_Index], criterion) {
+                    if !NumGet(ptr, A_Index, 'char') {
+                        if callbackFilter(list[A_Index], criterion) {
                             ++i
                         } else {
                             NumPut('char', 1, ptr, A_Index)
@@ -354,32 +329,61 @@ class FilterStrings {
                         }
                     }
                 }
+            } else if InStr(this.PreviousCriterion, criterion, this.CaseSense) == 1 {
+                loop list.Length {
+                    if NumGet(ptr, A_Index, 'char') {
+                        if callbackFilter(list[A_Index], criterion) {
+                            NumPut('char', 0, ptr, A_Index)
+                            if callbackAdd(A_Index, i++, this) {
+                                break
+                            }
+                        }
+                    } else {
+                        ++i
+                    }
+                }
+            } else {
+                loop list.Length {
+                    if NumGet(ptr, A_Index, 'char') {
+                        if callbackFilter(list[A_Index], criterion) {
+                            NumPut('char', 0, ptr, A_Index)
+                            if callbackAdd(A_Index, i++, this) {
+                                break
+                            }
+                        }
+                    } else if callbackFilter(list[A_Index], criterion) {
+                        ++i
+                    } else {
+                        NumPut('char', 1, ptr, A_Index)
+                        if callbackDelete(A_Index, i, this) {
+                            break
+                        }
+                    }
+                }
             }
-            this.PreviousCriterion := criterion
         } else {
             this.Reset()
         }
+        this.PreviousCriterion := criterion
         this.Time := A_TickCount
-        SetTimer(ObjBindMethod(this, 'Call'), this.__timerPeriod, this.Priority)
-        if IsSet(originalCritical) {
-            Critical(originalCritical)
-        }
+        SetTimer(this, -Abs(this.Delay), this.Priority)
     }
 
     Add(Str, Index?) {
-        originalCritical := Critical(-1)
+        originalCritical := Critical('On')
         filtered := this.Filtered
+        list := this.List
+        filtered.Size := list.Length + 1
         ptr := filtered.Ptr - 1
-        filtered.Size := this.List.Length + 1
         if IsSet(Index) {
-            Index--
             DllCall(
                 g_msvcrt_memmove
-              , 'ptr', filtered.Ptr + Index + 1
               , 'ptr', filtered.Ptr + Index
-              , 'int', filtered.Size - Index - 1
+              , 'ptr', filtered.Ptr + Index - 1
+              , 'int', filtered.Size - Index + 1
               , 'cdecl'
             )
+            Index--
             if criterion := this.CallbackGetCriterion.Call() {
                 i := 0
                 loop Index {
@@ -387,7 +391,7 @@ class FilterStrings {
                         ++i
                     }
                 }
-                this.List.InsertAt(++Index, Str)
+                list.InsertAt(++Index, Str)
                 if this.CallbackFilter.Call(Str, criterion) {
                     this.CallbackAdd.Call(Index, ++i, this)
                     NumPut('char', 0, ptr, Index)
@@ -395,19 +399,19 @@ class FilterStrings {
                     NumPut('char', 1, ptr, Index)
                 }
             } else {
-                this.List.InsertAt(++Index, Str)
+                list.InsertAt(++Index, Str)
                 this.CallbackAdd.Call(Index, Index, this)
                 NumPut('char', 0, ptr, Index)
             }
         } else if criterion := this.CallbackGetCriterion.Call() {
             i := 0
-            Index := this.List.Length
+            Index := list.Length
             loop Index {
                 if !NumGet(ptr, A_Index, 'char') {
                     ++i
                 }
             }
-            this.List.Push(Str)
+            list.Push(Str)
             if this.CallbackFilter.Call(Str, criterion) {
                 this.CallbackAdd.Call(++Index, ++i, this)
                 NumPut('char', 0, ptr, Index)
@@ -415,85 +419,20 @@ class FilterStrings {
                 NumPut('char', 1, ptr, ++Index)
             }
         } else {
-            this.List.Push(Str)
-            i := this.List.Length
+            list.Push(Str)
+            i := list.Length
             this.CallbackAdd.Call(i, i, this)
             NumPut('char', 0, ptr, i)
         }
         Critical(originalCritical)
     }
-    AddMultiple(Str, Index?) {
-        originalCritical := Critical(-1)
-        callbackAdd := this.CallbackAdd
-        callbackFilter := this.CallbackFilter
-        filtered := this.Filtered
-        list := this.List
-        filtered.Size := list.Length + Str.Length
-        ptr := filtered.Ptr - 1
-        if list.Capacity < filtered.Size {
-            list.Capacity := filtered.Size
-        }
-        if IsSet(Index) {
-            Index--
-            DllCall(
-                g_msvcrt_memmove
-              , 'ptr', filtered.Ptr + Index + Str.Length
-              , 'ptr', filtered.Ptr + Index
-              , 'int', filtered.Size - Index - Str.Length
-              , 'cdecl'
-            )
-            if criterion := this.CallbackGetCriterion.Call() {
-                i := 0
-                loop Index {
-                    if !NumGet(ptr, A_Index, 'char') {
-                        ++i
-                    }
-                }
-                loop Str.Length {
-                    list.InsertAt(++Index, Str[A_Index])
-                    if callbackFilter(Str[A_Index], criterion) {
-                        callbackAdd(Index, ++i, this)
-                        NumPut('char', 0, ptr, Index)
-                    } else {
-                        NumPut('char', 1, ptr, Index)
-                    }
-                }
-            } else {
-                loop Str.Length {
-                    list.InsertAt(++Index, Str[A_Index])
-                    callbackAdd(Index, Index, this)
-                    NumPut('char', 0, ptr, Index)
-                }
-            }
-        } else if criterion := this.CallbackGetCriterion.Call() {
-            i := 0
-            Index := list.Length
-            loop Index {
-                if !NumGet(ptr, A_Index, 'char') {
-                    ++i
-                }
-            }
-            loop Str.Length {
-                list.Push(Str[A_Index])
-                if callbackFilter(Str[A_Index], criterion) {
-                    callbackAdd(++Index, ++i, this)
-                    NumPut('char', 0, ptr, Index)
-                } else {
-                    NumPut('char', 1, ptr, ++Index)
-                }
-            }
-        } else {
-            Index := list.Length
-            loop Str.Length {
-                list.Push(Str[A_Index])
-                callbackAdd(++Index, Index, this)
-                NumPut('char', 0, ptr, Index)
-            }
-        }
-        Critical(originalCritical)
-    }
+    /**
+     * @param {Integer} indexList - The index in the list of the item to delete.
+     *
+     * @param {Integer} [length = 1] - The number of items to delete.
+     */
     Delete(Index, Length := 1) {
-        originalCritical := Critical(-1)
+        originalCritical := Critical('On')
         callbackDelete := this.CallbackDelete
         filtered := this.Filtered
         list := this.List
@@ -518,20 +457,24 @@ class FilterStrings {
             }
         }
         list.RemoveAt(Index, Length)
-        DllCall(
-            g_msvcrt_memmove
-          , 'ptr', filtered.Ptr + Index
-          , 'ptr', filtered.Ptr + Index + Length
-          , 'int', filtered.Size - Index - Length
-          , 'cdecl'
-        )
+        if list.length >= Index {
+            DllCall(
+                g_msvcrt_memmove
+              , 'ptr', filtered.Ptr + Index - 1
+              , 'ptr', filtered.Ptr + Index + Length - 1
+              , 'int', filtered.Size - Index - Length + 1
+              , 'cdecl'
+            )
+        }
         filtered.Size := list.Length
         Critical(originalCritical)
     }
     Dispose() {
         list := []
-        for prop in this.OwnProps() {
-            list.Push(prop)
+        for prop, val in this.OwnProps() {
+            if IsObject(val) {
+                list.Push(prop)
+            }
         }
         for prop in list {
             this.DeleteProp(prop)
@@ -598,6 +541,16 @@ FilterStrings_CallbackAddListBox(indexList, indexCtrl, filterStringsObj) {
     }
 }
 /**
+ * @description - This function can be used as `Options.CallbackAdd` for list-view controls.
+ * @param {Integer} indexList - The index of the string that is to be inserted.
+ * @param {Integer} indexCtrl - The 1-based index at which the string should be inserted into the
+ * control's list.
+ * @param {FilterStrings} filterStringsObj - The {@link FilterStrings} object.
+ */
+FilterStrings_CallbackAddListView(indexList, indexCtrl, filterStringsObj) {
+    filterStringsObj.Ctrl.Insert(indexCtrl, , filterStringsObj.List[indexList])
+}
+/**
  * @description - This function can be used as `Options.CallbackDelete` for combobox controls,
  * dropdown-list controls, and listbox controls.
  * @param {Integer} indexList - The index in `list` of the string that is to be inserted.
@@ -640,7 +593,7 @@ FilterStrings_CallbackFilter(item, criterion, caseSense := false, ignoreChars :=
             lenSubCriterion := StrLen(subCriterion)
             leftOffsetItem := pos + lenSubCriterion
             leftOffsetCriterion += lenSubCriterion
-            if leftOffsetCriterion >= lenCriterion {
+            if leftOffsetCriterion > lenCriterion {
                 return true
             } else {
                 rightOffsetCriterion := 0
@@ -653,122 +606,6 @@ FilterStrings_CallbackFilter(item, criterion, caseSense := false, ignoreChars :=
         }
     }
     return false
-}
-/**
- * @description - Breaks `criterion` into a series of substrings, then searches `item` for
- * the presence of each substring. If the number of characters that match with a substring in
- * `item` divided by the total number of non-ignored characters in `criterion` is greater than or
- * equal to `threshold`, {@link FilterStrings_CallbackFilterEx} returns nonzero.
- *
- * @param {String} item - The string to potentially filter.
- *
- * @param {String} criterion - The filter criterion.
- *
- * @param {Boolean} [caseSense = false] - If true, string comparisons are case sensitive.
- *
- * @param {String} [ignoreChars = "\W"] - A
- * {@link https://www.autohotkey.com/docs/v2/misc/RegEx-QuickRef.htm regular expression} that
- * specifies which characters are ignored. The default value causes
- * {@link FilterStrings_CallbackFilter} to ignore all non-word characters.
- *
- * @param {Float} [threshold = 1] - `threshold` specifies the required ratio of characters in
- * `criterion` that must match with a substring in `item` for the function to return nonzero.
- * For example, if `threshold := 0.5`, then 50% of the characters in `criterion` must match with
- * a substring in `item`. If `threshold := 1`, then 100% of the characters in `criterion` must match
- * with a substring in `item` (this is the behavior of {@link FilterStrings_CallbackFilter}).
- *
- * @param {Boolean} [backtracking = false] - If true, the calculation permits backtracking. Setting
- * `backtracking` to true will typically increase the number of matches because substrings can be
- * matched at any point in `item`.
- *
- * If false, a matching substring only counts if it occurs after the end of the previous matches.
- * {@link FilterStrings_CallbackFilterEx} will still check for matching substrings that occur at a
- * position before the end of the previous match, and if the character length of a match exceeds the
- * sum of the lengths of matches within that range, then the former matches are removed from the
- * list of matches and are replaced with the new, longer match.
- *
- * @returns {Boolean} - If the number of characters that match with a substring in
- * `item` divided by the total number of non-ignored characters in `criterion` is greater than or
- * equal to `threshold`, {@link FilterStrings_CallbackFilterEx} returns nonzero.
- */
-FilterStrings_CallbackFilterEx(item, criterion, caseSense := false, ignoreChars := '\W', threshold := 1, backtracking := false) {
-    leftOffsetCriterion := leftOffsetItem := 1
-    rightOffsetCriterion := chars := 0
-    _criterion := RegExReplace(criterion, ignoreChars, '')
-    _item := RegExReplace(item, ignoreChars, '')
-    lenCriterion := StrLen(_criterion)
-    lenItem := StrLen(_item)
-    found := []
-    if backtracking {
-        loop {
-            subCriterion := SubStr(_criterion, leftOffsetCriterion, lenCriterion - leftOffsetCriterion - rightOffsetCriterion + 1)
-            if pos := InStr(_item, subCriterion, caseSense, leftOffsetItem) {
-                lenSubCriterion := StrLen(subCriterion)
-                if _Proc() {
-                    break
-                } else {
-                    continue
-                }
-            } else {
-                rightOffsetCriterion++
-                if rightOffsetCriterion + leftOffsetCriterion > lenCriterion {
-                    return false
-                }
-            }
-        }
-    } else {
-        loop {
-            subCriterion := SubStr(_criterion, leftOffsetCriterion, lenCriterion - leftOffsetCriterion - rightOffsetCriterion + 1)
-            if pos := InStr(_item, subCriterion, caseSense, leftOffsetItem) {
-                lenSubCriterion := StrLen(subCriterion)
-                if _Proc() {
-                    break
-                } else {
-                    continue
-                }
-            } else if pos := InStr(_item, subCriterion, caseSense) {
-                lenSubCriterion := StrLen(subCriterion)
-                i := found.Length + 1
-                _chars := 0
-                loop {
-                    if --i < 1 || found[i].leftOffsetItem + found[i].lenSubCriterion < pos {
-                        break
-                    }
-                    _chars += found[i].lenSubCriterion
-                }
-                if lenSubCriterion > _chars {
-                    found.Length := i
-                    if _Proc() {
-                        break
-                    } else {
-                        continue
-                    }
-                }
-            }
-            rightOffsetCriterion++
-            if rightOffsetCriterion + leftOffsetCriterion > lenCriterion {
-                if ++leftOffsetCriterion > lenCriterion {
-                    break
-                }
-                rightOffsetCriterion := 0
-            }
-        }
-    }
-    for foundInfo in found {
-        chars += foundInfo.lenSubCriterion
-    }
-    return (chars / lenCriterion) >= threshold
-
-    _Proc() {
-        found.Push({ lenSubCriterion: lenSubCriterion, leftOffsetItem: leftOffsetItem })
-        leftOffsetItem := pos + lenSubCriterion
-        leftOffsetCriterion += lenSubCriterion
-        if leftOffsetCriterion > lenCriterion {
-            return 1
-        } else {
-            rightOffsetCriterion := 0
-        }
-    }
 }
 
 /**
