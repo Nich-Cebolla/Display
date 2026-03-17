@@ -4,7 +4,7 @@ An AutoHotkey (AHK) library that provides tools for deploying attractive, user-f
 
 This project is now in a stable pre-release stage. To use in a project:
 
-1. Download the .zip folder.
+1. Download the Display.zip folder from the [releases page](https://github.com/Nich-Cebolla/Display/releases).
 2. Extract the contents of the .zip folder to your project directory.
 3. Open the "DisplayConfig.ahk" script in your code editor.
 4. Make any changes to the configuration as needed.
