@@ -601,7 +601,6 @@ FilterStrings_CallbackFilter(item, criterion, caseSense := false, ignoreChars :=
     _criterion := RegExReplace(criterion, ignoreChars, '')
     _item := RegExReplace(item, ignoreChars, '')
     lenCriterion := StrLen(_criterion)
-    lenItem := StrLen(_item)
     loop {
         subCriterion := SubStr(_criterion, leftOffsetCriterion, lenCriterion - leftOffsetCriterion - rightOffsetCriterion + 1)
         if pos := InStr(_item, subCriterion, caseSense, leftOffsetItem) {
