@@ -1,10 +1,17 @@
 # Display
+
 An AutoHotkey (AHK) library that provides tools for deploying attractive, user-friendly user interfaces with minimal code.
 
-This is a work in progress and will change frequently while I finish it. If you use this library in a project, do not use your git clone directory for the project. I will break things as I release updates.
+This project is now in a stable pre-release stage. To use in a project:
 
-# Notes on dpi awareness context
+1. Download the .zip folder.
+2. Extract the contents of the .zip folder to your project directory.
+3. Open the "DisplayConfig.ahk" script in your code editor.
+4. Make any changes to the configuration as needed.
+5. Write an `#Include DisplayConfig.ahk` statement in your project's source code.
 
+
+<!--
 ## Controls
 
 If you call [`DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")`](https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm#Workarounds)
@@ -202,7 +209,6 @@ handler function would need to calculate the lengths and positions including the
 characters that were excluded from `FilterCallback`'s process.
 
 
-<!--
 The WinAPI text functions require string length measured in WORDs. `StrLen()` handles this
 for us, as noted here: https://www.autohotkey.com/docs/v2/lib/Chr.htm
 "Unicode supplementary characters (where Number is in the range 0x10000 to 0x10FFFF) are counted
