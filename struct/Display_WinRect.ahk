@@ -62,8 +62,10 @@ class Display_WinRect extends Display_Rect {
                     throw OSError()
                 }
                 wrc := Display_WinRect(hwndParent, 0)
-                this.L -= wrc.L
-                this.T -= wrc.T
+                this.l -= wrc.l
+                this.r -= wrc.l
+                this.t -= wrc.t
+                this.b -= wrc.t
         }
     }
     Apply(InsertAfter := 0, Flags := 0) {
