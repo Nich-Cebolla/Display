@@ -10,6 +10,7 @@ This project is now in a stable pre-release stage. To use in a project:
 4. Make any changes to the configuration as needed.
 5. Write an `#Include DisplayConfig.ahk` statement in your project's source code.
 
+<!--
 # DPI
 
 Related articles:
@@ -32,7 +33,6 @@ End adapted text.
 
 
 
-<!--
 ## Controls
 
 If you call [`DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")`](https://www.autohotkey.com/docs/v2/misc/DPIScaling.htm#Workarounds)
