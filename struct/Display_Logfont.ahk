@@ -115,7 +115,7 @@ class Display_Logfont {
      * @memberof Logfont
      * @instance
      */
-    Dpi => this.Hwnd ? DllCall(g_user32_GetDpiForWindow, 'ptr', this.Hwnd, 'UInt') : ''
+    Dpi => this.Hwnd ? DllCall(g_user32_GetDpiForWindow, 'ptr', this.Hwnd, 'UInt') : 96
     /**
      * Gets or sets the escapement measured in tenths of a degree.
      * @memberof Logfont
@@ -150,7 +150,7 @@ class Display_Logfont {
      * @instance
      */
     FontSize {
-        Get => this.Hwnd ? Round(this.Height * -72 / this.Dpi, 2) : ''
+        Get => Round(this.Height * -72 / this.Dpi, 0)
         Set => this.Height := Round(Value * this.Dpi / -72, 0)
     }
     /**
