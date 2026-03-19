@@ -126,8 +126,16 @@ Display_GetChildBoundingRect(hwnd) {
 
     _EnumChildWindowsProc(hwnd, lparam) {
         rects := ObjFromPtrAddRef(lparam)
-        rects[3].hwnd := hwnd
-        rects[3]()
+        hwndParent := DllCall(g_user32_GetParent, 'ptr', hwnd, 'ptr')
+        if !DllCall(g_user32_GetWindowRect, 'ptr', hwnd, 'ptr', rects[3].ptr, 'int') {
+            throw OSError()
+        }
+        if !DllCall(g_user32_ScreenToClient, 'ptr', hwndParent, 'ptr', rects[3].ptr, 'int') {
+            throw OSError()
+        }
+        if !DllCall(g_user32_ScreenToClient, 'ptr', hwndParent, 'ptr', rects[3].ptr + 8, 'int') {
+            throw OSError()
+        }
         DllCall(g_user32_UnionRect, 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
         rects.Push(rects.RemoveAt(1))
         return 1
