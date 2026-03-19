@@ -25,7 +25,7 @@ class Display_WinRect extends Display_Rect {
      * For more information see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect}.
      */
     __New(Hwnd := 0, Flag := 0) {
-        this.Buffer := Buffer(16)
+        this.Size := 16
         this.Flag := Flag
         if this.Hwnd := Hwnd {
             this()
