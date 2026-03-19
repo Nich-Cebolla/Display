@@ -1,8 +1,4 @@
 ﻿
-#include ..\struct
-#include Display_Point.ahk
-#include Display_Rect.ahk
-
 /**
  * @classdesc - `dMon` contains several functions for getting a monitor's handle. The `dMon`
  * instance objects are intended to be disposable objects that retrieve the details from "GetMonitorInfoW"
@@ -63,7 +59,7 @@ class dMon {
      * @returns {dMon} - The {@link dMon} for the monitor that contains the mouse pointer.
      */
     static FromMouse(&OutX?, &OutY?) {
-        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Display_Point(), 'int') {
+        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Point(), 'int') {
             OutX := Pt.X
             OutY := Pt.Y
             return this(DllCall(g_user32_MonitorFromPoint, 'ptr', Pt.Value, 'uint', 0 , 'ptr'))
@@ -79,7 +75,7 @@ class dMon {
      * @returns {Integer} - The handle of the monitor that contains the mouse pointer.
      */
     static FromMouseH(&OutX?, &OutY?) {
-        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Display_Point(), 'int') {
+        if Result := DllCall(g_user32_GetCursorPos, 'ptr', Pt := Point(), 'int') {
             OutX := Pt.X
             OutY := Pt.Y
             return DllCall(g_user32_MonitorFromPoint, 'ptr', Pt.Value, 'uint', 0 , 'ptr')
@@ -116,7 +112,7 @@ class dMon {
      * with the rectangle.
      */
     static FromPos(L, T, R, B) {
-        return DllCall(g_user32_MonitorFromRect, 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
+        return DllCall(g_user32_MonitorFromRect, 'ptr', Rect(L, T, R, B), 'UInt', 0, 'Uptr')
     }
     /**
      * @description - Gets the monitor handle using a bounding rectangle.
@@ -129,12 +125,12 @@ class dMon {
      * with the rectangle.
      */
     static FromPosH(L, T, R, B) {
-        return DllCall(g_user32_MonitorFromRect, 'ptr', Display_Rect(L, T, R, B), 'UInt', 0, 'Uptr')
+        return DllCall(g_user32_MonitorFromRect, 'ptr', Rect(L, T, R, B), 'UInt', 0, 'Uptr')
     }
     /**
-     * @description - Returns a {@link dMon} object using a {@link Display_Rect} object.
+     * @description - Returns a {@link dMon} object using a {@link Rect} object.
      * @see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromRect}
-     * @param {Display_Rect} RectObj - The {@link Display_Rect} object.
+     * @param {Rect} RectObj - The {@link Rect} object.
      * @returns {dMon} - The {@link dMon} of the monitor that shares the largest area of intersection
      * with the rectangle.
      */
@@ -142,9 +138,9 @@ class dMon {
         return this(DllCall(g_user32_MonitorFromRect, 'ptr', RectObj, 'UInt', 0, 'Uptr'))
     }
     /**
-     * @description - Gets the monitor handle using a {@link Display_Rect} object.
+     * @description - Gets the monitor handle using a {@link Rect} object.
      * @see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromRect}
-     * @param {Display_Rect} RectObj - The {@link Display_Rect} object.
+     * @param {Rect} RectObj - The {@link Rect} object.
      * @returns {Integer} - The handle of the monitor that shares the largest area of intersection
      * with the rectangle.
      */
@@ -417,8 +413,8 @@ class dMon {
         H := this.HW
     }
 
-    TL => Display_Point(this.L, this.T)
-    BR => Display_Point(this.R, this.B)
+    TL => Point(this.L, this.T)
+    BR => Point(this.R, this.B)
     L => NumGet(this, 4, 'int')
     X => NumGet(this, 4, 'int')
     T => NumGet(this, 8, 'int')
@@ -430,8 +426,8 @@ class dMon {
     MidX => (this.R - this.L) / 2
     MidY => (this.B - this.T) / 2
     Primary => NumGet(this, 36, 'Uint')
-    TLW => Display_Point(this.LW, this.TW)
-    BRW => Display_Point(this.RW, this.BW)
+    TLW => Point(this.LW, this.TW)
+    BRW => Point(this.RW, this.BW)
     LW => NumGet(this, 20, 'int')
     XW => NumGet(this, 20, 'int')
     TW => NumGet(this, 24, 'int')
@@ -475,7 +471,7 @@ class dMon {
         static Rect(RectObj, DpiType := 0) => this(dMon.FromRectH(RectObj), DpiType)
         static Dimensions(X, Y, W, H, DpiType := 0) => this(dMon.FromDimensionsH(X, Y, W, H), DpiType)
         static Mouse(DpiType := 0) => this(dMon.FromMouseH(), DpiType)
-        static Display_Point(X, Y, DpiType := 0) => this(dMon.FromPointH(X, Y), DpiType)
+        static Point(X, Y, DpiType := 0) => this(dMon.FromPointH(X, Y), DpiType)
         static Win(Hwnd, DpiType := 0) => this(dMon.FromWinH(Hwnd), DpiType)
     }
 }

@@ -1,9 +1,5 @@
 ﻿
 #include dMon.ahk
-#include ..\struct
-#include Display_Point.ahk
-#include Display_Rect.ahk
-#include Display_WinRect.ahk
 
 Display_AdjustWindowRectEx(lpRect, dwStyle := 0, bMenu := 0, dwExStyle := 0) {
     return DllCall(g_user32_AdjustWindowRectEx, 'ptr', lpRect, 'uint', dwStyle, 'int', bMenu, 'uint', dwExStyle)
@@ -114,11 +110,11 @@ Display_GetAncestor(Hwnd, Flags) {
 /**
  * @description - Gets the bounding rectangle of all child windows of a given window.
  * @param {Integer} Hwnd - The handle to the parent window.
- * @returns {Display_Rect} - The bounding rectangle of all child windows, specifically the smallest
+ * @returns {Rect} - The bounding rectangle of all child windows, specifically the smallest
  * rectangle that contains all child windows.
  */
 Display_GetChildBoundingRect(hwnd) {
-    rects := [Display_WinRect(, 3), Display_WinRect(, 3), Display_WinRect(, 3)]
+    rects := [WinRect(, 3), WinRect(, 3), WinRect(, 3)]
     cb := CallbackCreate(_EnumChildWindowsProc, 'fast')
     DllCall(g_user32_EnumChildWindows, 'ptr', hwnd, 'ptr', cb, 'ptr', ObjPtr(rects), 'int')
     CallbackFree(cb)
@@ -142,7 +138,7 @@ Display_GetChildBoundingRect(hwnd) {
     }
 }
 Display_GetClientRect(Hwnd, &lpRect) {
-    return DllCall(g_user32_GetClientRect, 'ptr', Hwnd, 'ptr', lpRect := Display_Rect(), 'int')
+    return DllCall(g_user32_GetClientRect, 'ptr', Hwnd, 'ptr', lpRect := Rect(), 'int')
 }
 Display_GetDesktopWindow() {
     return DllCall(g_user32_GetDesktopWindow, 'ptr')
@@ -200,10 +196,10 @@ Display_GetWindow(Hwnd, Cmd) {
  * The dimensions are given in screen coordinates that are relative to the upper-left corner of
  * the screen.
  * @param {Integer} Hwnd - The window handle.
- * @returns {Display_Rect}
+ * @returns {Rect}
  */
 Display_GetWindowRect(Hwnd) {
-    rc := Display_Rect()
+    rc := Rect()
     if !DllCall(g_user32_GetWindowRect, 'ptr', Hwnd, 'ptr', rc, 'int') {
         throw OSError()
     }
@@ -241,11 +237,11 @@ Display_LockSetForegroundWindow(code) {
  * { L, T, R, B } of `Subject` are updated with the new values.
  *
  * @param {*} Subject - The object representing the rectangle that will be moved. This can be an
- * instance of {@link Display_Rect} or any class that inherits from {@link Display_Rect}, or any object with properties
+ * instance of {@link Rect} or any class that inherits from {@link Rect}, or any object with properties
  * { L, T, R, B }. Those four property values will be updated with the result of this function call.
  *
  * @param {*} [Target] - The object representing the rectangle that will be used as reference. This
- * can be an instance of {@link Display_Rect} or any class that inherits from {@link Display_Rect}, or any object with properties
+ * can be an instance of {@link Rect} or any class that inherits from {@link Rect}, or any object with properties
  * { L, T, R, B }. If unset, the mouse's current position relative to the screen is used. To use
  * a point instead of a rectangle, set the properties "L" and "R" equivalent to one another, and
  * "T" and "B" equivalent to one another.
@@ -531,7 +527,7 @@ Display_PathFromTitle(Hwnd) {
     }
 }
 Display_PhysicalToLogicalPoint(Hwnd, X, Y) {
-    return DllCall(g_user32_PhysicalToLogicalPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', Display_Point(X, Y), 'ptr')
+    return DllCall(g_user32_PhysicalToLogicalPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', Point(X, Y), 'ptr')
 }
 Display_RealChildWindowFromPoint(Hwnd, X, Y) {
     return DllCall(g_user32_RealChildWindowFromPoint, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')

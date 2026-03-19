@@ -1,5 +1,6 @@
 ﻿
-#include <DisplayConfig>
+#include ..\templates\DisplayConfig.ahk
+#include ..\src\dTab.ahk
 
 
 test()
@@ -7,7 +8,7 @@ test()
 class test {
     static Call() {
         this.EventHandler := EventHandler()
-        g := this.g := dGui('+Resize', , this.EventHandler)
+        g := this.g := Gui('+Resize', , this.EventHandler)
         tab := this.tab := dTab(g, 'Tab', 'w200 r2 vTab', ['Tab1', 'Tab2'])
         tab.UseTab()
         this.result := g.Add('Edit', 'w200 r5 vResult')

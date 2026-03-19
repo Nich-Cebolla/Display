@@ -7,25 +7,36 @@
 #include ..
 
 ; Step 3 / 5
-; Comment out any files which your project is not going to use. Internally, each file has an #include
-; statement for its own dependencies, so a file may still end up in your project even if you
-; comment it out here. Check the top of each individual file to review their dependencies.
-; LibraryManager.ahk is an exception; though it is required, no individual file #includes it.
+; Comment out any files which your project is not going to use.
+
+; Internally, most files have an #include statement for its own dependencies, so a file may still
+; end up in your project even if you comment it out here. Check the top of each individual file to
+; review their dependencies.
+
+; LibraryManager.ahk, Logfont.ahk, and Rect.ahk are exceptions. Though they are required by various
+; scripts, no individual file #includes them. This is because these are external libraries that have
+; been bundled with this project. If implementing the Display library in an existing project that
+; already uses these libraries, you can comment out the #include statement here to avoid a duplicate
+; declaration error.
+
 ; If using dGui - there's no need to use dLv, dTab, Lv, or Tab because dGui has the same methods
 ; just in a different package.
+
 ; If not using dGui - dLv and Lv offer the same functions; dLv is in written as a class whereas Lv is
 ; a list of functions. The same applies to dTab and Tab. Use dLv or Lv, but not both. And use dTab
 ; or Tab, but not both.
 
 #include src
-#include ControlTextExtent.ahk
 #include ComboBoxFilter.ahk
-#include dGui.ahk
 #include ControlFitText.ahk
+#include ControlTextExtent.ahk
+#include dGui.ahk
 ; #include dLv.ahk
 #include dMon.ahk
 #include Dpi.ahk
 ; #include dTab.ahk
+#include FilterStrings.ahk
+#include FontGroup.ahk
 ; #include Lv.ahk
 #include SelectFontIntoDc.ahk
 ; #include Tab.ahk
@@ -33,9 +44,18 @@
 #include Window.ahk
 #include WrapText.ahk
 
+; https://github.com/Nich-Cebolla/AutoHotkey-Logfont/ - v1.0.2
+; Required by src\FontGroup.ahk and src\ControlFitText.ahk
+#include Logfont.ahk
+
 ; Required
 #include lib.ahk
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/LibraryManager.ahk
 #include LibraryManager.ahk
+; https://github.com/Nich-Cebolla/AutoHotkey-Rect/ - v1.0.1
+#include Rect.ahk
+
+
 
 ; Step 4 / 5
 ; Adjust options.
@@ -72,9 +92,13 @@ Display_Initialize(force := false) {
     Display_dMon_SetConstants()
     ; Comment this out if not using src\Window.ahk
     Display_Window_SetConstants()
+    ; Comment this out if not using src\Logfont.ahk
+    Logfont_SetConstants()
+
+    Rect_SetConstants()
 
     /**
-     * @var {String} - This is used by struct\Display_TcItemW.ahk and struct\Display_Logfont.ahk
+     * @var {String} - This is used by struct\Display_TcItemW.ahk
      * when getting / setting struct members that are strings. Don't change this unless you have
      * a reason for doing so.
      */

@@ -1,7 +1,6 @@
 ﻿
 #include SelectFontIntoDc.ahk
 #include ..\struct
-#include Display_Logfont.ahk
 #include Display_Size.ahk
 
 class ControlFitText {
@@ -101,7 +100,7 @@ class ControlFitText {
          */
         __New(Ctrl, Options := '') {
             g := Gui()
-            lf := Display_Logfont(Ctrl.Hwnd)
+            lf := Logfont(Ctrl.Hwnd)
             fontOpt := 's' lf.FontSize ' w' lf.Weight
             if lf.Quality {
                 fontOpt .= ' q' lf.Quality

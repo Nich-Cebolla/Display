@@ -71,7 +71,7 @@ Display_CreateTestControl(
     , hInstance := 0
     , Param := 0
 ) {
-    rc := Display_Rect()
+    rc := Rect()
     if !DllCall(g_user32_GetClientRect, 'ptr', HwndGui, 'ptr', rc, 'int') {
         throw OSError()
     }

@@ -10,6 +10,27 @@ This project is now in a stable pre-release stage. To use in a project:
 4. Make any changes to the configuration as needed.
 5. Write an `#Include DisplayConfig.ahk` statement in your project's source code.
 
+# DPI
+
+Related articles:
+- [DPI and device-independent pixels](https://learn.microsoft.com/en-us/windows/win32/learnwin32/dpi-and-device-independent-pixels)
+- [WM_DPICHANGED](https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged)
+- [DPI_AWARENESS](https://learn.microsoft.com/en-us/windows/win32/api/windef/ne-windef-dpi_awareness)
+
+The following is adapted from [DPI and device-independent pixels](https://learn.microsoft.com/en-us/windows/win32/learnwin32/dpi-and-device-independent-pixels):
+
+Fonts are measured in logical units. A 72-point font is defined to be one logical inch tall. Logical inches are then converted to pixels. For many years, Windows used the following conversion: One logical inch equals 96 pixels. Using this scaling factor, a 72-point font is rendered as 96 pixels tall. A 12-point font is 16 pixels tall.
+
+12 points = 12/72 logical inch = 1/6 logical inch = 96/6 pixels = 16 pixels
+
+This scaling factor is described as 96 dots per inch (DPI). The term dots derives from printing, where physical dots of ink are put onto paper. For computer displays, it would be more accurate to say 96 pixels per logical inch, but the term DPI has stuck.
+
+Because actual pixel sizes vary, text that is readable on one monitor might be too small on another monitor. Also, people have different preferences—some people prefer larger text. For this reason, Windows enables the user to change the DPI setting. For example, if the user sets the display to 144 DPI, a 72-point font is 144 pixels tall. The standard DPI settings are 100% (96 DPI), 125% (120 DPI), and 150% (144 DPI). The user can also apply a custom setting. Starting in Windows 7, DPI is a per-user setting.
+
+End adapted text.
+
+
+
 
 <!--
 ## Controls
